@@ -205,6 +205,9 @@ final class WasmBinding private () extends Binding[Int]:
   override def ref(state: Int): Ref[Int] =
     val thread = mainThread(state)
     val refId = module._lx_ref(state, thread, -1)
+    // lx_ref pins by index without popping (see lx.h); the Ref now owns the
+    // value, so consume it off the stack to match luaL_ref semantics.
+    module._lx_pop(state, thread, 1)
     Ref[Int](state, refId, this, "wasm")
 
   override def unref(state: Int, key: Int): Unit =
