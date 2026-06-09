@@ -45,10 +45,12 @@ abstract class SharedBackendSuite extends FunSuite:
         b.setArray(state, -2, 1)
         b.pushNumber(state, 2.0)
         b.setArray(state, -2, 2)
-        b.getArray(state, -2, 1)
+        // setArray (lua_rawseti) pops the value, so the table is now at the
+        // top (-1), not -2.
+        b.getArray(state, -1, 1)
         assert(b.toNumber(state, -1).contains(1.0))
         b.pop(state, 1)
-        b.getArray(state, -2, 2)
+        b.getArray(state, -1, 2)
         assert(b.toNumber(state, -1).contains(2.0))
         b.pop(state, 2)
       finally b.closeState(state)
