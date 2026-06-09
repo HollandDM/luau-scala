@@ -203,6 +203,7 @@ object shim extends Module {
   }
 
   def wasmBuild: T[PathRef] = T {
+    val _       = luauSubmoduleHead()
     val dest    = T.dest
     val outJs   = dest / "luau-shim.js"
 
