@@ -1,0 +1,150 @@
+package luau.core.fake
+
+import luau.core.*
+import luau.core.codec.*
+
+object FakeBinding extends Binding[FakeState]:
+
+  def newState(): FakeState = FakeState()
+
+  def closeState(state: FakeState): Unit =
+    state.markClosed()
+    state.registry.clear()
+
+  def compileAndLoad(
+    state:     FakeState,
+    source:    IArray[Byte],
+    chunkname: String,
+  ): Either[LuaError, Unit] =
+    state.stack.addOne(LuaValue.Nil)
+    Right(())
+
+  def resume(thread: FakeState, nargs: Int): ResumeResult =
+    ResumeResult.Returned(0)
+
+  def newThread(state: FakeState): FakeState = FakeState()
+
+  // ---- Push -----------------------------------------------------------
+
+  def pushNil(state: FakeState): Unit     = state.stack.addOne(LuaValue.Nil)
+  def pushBoolean(state: FakeState, v: Boolean): Unit =
+    state.stack.addOne(LuaValue.Bool(v))
+  def pushNumber(state: FakeState, v: Double): Unit  =
+    state.stack.addOne(LuaValue.Number(v))
+  def pushBytes(state: FakeState, bytes: IArray[Byte]): Unit =
+    state.stack.addOne(LuaValue.LuaString(bytes))
+  def pushString(state: FakeState, v: String): Unit  =
+    pushBytes(state, IArray.unsafeFromArray(v.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+  def pushFunction(state: FakeState, fnId: Int): Unit =
+    state.stack.addOne(LuaValue.Nil)
+
+  def pushRef(state: FakeState, registry: Int): Unit =
+    val v = state.registry.getOrElse(registry, LuaValue.Nil)
+    state.stack.addOne(v)
+
+  // ---- Read -----------------------------------------------------------
+
+  def typeAt(state: FakeState, idx: Int): LuaType =
+    state.valueAt(idx) match
+      case LuaValue.Nil           => LuaType.Nil
+      case _: LuaValue.Bool       => LuaType.Boolean
+      case _: LuaValue.Number     => LuaType.Number
+      case _: LuaValue.LuaString  => LuaType.String
+      case _: LuaValue.LuaRef  => LuaType.Table
+      case _                      => LuaType.Nil
+
+  def toNumber(state: FakeState, idx: Int): Option[Double] =
+    state.valueAt(idx) match
+      case LuaValue.Number(n) => Some(n)
+      case _                  => None
+
+  def toBoolean(state: FakeState, idx: Int): Boolean =
+    LuaValue.isTruthy(state.valueAt(idx))
+
+  def toBytes(state: FakeState, idx: Int): Option[IArray[Byte]] =
+    state.valueAt(idx) match
+      case LuaValue.LuaString(b) => Some(b)
+      case _                     => None
+
+  def stackTop(state: FakeState): Int = state.stack.size
+
+  def setStackTop(state: FakeState, idx: Int): Unit =
+    val newSize = if idx >= 0 then idx else state.stack.size + idx + 1
+    while state.stack.size > newSize do state.stack.removeLast()
+    while state.stack.size < newSize do state.stack.addOne(LuaValue.Nil)
+
+  // ---- Table ----------------------------------------------------------
+
+  def newTable(state: FakeState): Unit =
+    state.stack.addOne(FakeTable.empty)
+
+  def rawGet(state: FakeState, tableIdx: Int): Unit =
+    val key   = state.stack.removeLast()
+    val table = state.valueAt(tableIdx)
+    val result = table match
+      case t: FakeTable => t.rawGet(key)
+      case _            => LuaValue.Nil
+    state.stack.addOne(result)
+
+  def rawSet(state: FakeState, tableIdx: Int): Unit =
+    val value = state.stack.removeLast()
+    val key   = state.stack.removeLast()
+    val table = state.valueAt(tableIdx)
+    table match
+      case t: FakeTable => t.rawSet(key, value)
+      case _            => ()
+
+  def setArray(state: FakeState, tableIdx: Int, n: Int): Unit =
+    val value = state.stack.removeLast()
+    state.valueAt(tableIdx) match
+      case t: FakeTable => t.rawSet(LuaValue.Number(n.toDouble), value)
+      case _            => ()
+
+  def getArray(state: FakeState, tableIdx: Int, n: Int): Unit =
+    val result = state.valueAt(tableIdx) match
+      case t: FakeTable => t.rawGet(LuaValue.Number(n.toDouble))
+      case _            => LuaValue.Nil
+    state.stack.addOne(result)
+
+  def rawLen(state: FakeState, idx: Int): Long =
+    state.valueAt(idx) match
+      case t: FakeTable  => t.size.toLong
+      case LuaValue.LuaString(b) => b.length.toLong
+      case _             => 0L
+
+  // ---- Registry -------------------------------------------------------
+
+  def ref(state: FakeState): Ref[FakeState] =
+    val value = state.stack.removeLast()
+    val key   = state.allocRegKey()
+    state.registry(key) = value
+    new Ref[FakeState](state, key, this, "")
+
+  def unref(state: FakeState, key: Int): Unit =
+    if !state.isClosed then state.registry.remove(key)
+
+  // ---- Native functions -----------------------------------------------
+
+  def registerNativeFn(state: FakeState, fn: NativeFn[FakeState]): Unit =
+    val id = state.allocFnId()
+    state.nativeFns(id) = fn
+    pushFunction(state, id)
+
+  // ---- Globals --------------------------------------------------------
+
+  def getGlobal(state: FakeState, name: String): Unit =
+    state.stack.addOne(state.globals.getOrElse(name, LuaValue.Nil))
+
+  def setGlobal(state: FakeState, name: String): Unit =
+    state.globals(name) = state.stack.removeLast()
+
+  // ---- Scope ----------------------------------------------------------
+
+  override def openScope(state: FakeState): Scope[FakeState] =
+    Scope(this, state)
+
+  // ---- Library loading / sandbox (stub) -------------------------------
+
+  def openLibs(state: FakeState, mask: Int): Unit = ()
+
+  def sandbox(state: FakeState): Unit = ()
