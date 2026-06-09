@@ -35,7 +35,7 @@ final class Task[H](
 
   private[scheduler] def fireCancel(): Unit =
     val c = _cancel.getAndSet(null)
-    if c != null then c()
+    if c != null then c.asInstanceOf[Cancel].cancel()
 
   private[scheduler] def releaseThread(): Unit =
     threadRef.close()

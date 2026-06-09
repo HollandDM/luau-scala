@@ -8,7 +8,7 @@ import luau.panama.LxConstants.*
 import luau.panama.LxHandles.*
 
 final class NativeFnDispatcher:
-  private var ps: PanamaState = _
+  private var ps: PanamaState = null
   private val fns = new ConcurrentHashMap[Int, NativeFn[MemorySegment]]()
   private var nextId = 1
 

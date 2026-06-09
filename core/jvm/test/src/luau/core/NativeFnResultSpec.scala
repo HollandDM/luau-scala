@@ -24,7 +24,7 @@ class NativeFnResultSpec extends FunSuite:
       resume.succeed(LuaValue.Nil)
       Cancel(() => { cancelled = true })
     }
-    val register = s match { case NativeFnResult.Suspend(r) => r }
+    val register = s match { case NativeFnResult.Suspend(r) => r; case _ => ??? }
     var result: Either[LuaError, LuaValue] = Left(LuaError.runtime("not called"))
     val cancel = register(Resume(r => result = r))
     assert(registered)

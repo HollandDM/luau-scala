@@ -1,24 +1,21 @@
 import mill._, scalalib._, scalajslib._, scalafmt._
 
-val scalaVersion      = "3.7.4"
-val scalaJSVersion    = "1.21.0"
-val zioVersion        = "2.1.16"
-val catsEffectVersion = "3.6.0"
-val munitVersion      = "1.2.0"
+val scalaVersion       = "3.8.4"
+val scalaJSVersion     = "1.21.0"
+val zioVersion         = "2.1.25"
+val catsEffectVersion  = "3.5.0"
+val munitVersion       = "1.2.0"
 
 trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
   def scalaVersion = build.scalaVersion
-  def platformDeps: T[Agg[Dep]] = T { Agg.empty[Dep] }
-  def ivyDeps = T { platformDeps() }
-  def scalacOptions = T { Seq(
+  def mvnDeps = platformDeps
+  def platformDeps: Seq[Dep] = Seq.empty
+  def scalacOptions = super.scalacOptions() ++ Seq(
     "-encoding", "UTF-8",
-    "-deprecation",
-    "-feature",
-    "-unchecked",
-    "-Xfatal-warnings",
-    "-Ykind-projector:underscores",
+    "-deprecation", "-feature", "-unchecked",
+    "-Werror", "-Xkind-projector:underscores",
     "-source:future"
-  )}
+  )
 }
 
 trait LuauCrossPlatformJSModule extends LuauCrossPlatformModule with ScalaJSModule {
@@ -28,74 +25,49 @@ trait LuauCrossPlatformJSModule extends LuauCrossPlatformModule with ScalaJSModu
 object core extends Module {
   object jvm extends LuauCrossPlatformModule {
     def moduleDeps = Seq()
-    def sources    = T.sources { millSourcePath / "src" }
     object test extends ScalaTests with TestModule.Munit {
-      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
     def moduleDeps = Seq()
-    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    def scalaSource = Task.Sources { os.pwd / "core" / "jvm" / "src" }
     object test extends ScalaJSTests with TestModule.Munit {
-      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
 }
 
 object panama extends LuauCrossPlatformModule {
-  def moduleDeps  = Seq(core.jvm)
-  def sources     = T.sources { millSourcePath / "src" }
-  def generatedSources = T.sources { millSourcePath / "src" / "generated" }
-
-  def generateBindings: T[Unit] = T {
-    val headerFile  = millSourcePath / os.up / "shim" / "include" / "lx.h"
-    val outDir      = millSourcePath / "src" / "generated"
-    os.makeDir.all(outDir)
-    val jextractCmd = Seq(
-      "jextract",
-      "--output", outDir.toString,
-      "--target-package", "luau.panama.generated",
-      "--library", "luau-shim",
-      "--header-class-name", "LuauShimH",
-      headerFile.toString
-    )
-    os.proc(jextractCmd).call(stdout = os.Inherit, stderr = os.Inherit)
-  }
-
+  def moduleDeps = Seq(core.jvm)
   object test extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
-    def forkArgs = T {
-      val libDir = build.shim.nativeBuild().path / os.up
-      Seq(
-        s"-Djava.library.path=${libDir}",
-        "--enable-native-access=ALL-UNNAMED",
-        "--enable-preview"
-      )
-    }
+    def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
+    def forkArgs = Seq(
+      "--enable-native-access=ALL-UNNAMED",
+      "--enable-preview"
+    )
   }
 }
 
 object wasm extends LuauCrossPlatformJSModule {
   def moduleDeps = Seq(core.js)
-  def sources    = T.sources { millSourcePath / "src" }
   object test extends ScalaJSTests with TestModule.Munit {
-    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
   }
 }
 
 object scheduler extends Module {
   object jvm extends LuauCrossPlatformModule {
     def moduleDeps = Seq(core.jvm)
-    def sources    = T.sources { millSourcePath / "src" }
     object test extends ScalaTests with TestModule.Munit {
-      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
     def moduleDeps = Seq(core.js)
-    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    def scalaSource = Task.Sources { os.pwd / "scheduler" / "jvm" / "src" }
     object test extends ScalaJSTests with TestModule.Munit {
-      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
 }
@@ -103,33 +75,31 @@ object scheduler extends Module {
 object stdlib extends Module {
   object jvm extends LuauCrossPlatformModule {
     def moduleDeps = Seq(scheduler.jvm)
-    def sources    = T.sources { millSourcePath / "src" }
     object test extends ScalaTests with TestModule.Munit {
-      def moduleDeps = Seq(core.jvm, scheduler.jvm, core.jvm.test, scheduler.jvm.test)
-      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+      def moduleDeps = Seq(scheduler.jvm, core.jvm)
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
     def moduleDeps = Seq(scheduler.js)
-    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    def scalaSource = Task.Sources { os.pwd / "stdlib" / "jvm" / "src" }
     object test extends ScalaJSTests with TestModule.Munit {
-      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
 }
 
 object zio extends LuauCrossPlatformModule {
   def moduleDeps = Seq(core.jvm, scheduler.jvm)
-  def ivyDeps    = T { Agg(
-    ivy"dev.zio::zio::${zioVersion}",
-    ivy"dev.zio::zio-streams::${zioVersion}"
-  )}
-  def sources    = T.sources { millSourcePath / "src" }
+  def platformDeps = Seq(
+    mvn"dev.zio::zio::${build.zioVersion}",
+    mvn"dev.zio::zio-streams::${build.zioVersion}"
+  )
   object test extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(
-      ivy"org.scalameta::munit::${munitVersion}",
-      ivy"dev.zio::zio-test::${zioVersion}",
-      ivy"dev.zio::zio-test-sbt::${zioVersion}"
+    def mvnDeps = Seq(
+      mvn"org.scalameta::munit::${build.munitVersion}",
+      mvn"dev.zio::zio-test::${build.zioVersion}",
+      mvn"dev.zio::zio-test-sbt::${build.zioVersion}"
     )
   }
 }
@@ -137,51 +107,43 @@ object zio extends LuauCrossPlatformModule {
 object ce extends Module {
   object jvm extends LuauCrossPlatformModule {
     def moduleDeps = Seq(core.jvm, scheduler.jvm)
-    def ivyDeps    = T { Agg(ivy"org.typelevel::cats-effect::${catsEffectVersion}") }
-    def sources    = T.sources { millSourcePath / "src" }
+    def platformDeps = Seq(mvn"org.typelevel::cats-effect::${build.catsEffectVersion}")
     object test extends ScalaTests with TestModule.Munit {
-      def ivyDeps = Agg(
-        ivy"org.scalameta::munit::${munitVersion}",
-        ivy"org.typelevel::munit-cats-effect::1.0.7"
-      )
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
     def moduleDeps = Seq(core.js, scheduler.js)
-    def ivyDeps    = T { Agg(ivy"org.typelevel::cats-effect::${catsEffectVersion}") }
-    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    def platformDeps = Seq(mvn"org.typelevel::cats-effect::${build.catsEffectVersion}")
+    def scalaSource = Task.Sources { os.pwd / "ce" / "jvm" / "src" }
     object test extends ScalaJSTests with TestModule.Munit {
-      def ivyDeps = Agg(
-        ivy"org.scalameta::munit::${munitVersion}",
-        ivy"org.typelevel::munit-cats-effect::1.0.7"
-      )
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
 }
 
 object shim extends Module {
 
-  def shimSrcDir    = T { millSourcePath }
-  def shimIncDir    = T { millSourcePath / "include" }
-  def luauIncVm     = T { millSourcePath / "luau" / "VM" / "include" }
-  def luauIncCommon = T { millSourcePath / "luau" / "Common" / "include" }
-  def luauIncCompiler = T { millSourcePath / "luau" / "Compiler" / "include" }
-  def luauIncAst    = T { millSourcePath / "luau" / "Ast" / "include" }
-  def luauIncBytecode = T { millSourcePath / "luau" / "Bytecode" / "include" }
-  def luauVmDir     = T { millSourcePath / "luau" / "VM" }
-  def luauCompilerDir = T { millSourcePath / "luau" / "Compiler" }
-  def luauAstDir    = T { millSourcePath / "luau" / "Ast" }
-  def luauBytecodeDir = T { millSourcePath / "luau" / "Bytecode" }
-  def luauCommonDir = T { millSourcePath / "luau" / "Common" }
+  def shimSrcDir    = Task { os.pwd / "shim" }
+  def shimIncDir    = Task { os.pwd / "shim" / "include" }
+  def luauIncVm     = Task { os.pwd / "shim" / "luau" / "VM" / "include" }
+  def luauIncCommon = Task { os.pwd / "shim" / "luau" / "Common" / "include" }
+  def luauIncCompiler = Task { os.pwd / "shim" / "luau" / "Compiler" / "include" }
+  def luauIncAst    = Task { os.pwd / "shim" / "luau" / "Ast" / "include" }
+  def luauIncBytecode = Task { os.pwd / "shim" / "luau" / "Bytecode" / "include" }
+  def luauVmDir     = Task { os.pwd / "shim" / "luau" / "VM" }
+  def luauCompilerDir = Task { os.pwd / "shim" / "luau" / "Compiler" }
+  def luauAstDir    = Task { os.pwd / "shim" / "luau" / "Ast" }
+  def luauBytecodeDir = Task { os.pwd / "shim" / "luau" / "Bytecode" }
+  def luauCommonDir = Task { os.pwd / "shim" / "luau" / "Common" }
 
-  def luauSubmoduleHead: T[String] = T.input {
-    val headFile = millSourcePath / "luau" / ".git" / "HEAD"
+  def luauSubmoduleHead: Task[String] = Task.Input {
+    val headFile = os.pwd / "shim" / "luau" / ".git" / "HEAD"
     if (os.exists(headFile)) os.read(headFile).trim
     else "absent"
   }
 
-  /** Collect all Luau .cpp sources from the submodule dirs. */
-  def luauSources: T[Seq[os.Path]] = T {
+  def luauSources: Task[Seq[os.Path]] = Task {
     val dirs = Seq(luauVmDir(), luauCompilerDir(), luauAstDir(), luauBytecodeDir(), luauCommonDir())
     dirs.flatMap { d =>
       val srcDir = d / "src"
@@ -190,139 +152,82 @@ object shim extends Module {
     }
   }
 
-  def allIncludeDirs: T[Seq[String]] = T {
+  def allIncludeDirs: Task[Seq[String]] = Task {
     Seq(
-      shimIncDir().toString,
-      luauIncVm().toString,
-      luauIncCommon().toString,
-      luauIncCompiler().toString,
-      luauIncAst().toString,
-      luauIncBytecode().toString
+      shimIncDir().toString, luauIncVm().toString, luauIncCommon().toString,
+      luauIncCompiler().toString, luauIncAst().toString, luauIncBytecode().toString
     )
   }
 
-  def nativePlatform: T[(String, Seq[String])] = T {
+  def nativePlatform: Task[(String, Seq[String])] = Task {
     val _     = luauSubmoduleHead()
     val osStr = System.getProperty("os.name", "").toLowerCase
     if (osStr.contains("mac")) ("dylib", Seq("-dynamiclib"))
     else                        ("so",    Seq("-shared", "-fPIC"))
   }
 
-  def nativeBuild: T[PathRef] = T {
-    val dest        = T.dest
+  def nativeBuild: Task[PathRef] = Task {
+    val dest        = Task.dest
     val (ext, lflags) = nativePlatform()
     val outLib      = dest / s"libluau-shim.$ext"
-
     val srcFile     = shimSrcDir() / "src" / "lx.cpp"
     val includeArgs = allIncludeDirs().flatMap(d => Seq("-I", d))
     val luauSrcs    = luauSources().map(_.toString)
 
-    val compileCmd = Seq("clang++") ++
-      Seq("-std=c++17", "-O2") ++
-      includeArgs ++
-      lflags ++
+    os.proc(Seq("clang++") ++
+      Seq("-std=c++17", "-O2") ++ includeArgs ++ lflags ++
       Seq("-o", outLib.toString, srcFile.toString) ++ luauSrcs
-
-    os.proc(compileCmd).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
+    ).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
 
     PathRef(outLib)
   }
 
-  def wasmBuild: T[PathRef] = T {
+  def wasmBuild: Task[PathRef] = Task {
     val _       = luauSubmoduleHead()
-    val dest    = T.dest
+    val dest    = Task.dest
     val outJs   = dest / "luau-shim.js"
-
     val srcFile   = shimSrcDir() / "src" / "lx.cpp"
     val includeArgs = allIncludeDirs().flatMap(d => Seq("-I", d))
     val luauSrcs  = luauSources().map(_.toString)
 
     val exportedFunctions = Seq(
-      "_lx_newstate",
-      "_lx_close",
-      "_lx_main_thread",
-      "_lx_new_thread",
-      "_lx_thread_status",
-      "_lx_compile_and_load",
-      "_lx_resume",
-      "_lx_push_nil",
-      "_lx_push_boolean",
-      "_lx_push_number",
-      "_lx_push_integer",
-      "_lx_push_lstring",
-      "_lx_push_ref",
-      "_lx_push_copy",
-      "_lx_pop",
-      "_lx_stack_top",
-      "_lx_type",
-      "_lx_to_number",
-      "_lx_to_integer",
-      "_lx_to_boolean",
-      "_lx_to_lstring",
-      "_lx_rawlen",
-      "_lx_newtable",
-      "_lx_rawget",
-      "_lx_rawset",
-      "_lx_rawgeti",
-      "_lx_rawseti",
-      "_lx_setarray",
-      "_lx_ref",
-      "_lx_unref",
-      "_lx_register_native",
-      "_lx_set_suspend_token",
-      "_lx_get_suspend_token",
-      "_lx_set_global",
-      "_lx_get_global",
-      "_lx_openlibs",
-      "_lx_sandbox",
-      "_lx_open_libs",
-      "_lx_gc_step",
-      "_lx_gc_collect",
-      "_lx_copy_error",
-      "_malloc",
-      "_free"
+      "_lx_newstate", "_lx_close", "_lx_main_thread", "_lx_new_thread",
+      "_lx_thread_status", "_lx_compile_and_load", "_lx_resume",
+      "_lx_push_nil", "_lx_push_boolean", "_lx_push_number", "_lx_push_integer",
+      "_lx_push_lstring", "_lx_push_ref", "_lx_push_copy", "_lx_pop", "_lx_stack_top",
+      "_lx_type", "_lx_to_number", "_lx_to_integer", "_lx_to_boolean", "_lx_to_lstring",
+      "_lx_rawlen", "_lx_newtable", "_lx_rawget", "_lx_rawset", "_lx_rawgeti", "_lx_rawseti",
+      "_lx_setarray", "_lx_ref", "_lx_unref", "_lx_register_native",
+      "_lx_set_suspend_token", "_lx_get_suspend_token",
+      "_lx_set_global", "_lx_get_global",
+      "_lx_openlibs", "_lx_sandbox", "_lx_open_libs",
+      "_lx_gc_step", "_lx_gc_collect", "_lx_copy_error",
+      "_malloc", "_free"
     ).mkString("[", ",", "]")
-
     val exportedRuntimeMethods = Seq(
-      "addFunction",
-      "removeFunction",
-      "dynCall_iii",
-      "dynCall_iiiiii",
-      "ccall",
-      "cwrap",
-      "getValue",
-      "setValue",
-      "UTF8ToString",
-      "stringToUTF8"
+      "addFunction", "removeFunction", "dynCall_iii", "dynCall_iiiiii",
+      "ccall", "cwrap", "getValue", "setValue", "UTF8ToString", "stringToUTF8"
     ).mkString("[\"", "\",\"", "\"]")
 
-    val emccCmd = Seq("emcc") ++
-      Seq("-std=c++17", "-O2") ++
-      includeArgs ++
-      Seq(
-        "-s", "WASM=1",
+    os.proc(Seq("emcc") ++
+      Seq("-std=c++17", "-O2") ++ includeArgs ++
+      Seq("-s", "WASM=1",
         "-s", s"EXPORTED_FUNCTIONS=$exportedFunctions",
         "-s", s"EXPORTED_RUNTIME_METHODS=$exportedRuntimeMethods",
-        "-s", "MODULARIZE=1",
-        "-s", "EXPORT_NAME='LuauShim'",
-        "-s", "ALLOW_MEMORY_GROWTH=1",
-        "-s", "ALLOW_TABLE_GROWTH=1",
-        "-s", "STACK_SIZE=1048576",
-        "-s", "ENVIRONMENT='node,web,worker'",
-        "--no-entry",
-        "-o", outJs.toString,
-        srcFile.toString
+        "-s", "MODULARIZE=1", "-s", "EXPORT_NAME='LuauShim'",
+        "-s", "ALLOW_MEMORY_GROWTH=1", "-s", "ALLOW_TABLE_GROWTH=1",
+        "-s", "STACK_SIZE=1048576", "-s", "ENVIRONMENT='node,web,worker'",
+        "--no-entry", "-o", outJs.toString, srcFile.toString
       ) ++ luauSrcs
-
-    os.proc(emccCmd).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
+    ).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
 
     PathRef(dest / "luau-shim.wasm")
   }
 
-  def copyWasmToResources: T[Unit] = T {
+  def copyWasmToResources: Task[Unit] = Task {
     val wasmDest = wasmBuild().path
     val jsDest   = wasmDest / os.up / "luau-shim.js"
-    val resDir   = millSourcePath / os.up / "wasm" / "test" / "resources"
+    val resDir   = os.pwd / "wasm" / "test" / "resources"
     os.makeDir.all(resDir)
     os.copy.over(wasmDest, resDir / "luau-shim.wasm")
     os.copy.over(jsDest,   resDir / "luau-shim.js")

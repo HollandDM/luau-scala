@@ -5,8 +5,8 @@ import scala.scalajs.js.typedarray.Uint8Array
 
 object WasmMarshal:
 
-  private val utf8Encoder = new js.Dynamic.global.TextEncoder()
-  private val utf8Decoder = new js.Dynamic.global.TextDecoder("utf-8")
+  private val utf8Encoder = js.Dynamic.newInstance(js.Dynamic.global.selectDynamic("TextEncoder"))()
+  private val utf8Decoder = js.Dynamic.newInstance(js.Dynamic.global.selectDynamic("TextDecoder"))("utf-8")
 
   def withString[A](s: String)(f: (Int, Int) => A): A =
     val bytes: Uint8Array = utf8Encoder.encode(s).asInstanceOf[Uint8Array]

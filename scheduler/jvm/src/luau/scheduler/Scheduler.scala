@@ -148,7 +148,7 @@ final class Scheduler[H](
     val timerTask = new TimerTask:
       def run(): Unit = callback
     timer.schedule(timerTask, ms)
-    () => timerTask.cancel()
+    Cancel { () => timerTask.cancel(); () }
 
   // ── Cancel task ───────────────────────────────────────────────────────
 
@@ -223,7 +223,7 @@ final class Scheduler[H](
   private def wireSuspend(task: Task[H], register: Resume => Cancel): Unit =
     @volatile var fired = false
 
-    val resume: Resume = either =>
+    val resume: Resume = Resume { (either: Either[LuaError, LuaValue]) =>
       if !fired then
         fired = true
         task.clearCancel()
@@ -232,6 +232,7 @@ final class Scheduler[H](
           case Right(value) => ResumeValues.SuspendValue(value)
           case Left(err)    => ResumeValues.Failure(err)
         runQueue.enqueue(ReadyTask[H](task, rv))
+    }
 
     val cancel: Cancel = register(resume)
     task.installCancel(cancel)
@@ -258,7 +259,7 @@ final class Scheduler[H](
       case LuaValue.False            => binding.pushBoolean(thread, false)
       case LuaValue.Number(n)        => binding.pushNumber(thread, n)
       case LuaValue.LuaString(b)     => binding.pushBytes(thread, b)
-      case _: LuaValue.LuaRef[?]     => binding.pushNil(thread)
+      case _: LuaValue.LuaRef        => binding.pushNil(thread)
 
   private def valueCount(rv: ResumeValues): Int = rv match
     case ResumeValues.None                  => 0

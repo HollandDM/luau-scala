@@ -15,46 +15,46 @@ object LuauEncoder:
 
   // ---- Primitive instances -------------------------------------------
 
-  given LuauEncoder[Unit] with
+  given LuauEncoder[Unit]:
     def encode[H](value: Unit, sink: Sink[H]): Unit = sink.pushNil()
 
-  given LuauEncoder[Boolean] with
+  given LuauEncoder[Boolean]:
     def encode[H](value: Boolean, sink: Sink[H]): Unit = sink.pushBoolean(value)
 
-  given LuauEncoder[Double] with
+  given LuauEncoder[Double]:
     def encode[H](value: Double, sink: Sink[H]): Unit = sink.pushNumber(value)
 
-  given LuauEncoder[Int] with
+  given LuauEncoder[Int]:
     def encode[H](value: Int, sink: Sink[H]): Unit = sink.pushNumber(value.toDouble)
 
-  given LuauEncoder[Long] with
+  given LuauEncoder[Long]:
     def encode[H](value: Long, sink: Sink[H]): Unit = sink.pushNumber(value.toDouble)
 
-  given LuauEncoder[Float] with
+  given LuauEncoder[Float]:
     def encode[H](value: Float, sink: Sink[H]): Unit = sink.pushNumber(value.toDouble)
 
   // ---- String instances ----------------------------------------------
 
-  given LuauEncoder[String] with
+  given LuauEncoder[String]:
     def encode[H](value: String, sink: Sink[H]): Unit = sink.pushString(value)
 
-  given LuauEncoder[IArray[Byte]] with
+  given LuauEncoder[IArray[Byte]]:
     def encode[H](value: IArray[Byte], sink: Sink[H]): Unit = sink.pushBytes(value)
 
-  given LuauEncoder[Array[Byte]] with
+  given LuauEncoder[Array[Byte]]:
     def encode[H](value: Array[Byte], sink: Sink[H]): Unit =
       sink.pushBytes(IArray.unsafeFromArray(value))
 
   // ---- Option --------------------------------------------------------
 
-  given [A: LuauEncoder]: LuauEncoder[Option[A]] with
+  given [A: LuauEncoder] => LuauEncoder[Option[A]]:
     def encode[H](value: Option[A], sink: Sink[H]): Unit = value match
       case None    => sink.pushNil()
       case Some(a) => summon[LuauEncoder[A]].encode(a, sink)
 
   // ---- Collections (Seq / List / Array / Vector -> 1-indexed table) --
 
-  given [A: LuauEncoder]: LuauEncoder[Seq[A]] with
+  given [A: LuauEncoder] => LuauEncoder[Seq[A]]:
     def encode[H](value: Seq[A], sink: Sink[H]): Unit =
       sink.beginTable()
       var i = 1
@@ -63,10 +63,10 @@ object LuauEncoder:
         i += 1
       sink.endTable()
 
-  given [A: LuauEncoder]: LuauEncoder[List[A]] =
+  given [A: LuauEncoder] => LuauEncoder[List[A]] =
     summon[LuauEncoder[Seq[A]]].asInstanceOf[LuauEncoder[List[A]]]
 
-  given [A: LuauEncoder]: LuauEncoder[Array[A]] with
+  given [A: LuauEncoder] => LuauEncoder[Array[A]]:
     def encode[H](value: Array[A], sink: Sink[H]): Unit =
       sink.beginTable()
       var i = 1
@@ -75,7 +75,7 @@ object LuauEncoder:
         i += 1
       sink.endTable()
 
-  given [A: LuauEncoder]: LuauEncoder[Vector[A]] with
+  given [A: LuauEncoder] => LuauEncoder[Vector[A]]:
     def encode[H](value: Vector[A], sink: Sink[H]): Unit =
       sink.beginTable()
       var i = 1
@@ -86,7 +86,7 @@ object LuauEncoder:
 
   // ---- Map (String keys -> table) ------------------------------------
 
-  given [V: LuauEncoder]: LuauEncoder[Map[String, V]] with
+  given [V: LuauEncoder] => LuauEncoder[Map[String, V]]:
     def encode[H](value: Map[String, V], sink: Sink[H]): Unit =
       sink.beginTable()
       for (k, v) <- value do
@@ -98,7 +98,10 @@ object LuauEncoder:
   inline def derived[A](using m: Mirror.ProductOf[A]): LuauEncoder[A] =
     val labels    = constValueTuple[m.MirroredElemLabels]
     val encoders  = summonAll[Tuple.Map[m.MirroredElemTypes, LuauEncoder]]
-    new LuauEncoder[A]:
+    derivedEncoder[A](labels, encoders)
+
+  private def derivedEncoder[A](labels: Tuple, encoders: Tuple): LuauEncoder[A] =
+    new LuauEncoder[A] {
       def encode[H](value: A, sink: Sink[H]): Unit =
         val product = value.asInstanceOf[Product]
         sink.beginTable()
@@ -110,3 +113,4 @@ object LuauEncoder:
             .encode(product.productElement(i), sink)
           i += 1
         sink.endTable()
+    }

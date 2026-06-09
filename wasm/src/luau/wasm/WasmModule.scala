@@ -7,7 +7,7 @@ import scala.scalajs.js.typedarray.Uint8Array
 @js.native
 @JSImport("./luau-shim.js", JSImport.Default)
 object LuauShimFactory extends js.Object:
-  def apply(overrides: js.UndefOr[js.Dynamic] = js.undefined): js.Promise[WasmModuleExports] = js.native
+  def apply(options: js.Object = js.Object()): js.Promise[WasmModuleExports] = js.native
 
 @js.native
 trait WasmModuleExports extends js.Object:

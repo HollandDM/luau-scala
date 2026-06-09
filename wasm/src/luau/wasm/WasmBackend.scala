@@ -7,7 +7,7 @@ import scala.scalajs.js.JSConverters.*
 object WasmBackend:
 
   def load(loaderPath: String = "./luau-shim.js"): Future[Unit] =
-    LuauShimFactory().toFuture.map { exports =>
+    LuauShimFactory(js.Dynamic.literal()).toFuture.map { exports =>
       WasmModule.set(exports)
       Trampoline.install()
       ()

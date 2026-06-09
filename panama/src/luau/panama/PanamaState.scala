@@ -124,7 +124,8 @@ final class PanamaState private (
     }
 
   def toBoolean(state: MemorySegment, idx: Int): Boolean =
-    LxHandles.lx_to_boolean.invokeExact(L, state, idx).asInstanceOf[Int] != 0
+    val result: Int = LxHandles.lx_to_boolean.invokeExact(L, state, idx).asInstanceOf[Int]
+    result != 0
 
   def toBytes(state: MemorySegment, idx: Int): Option[IArray[Byte]] =
     withArena { arena =>

@@ -29,7 +29,7 @@ abstract class SharedBackendSuite extends FunSuite:
         val s = "hello, 世界"
         b.pushString(state, s)
         val readBack = b.toBytes(state, -1).map(bytes =>
-          new String(bytes.toArray, "UTF-8")
+          new String(IArray.genericWrapArray(bytes).toArray, "UTF-8")
         )
         assert(readBack.contains(s))
         b.pop(state, 1)
@@ -93,7 +93,7 @@ abstract class SharedBackendSuite extends FunSuite:
         b.resume(state, 0)
         assertEquals(b.toBoolean(state, -2), false)
         val errMsg = b.toBytes(state, -1).map(bytes =>
-          new String(bytes.toArray, "UTF-8")
+          new String(IArray.genericWrapArray(bytes).toArray, "UTF-8")
         )
         assert(errMsg.exists(_.contains("deliberate error")))
         b.pop(state, 2)
@@ -158,7 +158,7 @@ abstract class SharedBackendSuite extends FunSuite:
         val testStr = "日本語テスト:  null-safe 😀"
         b.pushString(state, testStr)
         val readBack = b.toBytes(state, -1).map(bytes =>
-          new String(bytes.toArray, "UTF-8")
+          new String(IArray.genericWrapArray(bytes).toArray, "UTF-8")
         )
         assertEquals(readBack, Some(testStr))
         b.pop(state, 1)
