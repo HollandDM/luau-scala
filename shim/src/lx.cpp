@@ -324,6 +324,20 @@ int64_t lx_get_suspend_token(lx_State s, lx_Thread t) {
 }
 
 // -----------------------------------------------------------------------
+// Global access
+// -----------------------------------------------------------------------
+
+void lx_set_global(lx_State state, const char* name) {
+    lua_State* L = static_cast<lua_State*>(state);
+    lua_setglobal(L, name);
+}
+
+void lx_get_global(lx_State state, const char* name) {
+    lua_State* L = static_cast<lua_State*>(state);
+    lua_getglobal(L, name);
+}
+
+// -----------------------------------------------------------------------
 // Standard libraries
 // -----------------------------------------------------------------------
 

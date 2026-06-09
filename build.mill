@@ -270,6 +270,8 @@ object shim extends Module {
       "_lx_register_native",
       "_lx_set_suspend_token",
       "_lx_get_suspend_token",
+      "_lx_set_global",
+      "_lx_get_global",
       "_lx_open_libs",
       "_lx_gc_step",
       "_lx_gc_collect",

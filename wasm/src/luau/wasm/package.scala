@@ -1,3 +1,3 @@
 package luau.wasm
 
-// Placeholder. Real declarations added in their respective plans.
+// Package-level constants and helpers for the WASM binding backend.
