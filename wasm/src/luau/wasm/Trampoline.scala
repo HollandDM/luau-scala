@@ -42,6 +42,15 @@ object Trampoline:
       WasmModule.module.removeFunction(fnPtr)
       fnPtr = -1
 
+  /** Drop all per-instance state. Call before re-installing onto a fresh wasm
+   *  instance: a new instance has its own function table and linear memory, so
+   *  a stale fnPtr / fnId registry from the previous instance is meaningless. */
+  def reset(): Unit =
+    fnPtr = -1
+    pendingSuspend = None
+    table.clear()
+    nextId = 1
+
   def register(fn: NativeFn): Int =
     val id = nextId
     nextId += 1

@@ -4,13 +4,9 @@ import luau.core.{Binding, SharedBackendSuite}
 
 class WasmBackendSuite extends SharedBackendSuite:
 
-  private var binding: WasmBinding = scala.compiletime.uninitialized
-
-  override def beforeAll(): Unit =
+  // Each test gets a brand-new wasm instance. The backend shares one wasm module
+  // across all states; a state's create/teardown leaves the shared heap/registry
+  // dirty enough to crash a later test (lua_rawgeti aborts). Reload per test.
+  override def withBinding[A](f: Binding[Int] => A): A =
     WasmBackend.load()
-    binding = WasmBackend.createBinding()
-
-  override def afterAll(): Unit =
-    if binding != null then ()
-
-  override def withBinding[A](f: Binding[Int] => A): A = f(binding)
+    f(WasmBackend.createBinding())
