@@ -82,7 +82,7 @@ abstract class SharedBackendSuite extends FunSuite:
     withBinding { b =>
       val state = b.newState()
       try
-        b.openLibs(state, 0)
+        b.openLibs(state, 1) // LX_LIB_BASE — need pcall
         val fn: NativeFn[Int] = (s, _) =>
           b.pushString(s, "deliberate error")
           NativeFnResult.Fail(LuaValue.Nil)
@@ -143,7 +143,7 @@ abstract class SharedBackendSuite extends FunSuite:
     withBinding { b =>
       val state = b.newState()
       try
-        b.openLibs(state, 0)
+        b.openLibs(state, 1 | (1 << 7)) // LX_LIB_BASE | LX_LIB_COROUTINE
         val src = IArray.unsafeFromArray("return coroutine.yield(42)".getBytes("UTF-8"))
         b.compileAndLoad(state, src, "test08").fold(e => fail(e.message), identity)
         val first = b.resume(state, 0)

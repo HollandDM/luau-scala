@@ -1,9 +1,13 @@
 #!/bin/bash
 set -eo pipefail
 
-WASI_SDK=/tmp/wasi-sdk/opt/wasi-sdk
-CLANG=$WASI_SDK/bin/clang++
-SYSROOT=$WASI_SDK/share/wasi-sysroot
+# System LLVM 22 (clang) + a from-source wasi sysroot built with
+# -DWASI_SDK_EXCEPTIONS=ON, so native wasm C++ exceptions (new EH) work.
+# RESOURCE_DIR merges system clang headers with the wasm compiler-rt builtins
+# produced by that sysroot build.
+CLANG="${WASI_CLANG:-/usr/bin/clang++}"
+SYSROOT="${WASI_SYSROOT:-$HOME/wasi-eh/install/share/wasi-sysroot}"
+RESOURCE_DIR="${WASI_RESOURCE_DIR:-$HOME/wasi-eh/resource-dir}"
 DEST="${1:-$(pwd)/out-wasm}"
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -29,9 +33,11 @@ LUAU_DIRS=(
 CFLAGS=(
   --target=wasm32-wasi
   --sysroot="$SYSROOT"
+  -resource-dir "$RESOURCE_DIR"
   -std=c++17
   -O2
   -fwasm-exceptions
+  -mllvm -wasm-use-legacy-eh=false
   -fno-rtti
   -D_LUAU_HAS_VECTOR_SIZE=0
   -D_WASI_EMULATED_PROCESS_CLOCKS
@@ -42,14 +48,16 @@ CFLAGS=(
 WASM_LDFLAGS=(
   --target=wasm32-wasi
   --sysroot="$SYSROOT"
+  -resource-dir "$RESOURCE_DIR"
   -std=c++17
   -O2
   -fwasm-exceptions
+  -mllvm -wasm-use-legacy-eh=false
   -fno-rtti
   -mexec-model=reactor
   -lc++abi
+  -lunwind
   -lwasi-emulated-process-clocks
-  -Wl,--export-dynamic
   -Wl,--export=lx_newstate
   -Wl,--export=lx_close
   -Wl,--export=lx_main_thread
@@ -101,29 +109,15 @@ WASM_LDFLAGS=(
 
 echo "=== Compiling Luau sources ==="
 
-# Compiler modules need wasm exceptions (they use throw for CompileError)
-COMPILER_CFLAGS=()
-skip=false
-for f in "${CFLAGS[@]}"; do
-  if [ "$f" = "-fno-exceptions" ]; then COMPILER_CFLAGS+=("-fwasm-exceptions"); continue; fi
-  if [ "$f" = "-DLUA_USE_LONGJMP=1" ]; then continue; fi
-  if [ "$f" = "-mllvm" ]; then skip=true; continue; fi
-  if [ "$skip" = true ]; then skip=false; continue; fi
-  COMPILER_CFLAGS+=("$f")
-done
-COMPILER_CFLAGS+=("-fwasm-exceptions")
-
+# Every translation unit compiles with the same flags: -fwasm-exceptions and
+# new-EH (-wasm-use-legacy-eh=false). Mixing EH encodings across objects breaks
+# linking/unwinding, so do NOT special-case the Compiler module here.
 OBJS=()
 for dir in "${LUAU_DIRS[@]}"; do
   for src in "$dir"/*.cpp; do
     obj="$DEST/$(basename "$src").o"
     echo "  CC $src"
-    # Compiler files use wasm exceptions
-    if [[ "$src" == */Compiler/* ]]; then
-      $CLANG "${COMPILER_CFLAGS[@]}" -o "$obj" "$src"
-    else
-      $CLANG "${CFLAGS[@]}" -o "$obj" "$src"
-    fi
+    $CLANG "${CFLAGS[@]}" -o "$obj" "$src"
     OBJS+=("$obj")
   done
 done
@@ -133,10 +127,10 @@ SHIM_OBJ="$DEST/lx.cpp.o"
 $CLANG "${CFLAGS[@]}" -o "$SHIM_OBJ" "$SRC_DIR/src/lx.cpp"
 OBJS+=("$SHIM_OBJ")
 
-echo "=== Compiling wasm EH stubs ==="
-EH_STUB_OBJ="$DEST/wasm_eh_stubs.c.o"
-$WASI_SDK/bin/clang --target=wasm32-wasi --sysroot="$SYSROOT" -O2 -mllvm -wasm-enable-sjlj -c -o "$EH_STUB_OBJ" "$SRC_DIR/src/wasm_eh_stubs.c"
-OBJS+=("$EH_STUB_OBJ")
+echo "=== Assembling C++ exception tag ==="
+TAG_OBJ="$DEST/cpp_exception_tag.o"
+$CLANG --target=wasm32-wasi -resource-dir "$RESOURCE_DIR" -c -o "$TAG_OBJ" "$SRC_DIR/src/cpp_exception_tag.s"
+OBJS+=("$TAG_OBJ")
 
 echo "=== Linking WASM binary ==="
 $CLANG "${WASM_LDFLAGS[@]}" -o "$DEST/luau-shim.wasm" "${OBJS[@]}"
