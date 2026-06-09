@@ -31,8 +31,8 @@ object LuauShimFactory:
 
   private def wrapFactory: js.Dynamic =
     js.Dynamic.newInstance(js.Dynamic.global.Function)(
-      "e", "r", "n",
-      "return function(){r();return e[n].apply(e,arguments)}"
+      "f", "r",
+      "return function(){r();return f.apply(null,arguments)}"
     )
 
   def apply(options: js.Object = js.Dynamic.literal()): WasmModuleExports =
@@ -45,16 +45,20 @@ object LuauShimFactory:
     val buf = fs.readFileSync(path).asInstanceOf[Uint8Array]
     val wasmModule = js.Dynamic.newInstance(WA.Module)(buf)
 
+    // WASI snapshot_preview1 import stubs, typed precisely against each call's
+    // wasm signature: i32 → Int, i64 → js.BigInt, errno result → 0, void → ().
+    // i64 args arrive as JS BigInt; typing them Int would make Scala.js unbox
+    // the BigInt → ClassCastException. fd_seek/clock_time_get carry the i64s.
     val wasi = js.Dynamic.literal(
       fd_write = { (_: Int, _: Int, _: Int, _: Int) => 0 }: js.Function,
       fd_close = { (_: Int) => 0 }: js.Function,
-      fd_seek = { (_: Int, _: Int, _: Int, _: Int) => 0 }: js.Function,
+      fd_seek = { (_: Int, _: js.BigInt, _: Int, _: Int) => 0 }: js.Function,
       fd_read = { (_: Int, _: Int, _: Int, _: Int) => 0 }: js.Function,
       fd_fdstat_get = { (_: Int, _: Int) => 0 }: js.Function,
       environ_sizes_get = { (_: Int, _: Int) => 0 }: js.Function,
       environ_get = { (_: Int, _: Int) => 0 }: js.Function,
-      proc_exit = { (_: Int) => 0 }: js.Function,
-      clock_time_get = { (_: Int, _: Int, _: Int) => 0 }: js.Function,
+      proc_exit = { (_: Int) => () }: js.Function,
+      clock_time_get = { (_: Int, _: js.BigInt, _: Int) => 0 }: js.Function,
       args_sizes_get = { (_: Int, _: Int) => 0 }: js.Function,
       args_get = { (_: Int, _: Int) => 0 }: js.Function,
     )
@@ -63,6 +67,10 @@ object LuauShimFactory:
       wasi_snapshot_preview1 = wasi,
     ))
     val ex = inst.exports.asInstanceOf[js.Dynamic]
+    // Reactor model: run C++ static constructors once. Exports are NOT wrapped
+    // with per-call ctors/dtors (that's the WASI *command* model, which tears
+    // global state down after every call and corrupts the embedded Runtime).
+    if js.typeOf(ex._initialize) != "undefined" then ex._initialize()
     val mem = ex.memory
     val tbl = ex.__indirect_function_table
 
@@ -73,16 +81,18 @@ object LuauShimFactory:
       HEAPU8 = new Uint8Array(b)
       HEAP32 = new Int32Array(b)
 
-    var nextIdx = 0
     val refreshFn: js.Function = { () => refresh() }: js.Function
-    val prefix  = js.Dynamic.literal(lx_push_integer = "lx_push_number", lx_to_integer = "lx_to_number")
+    val prefix  = js.Dynamic.literal()
 
     val api = js.Dynamic.literal(HEAPU8 = HEAPU8, HEAP32 = HEAP32).asInstanceOf[js.Dictionary[js.Any]]
-    api("_malloc")            = { (s: Int) => refresh(); ex.malloc(s) }: js.Function
-    api("_free")              = { (p: Int) => refresh(); ex.free(p) }: js.Function
+    api("_malloc")            = { (s: js.BigInt) => refresh(); ex.malloc(s) }: js.Function
+    api("_free")              = { (p: js.BigInt) => refresh(); ex.free(p) }: js.Function
     api("addFunction")        = { (fn: js.Function, sig: String) =>
-      val i = nextIdx; nextIdx += 1
-      val w = js.Dynamic.newInstance(WA.Instance)(cachedWrapMod, js.Dynamic.literal(e = js.Dynamic.literal(f = fn)))
+      // Grow the indirect function table and use the fresh slot. The table is
+      // built with `--growable-table`; never overwrite the wasm's own in-use
+      // entries (indices 0..N), or its call_indirect targets get clobbered.
+      val i = tbl.grow(1).asInstanceOf[Int]
+      val w = js.Dynamic.newInstance(WA.Instance)(cachedWrapMod, js.Dynamic.literal(env = js.Dynamic.literal(f = fn)))
       tbl.set(i, w.exports.w)
       i
     }: js.Function
@@ -113,7 +123,7 @@ object LuauShimFactory:
       val wasmName = if js.typeOf(src) != "undefined" then src.asInstanceOf[String] else n
       val fn = ex.selectDynamic(wasmName)
       if js.typeOf(fn) != "undefined" then
-        api("_" + n) = wrapFactory(fn, refreshFn, wasmName)
+        api("_" + n) = wrapFactory(fn, refreshFn)
       i += 1
 
     api.asInstanceOf[WasmModuleExports]

@@ -1,5 +1,5 @@
 import mill._, scalalib._, scalajslib._, scalafmt._
-import mill.scalajslib.api.ModuleKind
+import mill.scalajslib.api.{ModuleKind, JsEnvConfig}
 
 val scalaVersion       = "3.8.3"
 val scalaJSVersion     = "1.21.0"
@@ -52,12 +52,13 @@ object panama extends LuauCrossPlatformModule {
 
 object wasm extends LuauCrossPlatformJSModule {
   override def moduleDeps = super.moduleDeps ++ Seq(core.js)
+  override def jsEnvConfig = Task {
+    val wasmDir = shim.wasmBuildNative()
+    val wasmPath = wasmDir.path / "luau-shim.wasm"
+    JsEnvConfig.NodeJs().copy(env = Map("LUAU_WASM_PATH" -> wasmPath.toString))
+  }
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    override def resources = Task {
-      val wasmDir = shim.wasmBuildNative()
-      Seq(wasmDir)
-    }
   }
 }
 

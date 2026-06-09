@@ -46,10 +46,9 @@ WASM_LDFLAGS=(
   -O2
   -fwasm-exceptions
   -fno-rtti
-  -nostartfiles
+  -mexec-model=reactor
   -lc++abi
   -lwasi-emulated-process-clocks
-  -Wl,--no-entry
   -Wl,--export-dynamic
   -Wl,--export=lx_newstate
   -Wl,--export=lx_close
@@ -95,6 +94,7 @@ WASM_LDFLAGS=(
   -Wl,--export=malloc
   -Wl,--export=free
   -Wl,--export-table
+  -Wl,--growable-table
   -Wl,-z,stack-size=1048576
   -Wl,--max-memory=33554432
 )
