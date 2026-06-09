@@ -217,7 +217,7 @@ object shim extends Module {
     val luauSrcs    = luauSources().map(_.toString)
 
     val compileCmd = Seq("clang++") ++
-      Seq("-std=c++17", "-O2", "-fvisibility=hidden") ++
+      Seq("-std=c++17", "-O2") ++
       includeArgs ++
       lflags ++
       Seq("-o", outLib.toString, srcFile.toString) ++ luauSrcs
