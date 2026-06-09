@@ -1,0 +1,12 @@
+{
+    "value": [
+        "org.scalameta::munit::1.2.0",
+        "dev.zio::zio-test::2.1.25",
+        "dev.zio::zio-test-sbt::2.1.25"
+    ],
+    "valueHash": 894191744,
+    "inputsHash": -803268330,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

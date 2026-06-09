@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/panama/test/resources"
+    ],
+    "valueHash": 1221505221,
+    "inputsHash": 641404331,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

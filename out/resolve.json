@@ -1,0 +1,22 @@
+{
+    "value": [
+        "shim.luauAstDir",
+        "shim.luauBytecodeDir",
+        "shim.luauCommonDir",
+        "shim.luauCompilerDir",
+        "shim.luauIncAst",
+        "shim.luauIncBytecode",
+        "shim.luauIncCommon",
+        "shim.luauIncCompiler",
+        "shim.luauIncVm",
+        "shim.luauVmDir",
+        "shim.shimIncDir",
+        "shim.shimSrcDir",
+        "shim.wasmBuildNative"
+    ],
+    "valueHash": 502068591,
+    "inputsHash": 522272683,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

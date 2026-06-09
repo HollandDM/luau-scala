@@ -1,0 +1,38 @@
+./mill-launcher.sh wasm.test
+221] wasm.test.fastLinkJSTest Linker: Compute reachability: 10237 us
+221] Linker: Assemble LinkedClasses: 4112 us
+221] Linker: 20406 us
+221] Desugarer: Desugar: 1369 us
+221] Desugarer: 1408 us
+221] Optimizer: Batch mode: false
+221] Optimizer: Incremental part: 8726 us
+221] Optimizer: Elidable constructors: 717 us
+221] Optimizer: Optimizing 0 methods.
+221] Optimizer: Optimizer part: 143 us
+221] Optimizer: 13508 us
+221] Refiner: Compute reachability: 5460 us
+221] Refiner: Assemble LinkedClasses: 10430 us
+221] Refiner: 16496 us
+221] Module Splitter: Calculate Dependency Info: 450 us
+221] Module Splitter: Analyze Modules: 54 us
+221] Module Splitter: Assemble Modules: 591 us
+221] Module Splitter: 1212 us
+221] Emitter: Generate Classes: 13704 us
+221] Emitter: Write trees: 822 us
+221] Emitter: Class tree cache stats: reused: 1092 -- invalidated: 0
+221] Emitter: Method tree cache stats: reused: 4641 -- invalidated: 0
+221] Emitter: Pre prints: 0
+221] Emitter: 20452 us
+221] BasicBackend: Write result: 17290 us
+221] BasicBackend: total modules: 1; re-written: 1
+222] wasm.test.testForked Starting process: node
+222] [32mluau.wasm.WasmBackendSuite:[39m
+222] [91m==> X luau.wasm.WasmBackendSuite.beforeAll(luau.wasm.WasmBackendSuite)[39m [90m0.004s[39m scala.scalajs.js.JavaScriptException: Error: ENOENT: no such file or directory, open 'luau-shim.wasm'
+222] Test result: 1 completed, 1 failures.
+222] [32mluau.wasm.WasmModuleSmokeTest:[39m
+222] [91m==> X luau.wasm.WasmModuleSmokeTest.beforeAll(luau.wasm.WasmModuleSmokeTest)[39m [90m0.000s[39m scala.scalajs.js.JavaScriptException: Error: ENOENT: no such file or directory, open 'luau-shim.wasm'
+222] Test result: 2 completed, 2 failures.
+222] [32mluau.wasm.WasmSpecificSuite:[39m
+222] [91m==> X luau.wasm.WasmSpecificSuite.beforeAll(luau.wasm.WasmSpecificSuite)[39m [90m0.000s[39m scala.scalajs.js.JavaScriptException: Error: ENOENT: no such file or directory, open 'luau-shim.wasm'
+222] Test result: 3 completed, 3 failures.
+222/222, 1 FAILED] ./mill-launcher.sh wasm.test

@@ -1,0 +1,12 @@
+{
+    "value": [
+        "luau.core.NativeFnResultSpec",
+        "luau.core.RefScopeSpec",
+        "luau.core.codec.CodecSpec"
+    ],
+    "valueHash": -1205790387,
+    "inputsHash": 1245978458,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

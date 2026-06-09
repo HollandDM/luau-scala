@@ -1,0 +1,22 @@
+{
+    "value": [
+        "qref:v1:33b34353:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-sbt-test-adapter_2.13/1.21.0/scalajs-sbt-test-adapter_2.13-1.21.0.jar",
+        "qref:v1:be6bc5a3:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-linker_2.13/1.21.0/scalajs-linker_2.13-1.21.0.jar",
+        "qref:v1:dca94c37:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-env-nodejs_2.13/1.4.0/scalajs-env-nodejs_2.13-1.4.0.jar",
+        "qref:v1:50528653:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.17/scala-library-2.13.17.jar",
+        "qref:v1:9ca2e086:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/test-interface/1.0/test-interface-1.0.jar",
+        "qref:v1:44d90a70:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-js-envs_2.13/1.4.0/scalajs-js-envs_2.13-1.4.0.jar",
+        "qref:v1:fed32718:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-linker-interface_2.13/1.21.0/scalajs-linker-interface_2.13-1.21.0.jar",
+        "qref:v1:06d60575:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-ir_2.13/1.21.0/scalajs-ir_2.13-1.21.0.jar",
+        "qref:v1:e2a22fac:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/javascript/closure-compiler/v20220202/closure-compiler-v20220202.jar",
+        "qref:v1:a2a253ad:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-parallel-collections_2.13/0.2.0/scala-parallel-collections_2.13-0.2.0.jar",
+        "qref:v1:764e9c25:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/jimfs/jimfs/1.1/jimfs-1.1.jar",
+        "qref:v1:f7b610d0:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-logging_2.13/1.1.1/scalajs-logging_2.13-1.1.1.jar",
+        "qref:v1:bbe6941b:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/com/google/guava/guava/18.0/guava-18.0.jar"
+    ],
+    "valueHash": 1455636113,
+    "inputsHash": 551430968,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

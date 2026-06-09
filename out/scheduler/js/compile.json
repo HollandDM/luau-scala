@@ -1,0 +1,11 @@
+{
+    "value": {
+        "analysisFile": "/home/hoangdinh/OSS/luau-scala/out/scheduler/js/compile.dest/zinc",
+        "classes": "ref:v0:ec21d5bf:/home/hoangdinh/OSS/luau-scala/out/scheduler/js/compile.dest/classes"
+    },
+    "valueHash": 601935422,
+    "inputsHash": 1267578205,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

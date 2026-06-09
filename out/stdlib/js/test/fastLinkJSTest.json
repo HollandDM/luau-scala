@@ -1,0 +1,18 @@
+{
+    "value": {
+        "publicModules": [
+            {
+                "moduleID": "main",
+                "jsFileName": "main.js",
+                "sourceMapName": "main.js.map",
+                "moduleKind": "NoModule"
+            }
+        ],
+        "dest": "ref:v0:40fc0cd4:/home/hoangdinh/OSS/luau-scala/out/stdlib/js/test/fastLinkJSTest.dest"
+    },
+    "valueHash": -485196504,
+    "inputsHash": 1045585937,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

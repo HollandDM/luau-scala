@@ -1,0 +1,2217 @@
+[
+  {
+    "label": "wasm.repositories",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 141925495
+  },
+  {
+    "label": "mill.scalajslib.worker.ScalaJSWorkerExternalModule/scalaJSWorker",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -570620870
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/repositories",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -570620870
+  },
+  {
+    "label": "wasm.scalaJSVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1665000655
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/checkGradleModules",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -570620870
+  },
+  {
+    "label": "core.js.repositories",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1425896462
+  },
+  {
+    "label": "wasm.scalaVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1738750054
+  },
+  {
+    "label": "wasm.test.testFramework",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1974006536
+  },
+  {
+    "label": "wasm.test.scalaJSImportMap",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1514666337
+  },
+  {
+    "label": "wasm.jsEnvConfig",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 472902141
+  },
+  {
+    "label": "wasm.mvnDeps",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1698396638
+  },
+  {
+    "label": "wasm.test.runClasspath.super.RunModule",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "wasm.test.checkGradleModules",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -566381371
+  },
+  {
+    "label": "core.js.runMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 896134418
+  },
+  {
+    "label": "wasm.crossFullScalaJSVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1005078388
+  },
+  {
+    "label": "wasm.test.runMvnDeps",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1725296415
+  },
+  {
+    "label": "wasm.test.crossFullScalaJSVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 109056955
+  },
+  {
+    "label": "wasm.test.munitVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -24916172
+  },
+  {
+    "label": "wasm.test.mandatoryMvnDeps.super.javalib.JavaModule",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "core.js.bomMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 25970956
+  },
+  {
+    "label": "core.js.depManagement",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -2048081222
+  },
+  {
+    "label": "wasm.test.compileMvnDeps",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1894857062
+  },
+  {
+    "label": "core.js.transitiveCoursierProjects",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 236403550
+  },
+  {
+    "label": "wasm.compileMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1980431932
+  },
+  {
+    "label": "core.js.scalaJSVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1244112870
+  },
+  {
+    "label": "wasm.test.bomMvnDeps.super.JavaModule",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "core.js.mandatoryMvnDeps.super.javalib.JavaModule",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 627605274
+  },
+  {
+    "label": "core.js.localRunClasspath.super.RunModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 627605274
+  },
+  {
+    "label": "core.js.mvnDeps",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 64626066
+  },
+  {
+    "label": "wasm.mandatoryMvnDeps.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1398743508
+  },
+  {
+    "label": "core.js.unmanagedClasspathExistenceCheck",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1336331736
+  },
+  {
+    "label": "wasm.test.depManagement.super.JavaModule",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "core.js.crossFullScalaJSVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -547682417
+  },
+  {
+    "label": "wasm.bomMvnDeps",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -199347441
+  },
+  {
+    "label": "core.js.javacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -405028659
+  },
+  {
+    "label": "wasm.runMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1722345475
+  },
+  {
+    "label": "core.js.upstreamCompileOutput",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 178494611
+  },
+  {
+    "label": "core.js.mandatoryJavacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -712560405
+  },
+  {
+    "label": "core.js.unmanagedClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1247888229
+  },
+  {
+    "label": "wasm.test.mvnDeps",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1179580722
+  },
+  {
+    "label": "core.js.compileMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1463699794
+  },
+  {
+    "label": "core.js.checkGradleModules",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -631091370
+  },
+  {
+    "label": "core.js.resolvedDepsWarnNonPlatform",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -478012376
+  },
+  {
+    "label": "core.js.wrappedSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1493803895
+  },
+  {
+    "label": "wasm.test.resolvedDepsWarnNonPlatform",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -663605076
+  },
+  {
+    "label": "core.js.mandatoryScalacOptions.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 627605274
+  },
+  {
+    "label": "core.js.scalacPluginMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 627605274
+  },
+  {
+    "label": "core.js.jvmId",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 288309431
+  },
+  {
+    "label": "core.js.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 627605274
+  },
+  {
+    "label": "core.js.scalacOptions.super.mill.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 627605274
+  },
+  {
+    "label": "wasm.test.artifactTypes",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1508996736
+  },
+  {
+    "label": "core.js.scalaVersion",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -335959725
+  },
+  {
+    "label": "wasm.unmanagedClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1726351296
+  },
+  {
+    "label": "wasm.unmanagedClasspathExistenceCheck",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1902563624
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/useFileLocks",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": 1351553675,
+    "previousInputsHash": -1596666328
+  },
+  {
+    "label": "wasm.generatedSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1874978084
+  },
+  {
+    "label": "mill.javalib.CoursierConfigModule/coursierEnv",
+    "millis": 5,
+    "valueHashChanged": false,
+    "inputsHash": 1728666753,
+    "previousInputsHash": 689724734
+  },
+  {
+    "label": "wasm.mandatoryJavacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1318406973
+  },
+  {
+    "label": "core.js.artifactTypes",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1145393984
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/zincLogDebug",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": -1034927736,
+    "previousInputsHash": 1387383000
+  },
+  {
+    "label": "core.js.compileResources",
+    "millis": 1,
+    "valueHashChanged": false,
+    "inputsHash": -1010398699,
+    "previousInputsHash": -290413605
+  },
+  {
+    "label": "wasm.wrappedSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -164266245
+  },
+  {
+    "label": "wasm.localRunClasspath.super.RunModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1398743508
+  },
+  {
+    "label": "wasm.javacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1514488953
+  },
+  {
+    "label": "wasm.resolvedDepsWarnNonPlatform",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1887243935
+  },
+  {
+    "label": "wasm.checkGradleModules",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1004997287
+  },
+  {
+    "label": "wasm.jvmId",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 743519475
+  },
+  {
+    "label": "wasm.mandatoryScalacOptions.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1398743508
+  },
+  {
+    "label": "wasm.scalacPluginMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1398743508
+  },
+  {
+    "label": "wasm.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1398743508
+  },
+  {
+    "label": "wasm.scalacOptions.super.mill.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1398743508
+  },
+  {
+    "label": "wasm.test.mandatoryJavacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1734574525
+  },
+  {
+    "label": "wasm.test.unmanagedClasspathExistenceCheck",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -996556249
+  },
+  {
+    "label": "wasm.test.unmanagedClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1959561709
+  },
+  {
+    "label": "wasm.test.localRunClasspath.super.RunModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "shim.wasmBuildNative",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -184924787
+  },
+  {
+    "label": "wasm.test.wrappedSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 1193330736
+  },
+  {
+    "label": "wasm.test.mandatoryScalacOptions.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "wasm.sources",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": -1529590634,
+    "previousInputsHash": -1771957192
+  },
+  {
+    "label": "wasm.test.generatedSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 330100084
+  },
+  {
+    "label": "wasm.test.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 902767247
+  },
+  {
+    "label": "wasm.moduleSplitStyle",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 954576584
+  },
+  {
+    "label": "wasm.test.scalaJSMinify",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1737363082
+  },
+  {
+    "label": "wasm.moduleKind",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -688847988
+  },
+  {
+    "label": "wasm.test.scalaJSSourceMap",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1007812458
+  },
+  {
+    "label": "wasm.scalaJSOptimizer",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -329165792
+  },
+  {
+    "label": "wasm.test.scalaJSOutputPatterns",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -780177341
+  },
+  {
+    "label": "wasm.test.scalaJSExperimentalUseWebAssembly",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": 796618075
+  },
+  {
+    "label": "wasm.test.testArgsDefault",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -334218455
+  },
+  {
+    "label": "wasm.test.testReportXml",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -885380072
+  },
+  {
+    "label": "wasm.artifactTypes",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1877730442
+  },
+  {
+    "label": "wasm.zincReportCachedProblems",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": 1358754306,
+    "previousInputsHash": -1551071118
+  },
+  {
+    "label": "core.js.zincReportCachedProblems",
+    "millis": 1,
+    "valueHashChanged": false,
+    "inputsHash": 1602055931,
+    "previousInputsHash": 1145405690
+  },
+  {
+    "label": "core.js.sources",
+    "millis": 1,
+    "valueHashChanged": false,
+    "inputsHash": -460573660,
+    "previousInputsHash": 44168732
+  },
+  {
+    "label": "core.js.resources",
+    "millis": 1,
+    "valueHashChanged": false,
+    "inputsHash": 1697088818,
+    "previousInputsHash": 1103059439
+  },
+  {
+    "label": "wasm.test.zincReportCachedProblems",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": -1878512571,
+    "previousInputsHash": -2112180116
+  },
+  {
+    "label": "core.js.generatedSources",
+    "millis": 1,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -586807765
+  },
+  {
+    "label": "wasm.jvmIndexVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -935259140
+  },
+  {
+    "label": "wasm.resources",
+    "millis": 1,
+    "valueHashChanged": false,
+    "inputsHash": -859766322,
+    "previousInputsHash": 1476417863
+  },
+  {
+    "label": "wasm.depManagement",
+    "millis": 5,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -2048404066
+  },
+  {
+    "label": "core.js.jvmIndexVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "inputsHash": -1033496075
+  },
+  {
+    "label": "wasm.scalaJSBinaryVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaJSVersion"
+    ],
+    "inputsHash": 1559273250
+  },
+  {
+    "label": "wasm.test.scalaJSVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaJSVersion"
+    ],
+    "inputsHash": 44989184
+  },
+  {
+    "label": "wasm.test.sources",
+    "millis": 1,
+    "valueHashChanged": false,
+    "inputsHash": -1520186237,
+    "previousInputsHash": 1544844161
+  },
+  {
+    "label": "wasm.esFeatures",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaJSVersion"
+    ],
+    "inputsHash": 1133595130
+  },
+  {
+    "label": "wasm.test.compileResources",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": -728631147,
+    "previousInputsHash": -1159806615
+  },
+  {
+    "label": "wasm.test.jsEnvConfig",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.jsEnvConfig"
+    ],
+    "inputsHash": 1122959076
+  },
+  {
+    "label": "core.js.jvmVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.jvmId"
+    ],
+    "inputsHash": 1789528874
+  },
+  {
+    "label": "wasm.test.javacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.javacOptions"
+    ],
+    "inputsHash": 431191601
+  },
+  {
+    "label": "wasm.test.resources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "shim.wasmBuildNative"
+    ],
+    "inputsHash": -2026312527
+  },
+  {
+    "label": "wasm.jvmVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.jvmId"
+    ],
+    "inputsHash": 73054235
+  },
+  {
+    "label": "core.js.scalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.scalacOptions.super.mill.scalalib.ScalaModule"
+    ],
+    "inputsHash": -1934339275
+  },
+  {
+    "label": "wasm.compileResources",
+    "millis": 0,
+    "valueHashChanged": false,
+    "inputsHash": 993520686,
+    "previousInputsHash": 488511620
+  },
+  {
+    "label": "wasm.test.moduleSplitStyle",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.moduleSplitStyle"
+    ],
+    "inputsHash": 1463379711
+  },
+  {
+    "label": "wasm.scalaLibraryMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": -1206087191
+  },
+  {
+    "label": "wasm.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaVersion",
+      "wasm.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule"
+    ],
+    "inputsHash": 1286189128
+  },
+  {
+    "label": "core.js.scalacPluginMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.scalaJSVersion",
+      "core.js.scalaVersion",
+      "core.js.scalacPluginMvnDeps.super.scalalib.ScalaModule"
+    ],
+    "inputsHash": -1478052381
+  },
+  {
+    "label": "wasm.test.scalaJSOptimizer",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaJSOptimizer"
+    ],
+    "inputsHash": -189310000
+  },
+  {
+    "label": "wasm.test.bomMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.bomMvnDeps",
+      "wasm.test.bomMvnDeps.super.JavaModule"
+    ],
+    "inputsHash": -523970677
+  },
+  {
+    "label": "core.js.mandatoryScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.mandatoryScalacOptions.super.scalalib.ScalaModule",
+      "core.js.scalaVersion"
+    ],
+    "inputsHash": -1451449945
+  },
+  {
+    "label": "core.js.allSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.generatedSources",
+      "core.js.sources"
+    ],
+    "inputsHash": -1844378565
+  },
+  {
+    "label": "wasm.test.mandatoryScalacOptions.super.scalalib.ScalaModule.ScalaTests",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.mandatoryScalacOptions.super.scalalib.ScalaModule"
+    ],
+    "inputsHash": 720111217
+  },
+  {
+    "label": "wasm.scalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalacOptions.super.mill.scalalib.ScalaModule"
+    ],
+    "inputsHash": -411852064
+  },
+  {
+    "label": "wasm.mandatoryScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.mandatoryScalacOptions.super.scalalib.ScalaModule",
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": -146155555
+  },
+  {
+    "label": "wasm.test.allSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.generatedSources",
+      "wasm.test.sources"
+    ],
+    "inputsHash": 1816318575
+  },
+  {
+    "label": "wasm.test.esFeatures",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.esFeatures"
+    ],
+    "inputsHash": 618092471
+  },
+  {
+    "label": "core.js.scalaJSBinaryVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.scalaJSVersion"
+    ],
+    "inputsHash": -1690637183
+  },
+  {
+    "label": "wasm.test.localCompileClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.compileResources",
+      "wasm.test.unmanagedClasspath",
+      "wasm.test.unmanagedClasspathExistenceCheck"
+    ],
+    "inputsHash": -1667307840
+  },
+  {
+    "label": "wasm.artifactScalaJSVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.crossFullScalaJSVersion",
+      "wasm.scalaJSBinaryVersion",
+      "wasm.scalaJSVersion"
+    ],
+    "inputsHash": -263876467
+  },
+  {
+    "label": "core.js.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.scalaVersion",
+      "core.js.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule"
+    ],
+    "inputsHash": -982429386
+  },
+  {
+    "label": "core.js.javaHome",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.jvmIndexVersion",
+      "core.js.jvmVersion",
+      "mill.javalib.CoursierConfigModule/coursierEnv"
+    ],
+    "inputsHash": 1592233718
+  },
+  {
+    "label": "wasm.javaHome",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.jvmIndexVersion",
+      "wasm.jvmVersion"
+    ],
+    "inputsHash": -2121007593
+  },
+  {
+    "label": "wasm.test.scalaJSJsEnvMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.jsEnvConfig"
+    ],
+    "inputsHash": -2018603500
+  },
+  {
+    "label": "wasm.test.moduleKind",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.moduleKind"
+    ],
+    "inputsHash": -446648412
+  },
+  {
+    "label": "wasm.scalacPluginMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaJSVersion",
+      "wasm.scalaVersion",
+      "wasm.scalacPluginMvnDeps.super.scalalib.ScalaModule"
+    ],
+    "inputsHash": -1227304144
+  },
+  {
+    "label": "wasm.zincAuxiliaryClassFileExtensions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule"
+    ],
+    "inputsHash": 811491596
+  },
+  {
+    "label": "wasm.localCompileClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.compileResources",
+      "wasm.unmanagedClasspath",
+      "wasm.unmanagedClasspathExistenceCheck"
+    ],
+    "inputsHash": 1582533700
+  },
+  {
+    "label": "wasm.allSources",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.generatedSources",
+      "wasm.sources"
+    ],
+    "inputsHash": -521434155
+  },
+  {
+    "label": "core.js.scalaLibraryMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.scalaVersion"
+    ],
+    "inputsHash": 820261591
+  },
+  {
+    "label": "wasm.test.scalaVersion",
+    "millis": 1,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": -1101246844
+  },
+  {
+    "label": "wasm.test.scalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalacOptions"
+    ],
+    "inputsHash": -713315255
+  },
+  {
+    "label": "wasm.scalaLibraryMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaLibraryMvnDeps.super.scalalib.ScalaModule",
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": 1376638332
+  },
+  {
+    "label": "wasm.test.scalaJSBinaryVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaJSVersion"
+    ],
+    "inputsHash": 2089772350
+  },
+  {
+    "label": "core.js.artifactScalaJSVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.crossFullScalaJSVersion",
+      "core.js.scalaJSBinaryVersion",
+      "core.js.scalaJSVersion"
+    ],
+    "inputsHash": -452530907
+  },
+  {
+    "label": "wasm.test.scalaJSWorkerVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaJSVersion"
+    ],
+    "inputsHash": -865818026
+  },
+  {
+    "label": "wasm.test.depManagement",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.depManagement",
+      "wasm.test.depManagement.super.JavaModule"
+    ],
+    "inputsHash": 1737766965
+  },
+  {
+    "label": "wasm.test.scalacPluginMvnDeps.super.scalalib.ScalaModule.ScalaTests",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalacPluginMvnDeps"
+    ],
+    "inputsHash": 720111217
+  },
+  {
+    "label": "core.js.zincAuxiliaryClassFileExtensions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule"
+    ],
+    "inputsHash": -1969199674
+  },
+  {
+    "label": "core.js.localCompileClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.compileResources",
+      "core.js.unmanagedClasspath",
+      "core.js.unmanagedClasspathExistenceCheck"
+    ],
+    "inputsHash": -881200510
+  },
+  {
+    "label": "wasm.platformSuffix",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.artifactScalaJSVersion"
+    ],
+    "inputsHash": -2044151353
+  },
+  {
+    "label": "core.js.allSourceFiles",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.allSources",
+      "core.js.wrappedSources"
+    ],
+    "inputsHash": 176980121
+  },
+  {
+    "label": "wasm.test.allSourceFiles",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.allSources",
+      "wasm.test.wrappedSources"
+    ],
+    "inputsHash": -2086820918
+  },
+  {
+    "label": "core.js.platformSuffix",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.artifactScalaJSVersion"
+    ],
+    "inputsHash": -292553575
+  },
+  {
+    "label": "core.js.scalaLibraryMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.scalaLibraryMvnDeps.super.scalalib.ScalaModule",
+      "core.js.scalaVersion"
+    ],
+    "inputsHash": -217889643
+  },
+  {
+    "label": "wasm.test.mandatoryScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.mandatoryScalacOptions.super.scalalib.ScalaModule.ScalaTests",
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": -1389116783
+  },
+  {
+    "label": "wasm.test.scalaLibraryMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": 1095423564
+  },
+  {
+    "label": "wasm.test.scalacPluginMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaJSVersion",
+      "wasm.test.scalaVersion",
+      "wasm.test.scalacPluginMvnDeps.super.scalalib.ScalaModule.ScalaTests"
+    ],
+    "inputsHash": -1839574859
+  },
+  {
+    "label": "wasm.test.artifactScalaJSVersion",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.crossFullScalaJSVersion",
+      "wasm.test.scalaJSBinaryVersion",
+      "wasm.test.scalaJSVersion"
+    ],
+    "inputsHash": 205085245
+  },
+  {
+    "label": "wasm.test.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaVersion",
+      "wasm.test.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule"
+    ],
+    "inputsHash": -707267413
+  },
+  {
+    "label": "wasm.allSourceFiles",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.allSources",
+      "wasm.wrappedSources"
+    ],
+    "inputsHash": 1261184124
+  },
+  {
+    "label": "wasm.mandatoryMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.mandatoryMvnDeps.super.javalib.JavaModule",
+      "wasm.scalaLibraryMvnDeps"
+    ],
+    "inputsHash": 1583966781
+  },
+  {
+    "label": "wasm.enablePluginScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.checkGradleModules",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.scalacPluginMvnDeps"
+    ],
+    "inputsHash": 1172062133
+  },
+  {
+    "label": "wasm.scalaCompilerBridge",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.checkGradleModules",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": -1364429147
+  },
+  {
+    "label": "wasm.test.zincIncrementalCompilation",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.allSourceFiles"
+    ],
+    "inputsHash": 370696959
+  },
+  {
+    "label": "core.js.zincIncrementalCompilation",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.allSourceFiles"
+    ],
+    "inputsHash": 1792335791
+  },
+  {
+    "label": "wasm.scalacPluginClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.checkGradleModules",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.scalacPluginMvnDeps"
+    ],
+    "inputsHash": -823827792
+  },
+  {
+    "label": "core.js.scalaCompilerBridge",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.checkGradleModules",
+      "core.js.platformSuffix",
+      "core.js.repositories",
+      "core.js.scalaVersion",
+      "mill.javalib.CoursierConfigModule/coursierEnv"
+    ],
+    "inputsHash": -1341077835
+  },
+  {
+    "label": "wasm.test.platformSuffix",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.artifactScalaJSVersion"
+    ],
+    "inputsHash": -246110235
+  },
+  {
+    "label": "core.js.scalacPluginClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.checkGradleModules",
+      "core.js.platformSuffix",
+      "core.js.repositories",
+      "core.js.scalaVersion",
+      "core.js.scalacPluginMvnDeps",
+      "mill.javalib.CoursierConfigModule/coursierEnv"
+    ],
+    "inputsHash": -635326535
+  },
+  {
+    "label": "wasm.test.zincAuxiliaryClassFileExtensions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule"
+    ],
+    "inputsHash": 1030840855
+  },
+  {
+    "label": "wasm.zincIncrementalCompilation",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.allSourceFiles"
+    ],
+    "inputsHash": -1579479066
+  },
+  {
+    "label": "core.js.mandatoryMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.mandatoryMvnDeps.super.javalib.JavaModule",
+      "core.js.scalaLibraryMvnDeps"
+    ],
+    "inputsHash": -684651733
+  },
+  {
+    "label": "wasm.test.scalaLibraryMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaLibraryMvnDeps.super.scalalib.ScalaModule",
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": -608293620
+  },
+  {
+    "label": "core.js.enablePluginScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.checkGradleModules",
+      "core.js.platformSuffix",
+      "core.js.repositories",
+      "core.js.scalaVersion",
+      "core.js.scalacPluginMvnDeps",
+      "mill.javalib.CoursierConfigModule/coursierEnv"
+    ],
+    "inputsHash": -1390590302
+  },
+  {
+    "label": "wasm.test.scalaJSLinkerClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "mill.javalib.JvmWorkerModule/checkGradleModules",
+      "mill.javalib.JvmWorkerModule/repositories",
+      "wasm.test.scalaJSBinaryVersion",
+      "wasm.test.scalaJSImportMap",
+      "wasm.test.scalaJSJsEnvMvnDeps",
+      "wasm.test.scalaJSVersion"
+    ],
+    "inputsHash": 551430968
+  },
+  {
+    "label": "wasm.allScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.enablePluginScalacOptions",
+      "wasm.mandatoryScalacOptions",
+      "wasm.scalacOptions"
+    ],
+    "inputsHash": -1466530894
+  },
+  {
+    "label": "wasm.test.scalacPluginClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalacPluginClasspath"
+    ],
+    "inputsHash": 588627908
+  },
+  {
+    "label": "core.js.scalaCompilerClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.checkGradleModules",
+      "core.js.platformSuffix",
+      "core.js.repositories",
+      "core.js.scalaLibraryMvnDeps",
+      "core.js.scalaVersion",
+      "mill.javalib.CoursierConfigModule/coursierEnv"
+    ],
+    "inputsHash": 323746049
+  },
+  {
+    "label": "wasm.scalaCompilerClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.checkGradleModules",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.scalaLibraryMvnDeps",
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": 687011624
+  },
+  {
+    "label": "wasm.test.scalaCompilerBridge",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.scalaCompilerBridge"
+    ],
+    "inputsHash": -1008959218
+  },
+  {
+    "label": "wasm.test.enablePluginScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.test.checkGradleModules",
+      "wasm.test.platformSuffix",
+      "wasm.test.scalaVersion",
+      "wasm.test.scalacPluginMvnDeps"
+    ],
+    "inputsHash": 813705764
+  },
+  {
+    "label": "wasm.test.mandatoryMvnDeps.super.scalalib.ScalaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.mandatoryMvnDeps.super.javalib.JavaModule",
+      "wasm.test.scalaLibraryMvnDeps"
+    ],
+    "inputsHash": -409489760
+  },
+  {
+    "label": "wasm.test.scalaJSTestDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.test.checkGradleModules",
+      "wasm.test.platformSuffix",
+      "wasm.test.scalaJSVersion",
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": -659635991
+  },
+  {
+    "label": "wasm.test.allScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.enablePluginScalacOptions",
+      "wasm.test.mandatoryScalacOptions",
+      "wasm.test.scalacOptions"
+    ],
+    "inputsHash": -1504100591
+  },
+  {
+    "label": "core.js.allScalacOptions",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.enablePluginScalacOptions",
+      "core.js.mandatoryScalacOptions",
+      "core.js.scalacOptions"
+    ],
+    "inputsHash": 1315490954
+  },
+  {
+    "label": "wasm.test.scalaCompilerClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.test.checkGradleModules",
+      "wasm.test.platformSuffix",
+      "wasm.test.scalaLibraryMvnDeps",
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": -1280681584
+  },
+  {
+    "label": "wasm.mandatoryMvnDeps",
+    "millis": 1,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.mandatoryMvnDeps.super.scalalib.ScalaModule",
+      "wasm.scalaJSVersion",
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": -1281054496
+  },
+  {
+    "label": "core.js.mandatoryMvnDeps",
+    "millis": 1,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.mandatoryMvnDeps.super.scalalib.ScalaModule",
+      "core.js.scalaJSVersion",
+      "core.js.scalaVersion"
+    ],
+    "inputsHash": -1855076550
+  },
+  {
+    "label": "wasm.test.mandatoryMvnDeps.super.scalajslib.ScalaJSModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.mandatoryMvnDeps.super.scalalib.ScalaModule",
+      "wasm.test.scalaJSVersion",
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": -1449968356
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/classpath",
+    "millis": 2,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "mill.javalib.JvmWorkerModule/checkGradleModules",
+      "mill.javalib.JvmWorkerModule/repositories"
+    ],
+    "inputsHash": -1366023763
+  },
+  {
+    "label": "core.js.resolvedMvnDeps.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.artifactTypes",
+      "core.js.bomMvnDeps",
+      "core.js.checkGradleModules",
+      "core.js.compileMvnDeps",
+      "core.js.depManagement",
+      "core.js.mandatoryMvnDeps",
+      "core.js.mvnDeps",
+      "core.js.platformSuffix",
+      "core.js.repositories",
+      "core.js.resolvedDepsWarnNonPlatform",
+      "core.js.runMvnDeps",
+      "core.js.scalaVersion",
+      "core.js.transitiveCoursierProjects",
+      "mill.javalib.CoursierConfigModule/coursierEnv"
+    ],
+    "inputsHash": 843877196
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/internalWorkerClassLoader",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.JvmWorkerModule/classpath"
+    ],
+    "inputsHash": -1687317633
+  },
+  {
+    "label": "wasm.test.mandatoryMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.mandatoryMvnDeps.super.scalajslib.ScalaJSModule",
+      "wasm.test.munitVersion"
+    ],
+    "inputsHash": -1973967212
+  },
+  {
+    "label": "core.js.resolvedMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.resolvedMvnDeps.super.javalib.JavaModule",
+      "core.js.scalaVersion"
+    ],
+    "inputsHash": -188605504
+  },
+  {
+    "label": "mill.javalib.JvmWorkerModule/internalWorker",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "mill.javalib.JvmWorkerModule/checkGradleModules",
+      "mill.javalib.JvmWorkerModule/classpath",
+      "mill.javalib.JvmWorkerModule/internalWorkerClassLoader",
+      "mill.javalib.JvmWorkerModule/repositories",
+      "mill.javalib.JvmWorkerModule/useFileLocks",
+      "mill.javalib.JvmWorkerModule/zincLogDebug"
+    ],
+    "inputsHash": -253614624
+  },
+  {
+    "label": "core.js.compileClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.localCompileClasspath",
+      "core.js.resolvedMvnDeps"
+    ],
+    "inputsHash": -691320869
+  },
+  {
+    "label": "core.js.compile",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.allScalacOptions",
+      "core.js.allSourceFiles",
+      "core.js.compileClasspath",
+      "core.js.javaHome",
+      "core.js.javacOptions",
+      "core.js.mandatoryJavacOptions",
+      "core.js.scalaCompilerBridge",
+      "core.js.scalaCompilerClasspath",
+      "core.js.scalaVersion",
+      "core.js.scalacPluginClasspath",
+      "core.js.upstreamCompileOutput",
+      "core.js.zincAuxiliaryClassFileExtensions",
+      "core.js.zincIncrementalCompilation",
+      "core.js.zincReportCachedProblems",
+      "mill.javalib.JvmWorkerModule/internalWorker"
+    ],
+    "inputsHash": -920736622
+  },
+  {
+    "label": "wasm.upstreamCompileOutput",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.compile"
+    ],
+    "inputsHash": 1980387580
+  },
+  {
+    "label": "wasm.transitiveCoursierProjects",
+    "millis": 2,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.bomMvnDeps",
+      "core.js.compileMvnDeps",
+      "core.js.depManagement",
+      "core.js.mandatoryMvnDeps",
+      "core.js.mvnDeps",
+      "core.js.platformSuffix",
+      "core.js.runMvnDeps",
+      "core.js.scalaVersion",
+      "core.js.transitiveCoursierProjects"
+    ],
+    "inputsHash": -1840502873
+  },
+  {
+    "label": "core.js.localRunClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.compile",
+      "core.js.localRunClasspath.super.RunModule",
+      "core.js.resources"
+    ],
+    "inputsHash": -351585630
+  },
+  {
+    "label": "wasm.test.scalaJSWorkerClasspath",
+    "millis": 4,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "mill.javalib.JvmWorkerModule/checkGradleModules",
+      "mill.javalib.JvmWorkerModule/repositories",
+      "wasm.test.scalaJSWorkerVersion"
+    ],
+    "inputsHash": -2063577460
+  },
+  {
+    "label": "core.js.localClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.localCompileClasspath",
+      "core.js.localRunClasspath"
+    ],
+    "inputsHash": -720690944
+  },
+  {
+    "label": "wasm.resolvedMvnDeps.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.mvnDeps",
+      "core.js.platformSuffix",
+      "core.js.repositories",
+      "core.js.scalaVersion",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.artifactTypes",
+      "wasm.bomMvnDeps",
+      "wasm.checkGradleModules",
+      "wasm.compileMvnDeps",
+      "wasm.depManagement",
+      "wasm.mandatoryMvnDeps",
+      "wasm.mvnDeps",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.resolvedDepsWarnNonPlatform",
+      "wasm.runMvnDeps",
+      "wasm.scalaVersion",
+      "wasm.transitiveCoursierProjects"
+    ],
+    "inputsHash": 1185004351
+  },
+  {
+    "label": "wasm.resolvedMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.resolvedMvnDeps.super.javalib.JavaModule",
+      "wasm.scalaVersion"
+    ],
+    "inputsHash": -1178810771
+  },
+  {
+    "label": "wasm.compileClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.compile",
+      "core.js.localCompileClasspath",
+      "wasm.localCompileClasspath",
+      "wasm.resolvedMvnDeps"
+    ],
+    "inputsHash": 1203874548
+  },
+  {
+    "label": "wasm.compile",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.JvmWorkerModule/internalWorker",
+      "wasm.allScalacOptions",
+      "wasm.allSourceFiles",
+      "wasm.compileClasspath",
+      "wasm.javaHome",
+      "wasm.javacOptions",
+      "wasm.mandatoryJavacOptions",
+      "wasm.scalaCompilerBridge",
+      "wasm.scalaCompilerClasspath",
+      "wasm.scalaVersion",
+      "wasm.scalacPluginClasspath",
+      "wasm.upstreamCompileOutput",
+      "wasm.zincAuxiliaryClassFileExtensions",
+      "wasm.zincIncrementalCompilation",
+      "wasm.zincReportCachedProblems"
+    ],
+    "inputsHash": 434771033
+  },
+  {
+    "label": "wasm.test.scalaJSToolsClasspath",
+    "millis": 1,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.scalaJSLinkerClasspath",
+      "wasm.test.scalaJSWorkerClasspath"
+    ],
+    "inputsHash": -761128345
+  },
+  {
+    "label": "wasm.test.upstreamCompileOutput",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.compile",
+      "wasm.compile"
+    ],
+    "inputsHash": 1549810602
+  },
+  {
+    "label": "wasm.localRunClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.compile",
+      "wasm.localRunClasspath.super.RunModule",
+      "wasm.resources"
+    ],
+    "inputsHash": 1095416569
+  },
+  {
+    "label": "wasm.localClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.localCompileClasspath",
+      "wasm.localRunClasspath"
+    ],
+    "inputsHash": 1827147237
+  },
+  {
+    "label": "wasm.test.transitiveCoursierProjects",
+    "millis": 2,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.mvnDeps",
+      "core.js.platformSuffix",
+      "core.js.scalaVersion",
+      "wasm.bomMvnDeps",
+      "wasm.compileMvnDeps",
+      "wasm.depManagement",
+      "wasm.mandatoryMvnDeps",
+      "wasm.mvnDeps",
+      "wasm.platformSuffix",
+      "wasm.runMvnDeps",
+      "wasm.scalaVersion",
+      "wasm.transitiveCoursierProjects"
+    ],
+    "inputsHash": 1460222223
+  },
+  {
+    "label": "wasm.test.transitiveLocalClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.localClasspath",
+      "wasm.localClasspath"
+    ],
+    "inputsHash": -495799733
+  },
+  {
+    "label": "wasm.test.resolvedMvnDeps.super.javalib.JavaModule",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.mvnDeps",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.test.artifactTypes",
+      "wasm.test.bomMvnDeps",
+      "wasm.test.checkGradleModules",
+      "wasm.test.compileMvnDeps",
+      "wasm.test.depManagement",
+      "wasm.test.mandatoryMvnDeps",
+      "wasm.test.mvnDeps",
+      "wasm.test.platformSuffix",
+      "wasm.test.resolvedDepsWarnNonPlatform",
+      "wasm.test.runMvnDeps",
+      "wasm.test.scalaVersion",
+      "wasm.test.transitiveCoursierProjects"
+    ],
+    "inputsHash": 665879853
+  },
+  {
+    "label": "wasm.test.resolvedRunMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.repositories",
+      "mill.javalib.CoursierConfigModule/coursierEnv",
+      "wasm.mvnDeps",
+      "wasm.platformSuffix",
+      "wasm.repositories",
+      "wasm.scalaVersion",
+      "wasm.test.artifactTypes",
+      "wasm.test.bomMvnDeps",
+      "wasm.test.checkGradleModules",
+      "wasm.test.compileMvnDeps",
+      "wasm.test.depManagement",
+      "wasm.test.mandatoryMvnDeps",
+      "wasm.test.mvnDeps",
+      "wasm.test.platformSuffix",
+      "wasm.test.resolvedDepsWarnNonPlatform",
+      "wasm.test.runMvnDeps",
+      "wasm.test.scalaVersion",
+      "wasm.test.transitiveCoursierProjects"
+    ],
+    "inputsHash": -1729297014
+  },
+  {
+    "label": "wasm.test.resolvedMvnDeps",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.resolvedMvnDeps.super.javalib.JavaModule",
+      "wasm.test.scalaVersion"
+    ],
+    "inputsHash": 1421967749
+  },
+  {
+    "label": "wasm.test.compileClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "core.js.compile",
+      "core.js.localCompileClasspath",
+      "wasm.compile",
+      "wasm.localCompileClasspath",
+      "wasm.test.localCompileClasspath",
+      "wasm.test.resolvedMvnDeps"
+    ],
+    "inputsHash": -1593786901
+  },
+  {
+    "label": "wasm.test.compile",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "mill.javalib.JvmWorkerModule/internalWorker",
+      "wasm.javaHome",
+      "wasm.test.allScalacOptions",
+      "wasm.test.allSourceFiles",
+      "wasm.test.compileClasspath",
+      "wasm.test.javacOptions",
+      "wasm.test.mandatoryJavacOptions",
+      "wasm.test.scalaCompilerBridge",
+      "wasm.test.scalaCompilerClasspath",
+      "wasm.test.scalaVersion",
+      "wasm.test.scalacPluginClasspath",
+      "wasm.test.upstreamCompileOutput",
+      "wasm.test.zincAuxiliaryClassFileExtensions",
+      "wasm.test.zincIncrementalCompilation",
+      "wasm.test.zincReportCachedProblems"
+    ],
+    "inputsHash": 1605511236
+  },
+  {
+    "label": "wasm.test.localRunClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.compile",
+      "wasm.test.localRunClasspath.super.RunModule",
+      "wasm.test.resources"
+    ],
+    "inputsHash": 874001119
+  },
+  {
+    "label": "wasm.test.localClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.localCompileClasspath",
+      "wasm.test.localRunClasspath"
+    ],
+    "inputsHash": -36290198
+  },
+  {
+    "label": "wasm.test.runClasspath",
+    "millis": 0,
+    "cached": true,
+    "valueHashChanged": false,
+    "dependencies": [
+      "wasm.test.localClasspath",
+      "wasm.test.resolvedRunMvnDeps",
+      "wasm.test.runClasspath.super.RunModule",
+      "wasm.test.transitiveLocalClasspath"
+    ],
+    "inputsHash": 1930006881
+  },
+  {
+    "label": "wasm.test.fastLinkJSTest",
+    "millis": 101,
+    "cached": false,
+    "valueHashChanged": true,
+    "dependencies": [
+      "mill.scalajslib.worker.ScalaJSWorkerExternalModule/scalaJSWorker",
+      "wasm.test.esFeatures",
+      "wasm.test.moduleKind",
+      "wasm.test.moduleSplitStyle",
+      "wasm.test.runClasspath",
+      "wasm.test.scalaJSExperimentalUseWebAssembly",
+      "wasm.test.scalaJSImportMap",
+      "wasm.test.scalaJSMinify",
+      "wasm.test.scalaJSOptimizer",
+      "wasm.test.scalaJSOutputPatterns",
+      "wasm.test.scalaJSSourceMap",
+      "wasm.test.scalaJSTestDeps",
+      "wasm.test.scalaJSToolsClasspath"
+    ],
+    "inputsHash": -437856523
+  },
+  {
+    "label": "wasm.test.testForked",
+    "millis": 360,
+    "cached": false,
+    "valueHashChanged": true,
+    "dependencies": [
+      "mill.scalajslib.worker.ScalaJSWorkerExternalModule/scalaJSWorker",
+      "wasm.test.compile",
+      "wasm.test.fastLinkJSTest",
+      "wasm.test.jsEnvConfig",
+      "wasm.test.runClasspath",
+      "wasm.test.scalaJSToolsClasspath",
+      "wasm.test.testArgsDefault",
+      "wasm.test.testFramework",
+      "wasm.test.testReportXml"
+    ],
+    "inputsHash": -1796540022
+  }
+]

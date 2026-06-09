@@ -1,0 +1,144 @@
+{
+    "value": {
+        "msg": "     ",
+        "results": [
+            {
+                "fullyQualifiedName": "luau.panama.CompileAndRunTest.compile valid script returns Right(())",
+                "selector": "luau.panama.CompileAndRunTest.compile valid script returns Right(())",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.CompileAndRunTest.compile syntax error returns Left(LuaError)",
+                "selector": "luau.panama.CompileAndRunTest.compile syntax error returns Left(LuaError)",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.CompileAndRunTest.resume returns Returned for trivial script",
+                "selector": "luau.panama.CompileAndRunTest.resume returns Returned for trivial script",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.CompileAndRunTest.run 'return 1 + 1' yields integer 2 on stack",
+                "selector": "luau.panama.CompileAndRunTest.run 'return 1 + 1' yields integer 2 on stack",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.CompileAndRunTest.run multi-line script with local variables",
+                "selector": "luau.panama.CompileAndRunTest.run multi-line script with local variables",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.RefLifecycleTest.lx_ref stores table and lx_push_ref retrieves it",
+                "selector": "luau.panama.RefLifecycleTest.lx_ref stores table and lx_push_ref retrieves it",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.RefLifecycleTest.PanamaRef.close() is idempotent",
+                "selector": "luau.panama.RefLifecycleTest.PanamaRef.close() is idempotent",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.RefLifecycleTest.scoped block releases Refs on exit",
+                "selector": "luau.panama.RefLifecycleTest.scoped block releases Refs on exit",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.RefLifecycleTest.leaked Ref does not crash; state teardown frees it",
+                "selector": "luau.panama.RefLifecycleTest.leaked Ref does not crash; state teardown frees it",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.NativeFunctionTest.native function Return(1) — script receives correct value",
+                "selector": "luau.panama.NativeFunctionTest.native function Return(1) — script receives correct value",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.NativeFunctionTest.native function Fail — script sees error",
+                "selector": "luau.panama.NativeFunctionTest.native function Fail — script sees error",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.NativeFunctionTest.multiple native functions coexist by fnId",
+                "selector": "luau.panama.NativeFunctionTest.multiple native functions coexist by fnId",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.NativeLibSmokeTest.lx_newstate returns non-null pointer",
+                "selector": "luau.panama.NativeLibSmokeTest.lx_newstate returns non-null pointer",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.NativeLibSmokeTest.PanamaState.open() and close() lifecycle",
+                "selector": "luau.panama.NativeLibSmokeTest.PanamaState.open() and close() lifecycle",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.SuspendResumeTest.native Suspend returns Yielded from resume()",
+                "selector": "luau.panama.SuspendResumeTest.native Suspend returns Yielded from resume()",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.SuspendResumeTest.synchronous resume after Suspend delivers result",
+                "selector": "luau.panama.SuspendResumeTest.synchronous resume after Suspend delivers result",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.SuspendResumeTest.calling Resume with Left(LuaError) propagates error",
+                "selector": "luau.panama.SuspendResumeTest.calling Resume with Left(LuaError) propagates error",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.StringMarshalTest.ASCII string round-trip via push/read",
+                "selector": "luau.panama.StringMarshalTest.ASCII string round-trip via push/read",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.StringMarshalTest.UTF-8 multibyte string round-trip (Japanese)",
+                "selector": "luau.panama.StringMarshalTest.UTF-8 multibyte string round-trip (Japanese)",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.StringMarshalTest.toBytes returns None for non-string stack slot",
+                "selector": "luau.panama.StringMarshalTest.toBytes returns None for non-string stack slot",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.StringMarshalTest.empty string round-trip",
+                "selector": "luau.panama.StringMarshalTest.empty string round-trip",
+                "duration": 0,
+                "status": "Ignored"
+            },
+            {
+                "fullyQualifiedName": "luau.panama.StringMarshalTest.toNativeString allocates null-terminated C string",
+                "selector": "luau.panama.StringMarshalTest.toNativeString allocates null-terminated C string",
+                "duration": 0,
+                "status": "Ignored"
+            }
+        ]
+    },
+    "valueHash": -1301604279,
+    "inputsHash": -323720256,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

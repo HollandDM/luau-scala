@@ -1,0 +1,320 @@
+{
+  "wasm.test.testForked": {
+    "mill.scalajslib.worker.ScalaJSWorkerExternalModule/scalaJSWorker": {},
+    "wasm.test.jsEnvConfig": {
+      "wasm.jsEnvConfig": {}
+    },
+    "wasm.test.scalaJSToolsClasspath": {
+      "wasm.test.scalaJSWorkerClasspath": {
+        "mill.javalib.CoursierConfigModule/coursierEnv": {},
+        "mill.javalib.JvmWorkerModule/repositories": {},
+        "mill.javalib.JvmWorkerModule/checkGradleModules": {},
+        "wasm.test.scalaJSWorkerVersion": {}
+      },
+      "wasm.test.scalaJSLinkerClasspath": {
+        "wasm.test.scalaJSVersion": {
+          "wasm.scalaJSVersion": {}
+        },
+        "wasm.test.scalaJSBinaryVersion": {},
+        "wasm.test.scalaJSJsEnvMvnDeps": {}
+      }
+    },
+    "wasm.test.testFramework": {},
+    "wasm.test.compile": {
+      "wasm.test.scalaVersion": {
+        "wasm.scalaVersion": {}
+      },
+      "mill.javalib.JvmWorkerModule/internalWorker": {
+        "mill.javalib.JvmWorkerModule/classpath": {},
+        "mill.javalib.JvmWorkerModule/internalWorkerClassLoader": {},
+        "mill.javalib.JvmWorkerModule/zincLogDebug": {},
+        "mill.javalib.JvmWorkerModule/useFileLocks": {}
+      },
+      "wasm.javaHome": {
+        "wasm.jvmVersion": {
+          "wasm.jvmId": {}
+        },
+        "wasm.jvmIndexVersion": {}
+      },
+      "wasm.test.javacOptions": {
+        "wasm.javacOptions": {}
+      },
+      "wasm.test.mandatoryJavacOptions": {},
+      "wasm.test.upstreamCompileOutput": {
+        "core.js.compile": {
+          "core.js.scalaVersion": {},
+          "core.js.javacOptions": {},
+          "core.js.mandatoryJavacOptions": {},
+          "core.js.upstreamCompileOutput": {},
+          "core.js.allSourceFiles": {
+            "core.js.allSources": {
+              "core.js.sources": {},
+              "core.js.generatedSources": {}
+            },
+            "core.js.wrappedSources": {}
+          },
+          "core.js.compileClasspath": {
+            "core.js.resolvedMvnDeps": {
+              "core.js.resolvedMvnDeps.super.javalib.JavaModule": {
+                "core.js.resolvedDepsWarnNonPlatform": {},
+                "core.js.artifactTypes": {}
+              }
+            }
+          },
+          "core.js.allScalacOptions": {
+            "core.js.mandatoryScalacOptions": {
+              "core.js.mandatoryScalacOptions.super.scalalib.ScalaModule": {}
+            },
+            "core.js.enablePluginScalacOptions": {},
+            "core.js.scalacOptions": {
+              "core.js.scalacOptions.super.mill.scalalib.ScalaModule": {}
+            }
+          },
+          "core.js.scalaCompilerClasspath": {
+            "core.js.scalaLibraryMvnDeps": {
+              "core.js.scalaLibraryMvnDeps.super.scalalib.ScalaModule": {}
+            },
+            "core.js.checkGradleModules": {}
+          },
+          "core.js.scalacPluginClasspath": {
+            "core.js.scalacPluginMvnDeps": {
+              "core.js.scalaJSVersion": {},
+              "core.js.scalacPluginMvnDeps.super.scalalib.ScalaModule": {}
+            }
+          },
+          "core.js.scalaCompilerBridge": {},
+          "core.js.zincIncrementalCompilation": {},
+          "core.js.zincAuxiliaryClassFileExtensions": {
+            "core.js.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule": {
+              "core.js.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule": {}
+            }
+          },
+          "core.js.javaHome": {
+            "core.js.jvmVersion": {
+              "core.js.jvmId": {}
+            },
+            "core.js.jvmIndexVersion": {}
+          },
+          "core.js.zincReportCachedProblems": {}
+        },
+        "wasm.compile": {
+          "wasm.mandatoryJavacOptions": {},
+          "wasm.upstreamCompileOutput": {},
+          "wasm.allSourceFiles": {
+            "wasm.allSources": {
+              "wasm.sources": {},
+              "wasm.generatedSources": {}
+            },
+            "wasm.wrappedSources": {}
+          },
+          "wasm.compileClasspath": {
+            "wasm.resolvedMvnDeps": {
+              "wasm.resolvedMvnDeps.super.javalib.JavaModule": {
+                "wasm.resolvedDepsWarnNonPlatform": {},
+                "wasm.artifactTypes": {}
+              }
+            }
+          },
+          "wasm.allScalacOptions": {
+            "wasm.mandatoryScalacOptions": {
+              "wasm.mandatoryScalacOptions.super.scalalib.ScalaModule": {}
+            },
+            "wasm.enablePluginScalacOptions": {}
+          },
+          "wasm.scalaCompilerClasspath": {
+            "wasm.scalaLibraryMvnDeps": {
+              "wasm.scalaLibraryMvnDeps.super.scalalib.ScalaModule": {}
+            }
+          },
+          "wasm.zincIncrementalCompilation": {},
+          "wasm.zincAuxiliaryClassFileExtensions": {
+            "wasm.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule": {
+              "wasm.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule": {}
+            }
+          },
+          "wasm.zincReportCachedProblems": {}
+        }
+      },
+      "wasm.test.allSourceFiles": {
+        "wasm.test.allSources": {
+          "wasm.test.sources": {},
+          "wasm.test.generatedSources": {}
+        },
+        "wasm.test.wrappedSources": {}
+      },
+      "wasm.test.compileClasspath": {
+        "core.js.localCompileClasspath": {
+          "core.js.unmanagedClasspath": {},
+          "core.js.unmanagedClasspathExistenceCheck": {},
+          "core.js.compileResources": {}
+        },
+        "wasm.localCompileClasspath": {
+          "wasm.unmanagedClasspath": {},
+          "wasm.unmanagedClasspathExistenceCheck": {},
+          "wasm.compileResources": {}
+        },
+        "wasm.test.localCompileClasspath": {
+          "wasm.test.unmanagedClasspath": {},
+          "wasm.test.unmanagedClasspathExistenceCheck": {},
+          "wasm.test.compileResources": {}
+        },
+        "wasm.test.resolvedMvnDeps": {
+          "wasm.test.resolvedMvnDeps.super.javalib.JavaModule": {}
+        }
+      },
+      "wasm.test.allScalacOptions": {
+        "wasm.test.mandatoryScalacOptions": {
+          "wasm.test.mandatoryScalacOptions.super.scalalib.ScalaModule.ScalaTests": {
+            "wasm.test.mandatoryScalacOptions.super.scalalib.ScalaModule": {}
+          }
+        },
+        "wasm.test.enablePluginScalacOptions": {
+          "wasm.test.scalacPluginMvnDeps": {
+            "wasm.test.scalacPluginMvnDeps.super.scalalib.ScalaModule.ScalaTests": {}
+          }
+        },
+        "wasm.test.scalacOptions": {
+          "wasm.scalacOptions": {
+            "wasm.scalacOptions.super.mill.scalalib.ScalaModule": {}
+          }
+        }
+      },
+      "wasm.test.scalaCompilerClasspath": {
+        "core.js.repositories": {},
+        "wasm.repositories": {},
+        "wasm.test.platformSuffix": {
+          "wasm.test.artifactScalaJSVersion": {
+            "wasm.test.crossFullScalaJSVersion": {}
+          }
+        },
+        "wasm.test.checkGradleModules": {},
+        "wasm.test.scalaLibraryMvnDeps": {
+          "wasm.test.scalaLibraryMvnDeps.super.scalalib.ScalaModule": {}
+        }
+      },
+      "wasm.test.scalacPluginClasspath": {
+        "wasm.scalacPluginClasspath": {
+          "wasm.checkGradleModules": {},
+          "wasm.scalacPluginMvnDeps": {
+            "wasm.scalacPluginMvnDeps.super.scalalib.ScalaModule": {}
+          }
+        }
+      },
+      "wasm.test.scalaCompilerBridge": {
+        "wasm.scalaCompilerBridge": {}
+      },
+      "wasm.test.zincIncrementalCompilation": {},
+      "wasm.test.zincAuxiliaryClassFileExtensions": {
+        "wasm.test.zincAuxiliaryClassFileExtensions.super.scalalib.ScalaModule": {
+          "wasm.test.zincAuxiliaryClassFileExtensions.super.javalib.JavaModule": {}
+        }
+      },
+      "wasm.test.zincReportCachedProblems": {}
+    },
+    "wasm.test.runClasspath": {
+      "wasm.test.runClasspath.super.RunModule": {},
+      "wasm.test.resolvedRunMvnDeps": {
+        "wasm.test.resolvedDepsWarnNonPlatform": {},
+        "wasm.test.runMvnDeps": {},
+        "wasm.platformSuffix": {
+          "wasm.artifactScalaJSVersion": {
+            "wasm.crossFullScalaJSVersion": {},
+            "wasm.scalaJSBinaryVersion": {}
+          }
+        },
+        "wasm.mvnDeps": {},
+        "wasm.test.mandatoryMvnDeps": {
+          "wasm.test.mandatoryMvnDeps.super.scalajslib.ScalaJSModule": {
+            "wasm.test.mandatoryMvnDeps.super.scalalib.ScalaModule": {
+              "wasm.test.mandatoryMvnDeps.super.javalib.JavaModule": {}
+            }
+          },
+          "wasm.test.munitVersion": {}
+        },
+        "wasm.test.mvnDeps": {},
+        "wasm.test.compileMvnDeps": {},
+        "wasm.test.bomMvnDeps": {
+          "wasm.test.bomMvnDeps.super.JavaModule": {},
+          "wasm.bomMvnDeps": {}
+        },
+        "wasm.test.depManagement": {
+          "wasm.test.depManagement.super.JavaModule": {},
+          "wasm.depManagement": {}
+        },
+        "wasm.test.transitiveCoursierProjects": {
+          "core.js.mvnDeps": {},
+          "core.js.platformSuffix": {
+            "core.js.artifactScalaJSVersion": {
+              "core.js.crossFullScalaJSVersion": {},
+              "core.js.scalaJSBinaryVersion": {}
+            }
+          },
+          "wasm.transitiveCoursierProjects": {
+            "core.js.transitiveCoursierProjects": {},
+            "core.js.mandatoryMvnDeps": {
+              "core.js.mandatoryMvnDeps.super.scalalib.ScalaModule": {
+                "core.js.mandatoryMvnDeps.super.javalib.JavaModule": {}
+              }
+            },
+            "core.js.compileMvnDeps": {},
+            "core.js.runMvnDeps": {},
+            "core.js.bomMvnDeps": {},
+            "core.js.depManagement": {}
+          },
+          "wasm.mandatoryMvnDeps": {
+            "wasm.mandatoryMvnDeps.super.scalalib.ScalaModule": {
+              "wasm.mandatoryMvnDeps.super.javalib.JavaModule": {}
+            }
+          },
+          "wasm.compileMvnDeps": {},
+          "wasm.runMvnDeps": {}
+        },
+        "wasm.test.artifactTypes": {}
+      },
+      "wasm.test.transitiveLocalClasspath": {
+        "core.js.localClasspath": {
+          "core.js.localRunClasspath": {
+            "core.js.localRunClasspath.super.RunModule": {},
+            "core.js.resources": {}
+          }
+        },
+        "wasm.localClasspath": {
+          "wasm.localRunClasspath": {
+            "wasm.localRunClasspath.super.RunModule": {},
+            "wasm.resources": {}
+          }
+        }
+      },
+      "wasm.test.localClasspath": {
+        "wasm.test.localRunClasspath": {
+          "wasm.test.localRunClasspath.super.RunModule": {},
+          "wasm.test.resources": {
+            "shim.wasmBuildNative": {}
+          }
+        }
+      }
+    },
+    "wasm.test.fastLinkJSTest": {
+      "wasm.test.scalaJSImportMap": {},
+      "wasm.test.scalaJSTestDeps": {},
+      "wasm.test.scalaJSOptimizer": {
+        "wasm.scalaJSOptimizer": {}
+      },
+      "wasm.test.scalaJSSourceMap": {},
+      "wasm.test.moduleKind": {
+        "wasm.moduleKind": {}
+      },
+      "wasm.test.esFeatures": {
+        "wasm.esFeatures": {}
+      },
+      "wasm.test.moduleSplitStyle": {
+        "wasm.moduleSplitStyle": {}
+      },
+      "wasm.test.scalaJSOutputPatterns": {},
+      "wasm.test.scalaJSMinify": {},
+      "wasm.test.scalaJSExperimentalUseWebAssembly": {}
+    },
+    "wasm.test.testArgsDefault": {},
+    "wasm.test.testReportXml": {}
+  }
+}

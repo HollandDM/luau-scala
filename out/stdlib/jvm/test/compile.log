@@ -1,0 +1,12 @@
+compiling 1 Scala source to out/stdlib/jvm/test/compile.dest/classes ...
+[warn] stdlib/jvm/test/src/luau/stdlib/StdlibSuite.scala:132:40
+private class CallOrderBinding extends TestBinding:
+                                       ^^^^^^^^^^^
+Unless class TestBinding is declared 'open', its extension in a separate file should be enabled
+by adding the import clause 'import scala.language.adhocExtensions'
+or by setting the compiler option -language:adhocExtensions.
+See the Scala docs for value scala.language.adhocExtensions for a discussion
+why the feature should be explicitly enabled.
+
+[warn] one warning found
+done compiling

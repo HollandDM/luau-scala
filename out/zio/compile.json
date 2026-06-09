@@ -1,0 +1,11 @@
+{
+    "value": {
+        "analysisFile": "/home/hoangdinh/OSS/luau-scala/out/zio/compile.dest/zinc",
+        "classes": "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/out/zio/compile.dest/classes"
+    },
+    "valueHash": 867001879,
+    "inputsHash": 1671639927,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

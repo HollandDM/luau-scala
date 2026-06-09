@@ -1,0 +1,28 @@
+{
+    "value": [
+        "ref:v0:4f59e0c9:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/LuaValue.scala",
+        "ref:v0:a200ea3e:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/LuaError.scala",
+        "ref:v0:007968a9:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/LuaType.scala",
+        "ref:v0:9b8b681f:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/ResumeResult.scala",
+        "ref:v0:4911280e:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/NativeFnResult.scala",
+        "ref:v0:474d6e13:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/NativeFn.scala",
+        "ref:v0:ddad1ce7:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/Async.scala",
+        "ref:v0:1de32489:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/Ref.scala",
+        "ref:v0:4aafafd9:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/Scope.scala",
+        "ref:v0:506a200c:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/Binding.scala",
+        "ref:v0:3c84ff6f:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/codec/Sink.scala",
+        "ref:v0:b4320fa4:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/codec/SinkImpl.scala",
+        "ref:v0:d462e4b3:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/codec/package.scala",
+        "ref:v0:6edb6291:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/codec/instances/package.scala",
+        "ref:v0:7278a060:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/codec/LuauEncoder.scala",
+        "ref:v0:318844eb:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/codec/LuauDecoder.scala",
+        "ref:v0:a29d58bb:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/fake/FakeState.scala",
+        "ref:v0:c3251a5b:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/fake/FakeTable.scala",
+        "ref:v0:5f0c0e2c:/home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/fake/FakeBinding.scala"
+    ],
+    "valueHash": 1292153183,
+    "inputsHash": -964221404,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/core/jvm/compile-resources"
+    ],
+    "valueHash": -153282313,
+    "inputsHash": -1113695050,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

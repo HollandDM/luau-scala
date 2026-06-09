@@ -1,0 +1,11 @@
+{
+    "value": [
+        "--enable-native-access=ALL-UNNAMED",
+        "--enable-preview"
+    ],
+    "valueHash": 788342578,
+    "inputsHash": 461648724,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

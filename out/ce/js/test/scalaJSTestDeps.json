@@ -1,0 +1,15 @@
+{
+    "value": [
+        "qref:v1:1d85092a:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-library_2.13/1.21.0/scalajs-library_2.13-1.21.0.jar",
+        "qref:v1:80d3e8a7:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-test-bridge_2.13/1.21.0/scalajs-test-bridge_2.13-1.21.0.jar",
+        "qref:v1:e7100f31:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.3/scala-library-3.8.3.jar",
+        "qref:v1:c59e6954:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-javalib/1.21.0/scalajs-javalib-1.21.0.jar",
+        "qref:v1:16503264:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-scalalib_2.13/2.13.17%2B1.21.0/scalajs-scalalib_2.13-2.13.17%2B1.21.0.jar",
+        "qref:v1:fc134561:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-test-interface_2.13/1.21.0/scalajs-test-interface_2.13-1.21.0.jar"
+    ],
+    "valueHash": -1338595338,
+    "inputsHash": -1232951841,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

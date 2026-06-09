@@ -1,0 +1,18 @@
+{
+    "value": [
+        "ref:v0:c65f3492:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/LuauWasmLoader.scala",
+        "ref:v0:1f0b6db8:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/WasmModule.scala",
+        "ref:v0:3c02af91:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/WasmMarshal.scala",
+        "ref:v0:a8bc44eb:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/Trampoline.scala",
+        "ref:v0:a8c900e4:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/WasmScope.scala",
+        "ref:v0:a982108f:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/WasmBinding.scala",
+        "ref:v0:de532956:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/WasmBackend.scala",
+        "ref:v0:1a4ce326:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/WasmSink.scala",
+        "ref:v0:ee45348a:/home/hoangdinh/OSS/luau-scala/wasm/src/luau/wasm/LuauShimFactory.scala"
+    ],
+    "valueHash": -1058420235,
+    "inputsHash": 1261184124,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

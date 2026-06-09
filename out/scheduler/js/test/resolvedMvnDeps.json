@@ -1,0 +1,18 @@
+{
+    "value": [
+        "qref:v1:7962ed71:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_sjs1_3/3.8.3/scala3-library_sjs1_3-3.8.3.jar",
+        "qref:v1:1d85092a:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-library_2.13/1.21.0/scalajs-library_2.13-1.21.0.jar",
+        "qref:v1:edb55973:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit_sjs1_3/1.2.0/munit_sjs1_3-1.2.0.jar",
+        "qref:v1:a38d6055:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-scalalib_2.13/3.8.3/scalajs-scalalib_2.13-3.8.3.jar",
+        "qref:v1:e7100f31:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.3/scala-library-3.8.3.jar",
+        "qref:v1:c59e6954:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-javalib/1.21.0/scalajs-javalib-1.21.0.jar",
+        "qref:v1:f63248ad:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scalameta/munit-diff_sjs1_3/1.2.0/munit-diff_sjs1_3-1.2.0.jar",
+        "qref:v1:7d64ef67:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-test-interface_2.13/1.20.1/scalajs-test-interface_2.13-1.20.1.jar",
+        "qref:v1:1a4e6cf8:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-junit-test-runtime_2.13/1.20.1/scalajs-junit-test-runtime_2.13-1.20.1.jar"
+    ],
+    "valueHash": -549555184,
+    "inputsHash": 1559642739,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

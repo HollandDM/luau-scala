@@ -1,0 +1,17 @@
+{
+    "value": [
+        "-scalajs",
+        "-encoding",
+        "UTF-8",
+        "-deprecation",
+        "-feature",
+        "-unchecked",
+        "-Xkind-projector:underscores",
+        "-source:future"
+    ],
+    "valueHash": -604673257,
+    "inputsHash": -1069847299,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/scheduler/jvm/test/resources"
+    ],
+    "valueHash": -1087747242,
+    "inputsHash": -2103750794,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

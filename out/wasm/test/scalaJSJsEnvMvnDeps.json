@@ -1,0 +1,10 @@
+{
+    "value": [
+        "org.scala-js:scalajs-env-nodejs_2.13:1.4.0"
+    ],
+    "valueHash": -400014461,
+    "inputsHash": -2018603500,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

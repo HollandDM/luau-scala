@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:8b167584:/home/hoangdinh/OSS/luau-scala/stdlib/jvm/test/resources"
+    ],
+    "valueHash": 158254962,
+    "inputsHash": 1724938308,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

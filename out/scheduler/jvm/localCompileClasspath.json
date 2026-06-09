@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/scheduler/jvm/compile-resources"
+    ],
+    "valueHash": 1868651920,
+    "inputsHash": -1092490470,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

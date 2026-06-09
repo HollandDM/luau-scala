@@ -1,0 +1,17 @@
+{
+    "value": [
+        [
+            "luau.panama.CompileAndRunTest",
+            "luau.panama.NativeFunctionTest",
+            "luau.panama.NativeLibSmokeTest",
+            "luau.panama.RefLifecycleTest",
+            "luau.panama.StringMarshalTest",
+            "luau.panama.SuspendResumeTest"
+        ]
+    ],
+    "valueHash": -1012579469,
+    "inputsHash": -76048582,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

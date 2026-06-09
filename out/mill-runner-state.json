@@ -1,0 +1,30 @@
+{
+    "workerCache": {
+        "mill.javalib.JvmWorkerModule/internalWorkerClassLoader": {
+            "identityHashCode": 2095770554,
+            "inputHash": 337462980
+        },
+        "mill.javalib.JvmWorkerModule/internalWorker": {
+            "identityHashCode": 1001803828,
+            "inputHash": 1771165989
+        },
+        "mill.scalajslib.worker.ScalaJSWorkerExternalModule/scalaJSWorker": {
+            "identityHashCode": 350394130,
+            "inputHash": 1454159743
+        }
+    },
+    "evalWatched": [
+        "/home/hoangdinh/OSS/luau-scala/wasm/compile-resources",
+        "/home/hoangdinh/OSS/luau-scala/core/js/compile-resources",
+        "/home/hoangdinh/OSS/luau-scala/core/js/resources",
+        "/home/hoangdinh/OSS/luau-scala/wasm/test/src",
+        "/home/hoangdinh/OSS/luau-scala/wasm/src",
+        "/home/hoangdinh/OSS/luau-scala/wasm/test/compile-resources",
+        "/home/hoangdinh/OSS/luau-scala/core/js/src",
+        "/home/hoangdinh/OSS/luau-scala/wasm/resources"
+    ],
+    "moduleWatched": [],
+    "classLoaderIdentity": null,
+    "runClasspath": [],
+    "runClasspathHash": 473519988
+}

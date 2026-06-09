@@ -1,0 +1,10 @@
+{
+    "value": [
+        "org.scalameta::munit::1.2.0"
+    ],
+    "valueHash": -1194776472,
+    "inputsHash": 1179580722,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

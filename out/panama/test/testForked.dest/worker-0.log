@@ -1,0 +1,37 @@
+luau.panama.CompileAndRunTest
+Running Test Class luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+[32mluau.panama.CompileAndRunTest:[0m
+[33m==> i [0m[33mluau.panama.CompileAndRunTest[0m.[33mcompile valid script returns Right(())[0m[33m ignored[0m [90m0.0s[0m
+[33m==> i [0m[33mluau.panama.CompileAndRunTest[0m.[33mcompile syntax error returns Left(LuaError)[0m[33m ignored[0m [90m0.0s[0m
+[33m==> i [0m[33mluau.panama.CompileAndRunTest[0m.[33mresume returns Returned for trivial script[0m[33m ignored[0m [90m0.0s[0m
+[33m==> i [0m[33mluau.panama.CompileAndRunTest[0m.[33mrun 'return 1 + 1' yields integer 2 on stack[0m[33m ignored[0m [90m0.0s[0m
+[33m==> i [0m[33mluau.panama.CompileAndRunTest[0m.[33mrun multi-line script with local variables[0m[33m ignored[0m [90m0.0s[0m
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest
+luau.panama.CompileAndRunTest

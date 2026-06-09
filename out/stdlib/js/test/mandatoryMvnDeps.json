@@ -1,0 +1,58 @@
+{
+    "value": [
+        "org.scala-lang::scala3-library::3.8.3",
+        {
+            "dep": {
+                "module": {
+                    "organization": {
+                        "value": "org.scala-js"
+                    },
+                    "name": {
+                        "value": "scalajs-library"
+                    },
+                    "attributes": {}
+                },
+                "versionConstraint": "1.21.0",
+                "variantSelector": {
+                    "$type": "ConfigurationBased",
+                    "configuration": {
+                        "value": ""
+                    }
+                },
+                "minimizedExclusions": {
+                    "data": "ExcludeNone"
+                },
+                "publication": {
+                    "name": "",
+                    "type": {
+                        "value": ""
+                    },
+                    "ext": {
+                        "value": ""
+                    },
+                    "classifier": {
+                        "value": ""
+                    }
+                },
+                "optional": false,
+                "transitive": true,
+                "overrides": [],
+                "boms": [],
+                "bomDependencies": [],
+                "overridesMap": [],
+                "endorseStrictVersions": false
+            },
+            "cross": {
+                "$type": "Constant",
+                "value": "_2.13",
+                "platformed": false
+            },
+            "force": false
+        }
+    ],
+    "valueHash": -148172132,
+    "inputsHash": -1252979377,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

@@ -54,9 +54,9 @@ object wasm extends LuauCrossPlatformJSModule {
   override def moduleDeps = super.moduleDeps ++ Seq(core.js)
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    override def forkEnv = Task {
-      val wasmPath = shim.wasmBuildNative().path / "luau-shim.wasm"
-      super.forkEnv() ++ Map("LUAU_WASM_PATH" -> wasmPath.toString)
+    override def resources = Task {
+      val wasmDir = shim.wasmBuildNative()
+      Seq(wasmDir)
     }
   }
 }

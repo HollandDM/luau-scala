@@ -1,0 +1,11 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/stdlib/js/resources",
+        "ref:v0:290286a3:/home/hoangdinh/OSS/luau-scala/out/stdlib/js/compile.dest/classes"
+    ],
+    "valueHash": 193440604,
+    "inputsHash": -1918785891,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

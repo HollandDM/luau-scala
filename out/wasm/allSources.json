@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:c61c2b18:/home/hoangdinh/OSS/luau-scala/wasm/src"
+    ],
+    "valueHash": 1272102729,
+    "inputsHash": -521434155,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

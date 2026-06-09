@@ -38,7 +38,7 @@ object LuauShimFactory:
   def apply(options: js.Object = js.Dynamic.literal()): WasmModuleExports =
     val env = js.Dynamic.global.process.env
     val wasmPath = env.selectDynamic("LUAU_WASM_PATH")
-    val path = if js.typeOf(wasmPath) != "undefined" && wasmPath.asInstanceOf[String] != "" then
+    val path = if js.typeOf(wasmPath) != "undefined" then
       wasmPath.asInstanceOf[String]
     else
       "luau-shim.wasm"

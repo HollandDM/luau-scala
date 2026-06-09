@@ -1,0 +1,10 @@
+{
+    "value": [
+        "ref:v0:68ad91ff:/home/hoangdinh/OSS/luau-scala/out/mill-build/generatedScriptSources.dest/wrapped/build_/build.mill"
+    ],
+    "valueHash": 1871662608,
+    "inputsHash": 1869747334,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": -1251785219
+}

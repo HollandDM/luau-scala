@@ -1,0 +1,11 @@
+{
+    "value": [
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/ce/jvm/resources",
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/out/ce/jvm/compile.dest/classes"
+    ],
+    "valueHash": 1979615017,
+    "inputsHash": 1014989947,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

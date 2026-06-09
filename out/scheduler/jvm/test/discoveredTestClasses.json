@@ -1,0 +1,10 @@
+{
+    "value": [
+        "luau.scheduler.SchedulerTests"
+    ],
+    "valueHash": -618544088,
+    "inputsHash": -733519410,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

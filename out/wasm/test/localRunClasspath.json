@@ -1,0 +1,11 @@
+{
+    "value": [
+        "ref:v0:501285ca:/home/hoangdinh/OSS/luau-scala/out/shim/wasmBuildNative.dest",
+        "ref:v0:743950a3:/home/hoangdinh/OSS/luau-scala/out/wasm/test/compile.dest/classes"
+    ],
+    "valueHash": -29854183,
+    "inputsHash": 874001119,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

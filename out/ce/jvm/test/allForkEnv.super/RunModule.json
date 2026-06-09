@@ -1,0 +1,11 @@
+{
+    "value": {
+        "PATH": "/home/hoangdinh/.cache/coursier/arc/https/cdn.azul.com/zulu/bin/zulu21.48.15-ca-jdk21.0.10-linux_x64.tar.gz/zulu21.48.15-ca-jdk21.0.10-linux_x64/bin:/home/hoangdinh/.npm-global/bin:/home/hoangdinh/.cargo/bin:/home/hoangdinh/.opencode/bin:/home/hoangdinh/.bun/bin:/home/hoangdinh/.local/bin:/home/hoangdinh/.local/share/coursier/bin:/home/hoangdinh/.npm-global/bin:/home/hoangdinh/.cargo/bin:/home/hoangdinh/.opencode/bin:/home/hoangdinh/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/opt/cuda/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/usr/lib/rustup/bin:/home/hoangdinh/go/bin:/opt/cuda/bin:/home/hoangdinh/go/bin",
+        "MILL_WORKSPACE_ROOT": "/home/hoangdinh/OSS/luau-scala"
+    },
+    "valueHash": 320908557,
+    "inputsHash": -547977890,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

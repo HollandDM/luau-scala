@@ -1,0 +1,14 @@
+{
+    "value": {
+        "jsFile": "%s.js",
+        "sourceMapFile": "%s.js.map",
+        "moduleName": "./%s.js",
+        "jsFileURI": "%s.js",
+        "sourceMapURI": "%s.js.map"
+    },
+    "valueHash": 1259757381,
+    "inputsHash": -700703656,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

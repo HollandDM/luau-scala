@@ -1,0 +1,17 @@
+{
+    "value": [
+        "qref:v1:161470b9:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.8.2/scala3-compiler_3-3.8.2.jar",
+        "qref:v1:4d0b25f8:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.2/scala-library-3.8.2.jar",
+        "qref:v1:cc413833:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-interfaces/3.8.2/scala3-interfaces-3.8.2.jar",
+        "qref:v1:ee735519:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/tasty-core_3/3.8.2/tasty-core_3-3.8.2.jar",
+        "qref:v1:acedc6f5:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.8.2/scala3-library_3-3.8.2.jar",
+        "qref:v1:69cb58d7:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/modules/scala-asm/9.9.0-scala-1/scala-asm-9.9.0-scala-1.jar",
+        "qref:v1:9d520f0a:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/compiler-interface/1.10.7/compiler-interface-1.10.7.jar",
+        "qref:v1:36f364ca:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-sbt/util-interface/1.10.7/util-interface-1.10.7.jar"
+    ],
+    "valueHash": -409543476,
+    "inputsHash": 1113281556,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": -1251785219
+}

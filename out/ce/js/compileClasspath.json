@@ -1,0 +1,25 @@
+{
+    "value": [
+        "qref:v1:7962ed71:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala3-library_sjs1_3/3.8.3/scala3-library_sjs1_3-3.8.3.jar",
+        "qref:v1:1d85092a:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-library_2.13/1.21.0/scalajs-library_2.13-1.21.0.jar",
+        "qref:v1:ca5720bf:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect_sjs1_3/3.5.0/cats-effect_sjs1_3-3.5.0.jar",
+        "qref:v1:a38d6055:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-scalalib_2.13/3.8.3/scalajs-scalalib_2.13-3.8.3.jar",
+        "qref:v1:e7100f31:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-lang/scala-library/3.8.3/scala-library-3.8.3.jar",
+        "qref:v1:c59e6954:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scalajs-javalib/1.21.0/scalajs-javalib-1.21.0.jar",
+        "qref:v1:97affa03:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-kernel_sjs1_3/3.5.0/cats-effect-kernel_sjs1_3-3.5.0.jar",
+        "qref:v1:6f1b09e3:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-effect-std_sjs1_3/3.5.0/cats-effect-std_sjs1_3-3.5.0.jar",
+        "qref:v1:e976f036:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/scala-js/scala-js-macrotask-executor_sjs1_3/1.1.1/scala-js-macrotask-executor_sjs1_3-1.1.1.jar",
+        "qref:v1:59a9682f:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-core_sjs1_3/2.9.0/cats-core_sjs1_3-2.9.0.jar",
+        "qref:v1:1a6d5ab5:/home/hoangdinh/.cache/coursier/v1/https/repo1.maven.org/maven2/org/typelevel/cats-kernel_sjs1_3/2.9.0/cats-kernel_sjs1_3-2.9.0.jar",
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/core/js/compile-resources",
+        "ref:v0:c6cedcbf:/home/hoangdinh/OSS/luau-scala/out/core/js/compile.dest/classes",
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/scheduler/js/compile-resources",
+        "ref:v0:ec21d5bf:/home/hoangdinh/OSS/luau-scala/out/scheduler/js/compile.dest/classes",
+        "ref:v0:c984eca8:/home/hoangdinh/OSS/luau-scala/ce/js/compile-resources"
+    ],
+    "valueHash": 1786586806,
+    "inputsHash": 1469665591,
+    "millVersion": "1.1.6",
+    "millJvmVersion": "21.0.10",
+    "classLoaderSigHash": 1358096519
+}

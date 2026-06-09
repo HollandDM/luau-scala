@@ -1,0 +1,65 @@
+=== Compiling Luau sources ===
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lapi.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/laux.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lbaselib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lbitlib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lbuffer.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lbuflib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lbuiltins.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lclass.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lclasslib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lcorolib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ldblib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ldebug.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ldo.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lfunc.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lgc.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lgcdebug.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/linit.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lintlib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lmathlib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lmem.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lnumprint.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lobject.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/loslib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lperf.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lstate.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lstring.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lstrlib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ltable.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ltablib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ltm.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/ludata.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lutf8lib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lveclib.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lvmexecute.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lvmload.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/VM/src/lvmutils.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/BuiltinFolding.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/Builtins.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/Compiler.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/ConstantFolding.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/CostModel.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/lcode.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/TableShape.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/Types.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Compiler/src/ValueTracking.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Allocator.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Ast.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Confusables.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Cst.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Lexer.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Location.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/Parser.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Ast/src/PrettyPrinter.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Bytecode/src/BytecodeBuilder.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Bytecode/src/BytecodeGraph.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Common/src/BytecodeWire.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Common/src/StringUtils.cpp
+  CC /home/hoangdinh/OSS/luau-scala/shim/luau/Common/src/TimeTrace.cpp
+=== Compiling shim ===
+=== Compiling wasm EH stubs ===
+=== Linking WASM binary ===
+=== Copying outputs ===
+=== Done ===
+-rwxr-xr-x 1 hoangdinh hoangdinh 1990026 16:31  9 Thg 6  /home/hoangdinh/OSS/luau-scala/shim/luau-shim.wasm
