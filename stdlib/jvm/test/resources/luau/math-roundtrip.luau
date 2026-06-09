@@ -1,0 +1,10 @@
+assert(math.floor(2.9) == 2)
+assert(math.ceil(2.1) == 3)
+assert(math.abs(-5) == 5)
+assert(math.max(1, 2, 3) == 3)
+assert(math.min(1, 2, 3) == 1)
+assert(math.sqrt(4) == 2)
+assert(math.huge > 0)
+local x = math.random()
+assert(x >= 0 and x < 1)
+return "math ok"

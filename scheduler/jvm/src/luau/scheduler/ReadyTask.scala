@@ -14,3 +14,4 @@ enum ResumeValues:
   case None
   case Success(result: LuaValue)
   case Failure(error: LuaError)
+  case SuspendValue(result: LuaValue)

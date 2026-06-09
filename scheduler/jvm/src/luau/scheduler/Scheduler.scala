@@ -4,6 +4,8 @@ import luau.core.*
 import luau.core.NativeFnResult.Suspend
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
+import java.util.Timer
+import java.util.TimerTask
 
 /** Single-threaded Scheduler for one Luau state.
   *
@@ -27,15 +29,22 @@ final class Scheduler[H](
   private val idCounter = AtomicLong(0L)
   private val liveTasks = mutable.HashMap[Long, Task[H]]()
 
+  // ── Current task ──────────────────────────────────────────────────────
+
+  private var _currentTask: Option[Task[H]] = None
+
+  def currentTask: Option[Task[H]] = _currentTask
+
+  private[scheduler] def setCurrentTask(task: Option[Task[H]]): Unit =
+    _currentTask = task
+
   // ── Pending Suspend slot ──────────────────────────────────────────────
 
   private var pendingSuspend: Option[NativeFnResult.Suspend] = None
 
-  /** Called by Native function dispatcher before returning Suspend to Shim. */
   private[scheduler] def setPendingSuspend(s: NativeFnResult.Suspend): Unit =
     pendingSuspend = Some(s)
 
-  /** Read and clear pending Suspend. Called after lx_resume returns Yielded. */
   private[scheduler] def takePendingSuspend(): Option[NativeFnResult.Suspend] =
     val s = pendingSuspend
     pendingSuspend = None
@@ -43,7 +52,6 @@ final class Scheduler[H](
 
   // ── Spawn ─────────────────────────────────────────────────────────────
 
-  /** Spawn a new Task backed by a fresh lua_newthread coroutine. */
   def spawn(parent: Option[Task[H]] = None): Task[H] =
     val rawThread = binding.newThread(state)
     val threadRef = binding.ref(state)
@@ -54,9 +62,120 @@ final class Scheduler[H](
     runQueue.enqueue(ReadyTask[H](task, ResumeValues.None))
     task
 
+  // ── Spawn immediate ───────────────────────────────────────────────────
+
+  def spawnImmediate(fnRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
+    val rawThread = binding.newThread(state)
+    val threadRef = binding.ref(state)
+    val id = idCounter.incrementAndGet()
+    val task = Task[H](threadRef, rawThread, None, id)
+    task.setState(TaskState.Running)
+    liveTasks.put(id, task)
+
+    binding.pushRef(rawThread, fnRef.registryKey)
+    extraArgs.foreach { ref => binding.pushRef(rawThread, ref.registryKey) }
+
+    fnRef.close()
+    extraArgs.foreach(_.close())
+
+    val nargs = 1 + extraArgs.size
+    val result = binding.resume(rawThread, nargs)
+
+    result match
+      case ResumeResult.Returned(_) =>
+        task.setState(TaskState.Complete)
+        liveTasks.remove(task.id)
+        task.releaseThread()
+      case ResumeResult.Yielded(_) =>
+        task.setState(TaskState.Parked)
+      case ResumeResult.Error(err) =>
+        task.setState(TaskState.Failed(err.message))
+        liveTasks.remove(task.id)
+        task.releaseThread()
+        errorPolicy.onTaskError(task, err.message)
+
+    TaskHandle(threadRef, task)
+
+  // ── Defer task ────────────────────────────────────────────────────────
+
+  def deferTask(fnRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
+    val rawThread = binding.newThread(state)
+    val threadRef = binding.ref(state)
+    val id = idCounter.incrementAndGet()
+    val task = Task[H](threadRef, rawThread, None, id)
+    task.setState(TaskState.Queued)
+    liveTasks.put(id, task)
+
+    binding.pushRef(rawThread, fnRef.registryKey)
+    extraArgs.foreach { ref => binding.pushRef(rawThread, ref.registryKey) }
+
+    fnRef.close()
+    extraArgs.foreach(_.close())
+
+    runQueue.enqueue(ReadyTask[H](task, ResumeValues.None))
+    TaskHandle(threadRef, task)
+
+  // ── Schedule delayed ──────────────────────────────────────────────────
+
+  def scheduleDelayed(fnRef: Ref[H], extraArgs: List[Ref[H]], seconds: Double): TaskHandle[H] =
+    val rawThread = binding.newThread(state)
+    val threadRef = binding.ref(state)
+    val id = idCounter.incrementAndGet()
+    val task = Task[H](threadRef, rawThread, None, id)
+    task.setState(TaskState.Parked)
+    liveTasks.put(id, task)
+
+    binding.pushRef(rawThread, fnRef.registryKey)
+    extraArgs.foreach { ref => binding.pushRef(rawThread, ref.registryKey) }
+
+    fnRef.close()
+    extraArgs.foreach(_.close())
+
+    scheduleTimer(seconds) {
+      if task.state == TaskState.Parked then
+        task.setState(TaskState.Queued)
+        runQueue.enqueue(ReadyTask[H](task, ResumeValues.None))
+    }
+
+    TaskHandle(threadRef, task)
+
+  // ── Timer ─────────────────────────────────────────────────────────────
+
+  private val timer = new Timer("luau-scheduler-timer", true)
+
+  def scheduleTimer(seconds: Double)(callback: => Unit): Cancel =
+    val ms = (seconds * 1000).toLong
+    val timerTask = new TimerTask:
+      def run(): Unit = callback
+    timer.schedule(timerTask, ms)
+    () => timerTask.cancel()
+
+  // ── Cancel task ───────────────────────────────────────────────────────
+
+  def cancelTask(task: Task[H]): Unit =
+    val prev = task.state
+    if prev == TaskState.Parked || prev == TaskState.Queued then
+      task.setState(TaskState.Cancelled)
+      task.fireCancel()
+      liveTasks.remove(task.id)
+      task.releaseThread()
+
+  def cancelThread(threadRef: Ref[H]): Unit =
+    liveTasks.values.find { t =>
+      !t.threadRef.isClosed && t.threadRef.registryKey == threadRef.registryKey
+    }.foreach(cancelTask)
+
+  // ── Enqueue resume ────────────────────────────────────────────────────
+
+  def enqueueResume(task: Task[H], result: Either[LuaError, LuaValue]): Unit =
+    task.setState(TaskState.Queued)
+    val rv = result match
+      case Right(value) => ResumeValues.SuspendValue(value)
+      case Left(err)    => ResumeValues.Failure(err)
+    runQueue.enqueue(ReadyTask[H](task, rv))
+
   // ── Driver loop ───────────────────────────────────────────────────────
 
-  /** Drain the Run queue until empty. Returns number of Tasks resumed. */
   def runAllReady(): Int =
     var count = 0
     while
@@ -73,9 +192,11 @@ final class Scheduler[H](
     if task.state == TaskState.Cancelled then return
 
     task.setState(TaskState.Running)
+    _currentTask = Some(task)
     pushResumeValues(task, rt.values)
     val nargs = valueCount(rt.values)
     val result = binding.resume(task.thread, nargs)
+    _currentTask = None
 
     result match
       case ResumeResult.Returned(_) =>
@@ -108,7 +229,7 @@ final class Scheduler[H](
         task.clearCancel()
         task.setState(TaskState.Queued)
         val rv = either match
-          case Right(value) => ResumeValues.Success(value)
+          case Right(value) => ResumeValues.SuspendValue(value)
           case Left(err)    => ResumeValues.Failure(err)
         runQueue.enqueue(ReadyTask[H](task, rv))
 
@@ -121,11 +242,12 @@ final class Scheduler[H](
 
   private def pushResumeValues(task: Task[H], rv: ResumeValues): Unit =
     rv match
-      case ResumeValues.None            => ()
+      case ResumeValues.None                  => ()
+      case ResumeValues.SuspendValue(result)  => pushValue(task.thread, result)
       case ResumeValues.Success(result) =>
         binding.pushBoolean(task.thread, true)
         pushValue(task.thread, result)
-      case ResumeValues.Failure(err)    =>
+      case ResumeValues.Failure(err) =>
         binding.pushBoolean(task.thread, false)
         binding.pushString(task.thread, err.message)
 
@@ -139,9 +261,10 @@ final class Scheduler[H](
       case _: LuaValue.LuaRef[?]     => binding.pushNil(thread)
 
   private def valueCount(rv: ResumeValues): Int = rv match
-    case ResumeValues.None          => 0
-    case ResumeValues.Success(_)    => 2
-    case ResumeValues.Failure(_)    => 2
+    case ResumeValues.None                  => 0
+    case ResumeValues.SuspendValue(_)       => 1
+    case ResumeValues.Success(_)            => 2
+    case ResumeValues.Failure(_)            => 2
 
   // ── Teardown ──────────────────────────────────────────────────────────
 
@@ -153,4 +276,5 @@ final class Scheduler[H](
       task.releaseThread()
     }
     liveTasks.clear()
+    timer.cancel()
     binding.closeState(state)

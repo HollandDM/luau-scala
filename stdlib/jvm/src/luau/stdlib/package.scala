@@ -1,3 +1,3 @@
 package luau.stdlib
 
-// Placeholder. Real declarations added in their respective plans.
+// Public API: StdlibOpener, StdlibMask, TaskLibrary

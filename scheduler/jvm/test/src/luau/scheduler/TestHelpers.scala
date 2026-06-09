@@ -39,6 +39,9 @@ class TestBinding extends Binding[FakeState]:
     state.stack.addOne(LuaValue.Nil)
     thread
 
+  def pushCopy(state: FakeState, idx: Int): Unit =
+    FakeBinding.pushCopy(state, idx)
+
   def pushNil(state: FakeState): Unit       = FakeBinding.pushNil(state)
   def pushBoolean(state: FakeState, v: Boolean): Unit = FakeBinding.pushBoolean(state, v)
   def pushNumber(state: FakeState, v: Double): Unit   = FakeBinding.pushNumber(state, v)

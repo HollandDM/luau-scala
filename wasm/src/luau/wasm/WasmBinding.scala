@@ -93,9 +93,11 @@ final class WasmBinding private () extends Binding[Int]:
   override def pushFunction(state: Int, fnId: Int): Unit =
     module._lx_register_native(state, fnId, 0)
 
+  override def pushCopy(state: Int, idx: Int): Unit =
+    module._lx_push_copy(state, state, idx)
+
   override def pushRef(state: Int, registry: Int): Unit =
-    val thread = mainThread(state)
-    module._lx_push_ref(state, thread, registry)
+    module._lx_push_ref(state, state, registry)
 
   // ── Stack: read operations (non-raising) ───────────────────────────────
 
@@ -234,10 +236,10 @@ final class WasmBinding private () extends Binding[Int]:
   // ── Library loading / sandbox ──────────────────────────────────────────
 
   override def openLibs(state: Int, mask: Int): Unit =
-    module._lx_open_libs(state)
+    module._lx_openlibs(state, mask)
 
   override def sandbox(state: Int): Unit =
-    module._lx_open_libs(state)
+    module._lx_sandbox(state)
 
   // ── Internal helpers ───────────────────────────────────────────────────
 

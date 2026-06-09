@@ -336,11 +336,38 @@ int64_t lx_get_suspend_token(lx_State state, lx_Thread thread);
 /* Standard libraries                                                   */
 /* ------------------------------------------------------------------ */
 
+/* Bitmask values for lx_openlibs mask parameter */
+#define LX_LIB_BASE      (1u << 0)
+#define LX_LIB_MATH      (1u << 1)
+#define LX_LIB_STRING    (1u << 2)
+#define LX_LIB_TABLE     (1u << 3)
+#define LX_LIB_BIT32     (1u << 4)
+#define LX_LIB_UTF8      (1u << 5)
+#define LX_LIB_OS        (1u << 6)
+#define LX_LIB_COROUTINE (1u << 7)
+#define LX_LIB_VECTOR    (1u << 8)
+#define LX_LIB_BUFFER    (1u << 9)
+#define LX_LIB_DEBUG     (1u << 10)
+#define LX_LIB_STANDARD  (LX_LIB_BASE | LX_LIB_MATH | LX_LIB_STRING | LX_LIB_TABLE | \
+                          LX_LIB_BIT32 | LX_LIB_UTF8 | LX_LIB_OS | LX_LIB_COROUTINE | \
+                          LX_LIB_VECTOR | LX_LIB_BUFFER)
+
 /**
- * Open the safe Luau standard libraries: base, math, string, table,
- * coroutine, bit32, utf8, os (time/clock/date/difftime only), vector, buffer.
+ * Open standard libraries selected by mask into the given state.
+ * Returns 0 on success. Must be called before lx_sandbox.
+ */
+int  lx_openlibs(lx_State state, uint32_t mask);
+
+/**
+ * Null out unsafe globals (io, os.execute, os.exit, os.getenv, package,
+ * dofile, loadfile) and freeze the global table via luaL_sandbox.
+ * Must be called once, after all libraries and host tables are installed.
+ */
+void lx_sandbox(lx_State state);
+
+/**
+ * Open the safe Luau standard libraries (legacy, no mask).
  * Excludes: io, os.execute, os.exit, os.getenv, package, require.
- * Wraps luaL_openlibs with a sandbox filter.
  */
 void lx_open_libs(lx_State state);
 

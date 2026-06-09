@@ -28,6 +28,8 @@ trait Binding[H]:
 
   def pushNil(state: H): Unit
 
+  def pushCopy(state: H, idx: Int): Unit
+
   def pushBoolean(state: H, value: Boolean): Unit
 
   def pushNumber(state: H, value: Double): Unit

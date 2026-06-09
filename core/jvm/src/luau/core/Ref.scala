@@ -20,6 +20,9 @@ final class Ref[H] private[core] (
 
   def isClosed: Boolean = closed
 
+  /** The registry key for this Ref, used to push the value onto a stack. */
+  def registryKey: Int = registry
+
 object Ref:
   private[luau] def apply[H](
     state:    H,

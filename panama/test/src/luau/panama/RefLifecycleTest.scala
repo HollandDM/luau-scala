@@ -12,7 +12,7 @@ class RefLifecycleTest extends munit.FunSuite:
       assertEquals(ps.stackTop(ps.L), 1)
       ps.pop(ps.L, 1)
       assertEquals(ps.stackTop(ps.L), 0)
-      ps.pushRef(ps.L, ref.registry)
+      ps.pushRef(ps.L, ref.registryKey)
       assertEquals(ps.stackTop(ps.L), 1)
       assertEquals(ps.typeAt(ps.L, -1), LuaType.Table)
     }

@@ -1,10 +1,10 @@
 import mill._, scalalib._, scalajslib._, scalafmt._
 
-val scalaVersion      = "3.4.2"
-val scalaJSVersion    = "1.16.0"
-val zioVersion        = "2.1.6"
-val catsEffectVersion = "3.5.4"
-val munitVersion      = "1.0.0"
+val scalaVersion      = "3.7.4"
+val scalaJSVersion    = "1.21.0"
+val zioVersion        = "2.1.16"
+val catsEffectVersion = "3.6.0"
+val munitVersion      = "1.2.0"
 
 trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
   def scalaVersion = build.scalaVersion
@@ -105,6 +105,7 @@ object stdlib extends Module {
     def moduleDeps = Seq(scheduler.jvm)
     def sources    = T.sources { millSourcePath / "src" }
     object test extends ScalaTests with TestModule.Munit {
+      def moduleDeps = Seq(core.jvm, scheduler.jvm, core.jvm.test, scheduler.jvm.test)
       def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
     }
   }
@@ -272,6 +273,8 @@ object shim extends Module {
       "_lx_get_suspend_token",
       "_lx_set_global",
       "_lx_get_global",
+      "_lx_openlibs",
+      "_lx_sandbox",
       "_lx_open_libs",
       "_lx_gc_step",
       "_lx_gc_collect",

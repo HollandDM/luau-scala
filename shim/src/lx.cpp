@@ -341,31 +341,44 @@ void lx_get_global(lx_State state, const char* name) {
 // Standard libraries
 // -----------------------------------------------------------------------
 
-void lx_open_libs(lx_State state) {
+int lx_openlibs(lx_State state, uint32_t mask) {
     lua_State* L = static_cast<lua_State*>(state);
-    luaL_openlibs(L);
 
-    static const char* const blocked[] = {
-        "io", "require", "dofile", "loadfile", "load", "loadstring",
-        nullptr
-    };
-    for (int i = 0; blocked[i]; i++) {
-        lua_pushnil(L);
-        lua_setglobal(L, blocked[i]);
+    if (mask & LX_LIB_BASE)      luaopen_base(L);
+    if (mask & LX_LIB_MATH)      luaopen_math(L);
+    if (mask & LX_LIB_STRING)    luaopen_string(L);
+    if (mask & LX_LIB_TABLE)     luaopen_table(L);
+    if (mask & LX_LIB_BIT32)     luaopen_bit32(L);
+    if (mask & LX_LIB_UTF8)      luaopen_utf8(L);
+    if (mask & LX_LIB_COROUTINE) luaopen_coroutine(L);
+    if (mask & LX_LIB_VECTOR)    luaopen_vector(L);
+    if (mask & LX_LIB_BUFFER)    luaopen_buffer(L);
+    if (mask & LX_LIB_DEBUG)     luaopen_debug(L);
+    if (mask & LX_LIB_OS) {
+        luaopen_os(L);
+        lua_getglobal(L, "os");
+        lua_pushnil(L); lua_setfield(L, -2, "execute");
+        lua_pushnil(L); lua_setfield(L, -2, "exit");
+        lua_pushnil(L); lua_setfield(L, -2, "getenv");
+        lua_pop(L, 1);
     }
 
-    lua_getglobal(L, "os");
-    if (lua_type(L, -1) == LUA_TTABLE) {
-        static const char* const blocked_os[] = {
-            "execute", "exit", "getenv", "remove", "rename", "tmpname",
-            nullptr
-        };
-        for (int i = 0; blocked_os[i]; i++) {
-            lua_pushnil(L);
-            lua_setfield(L, -2, blocked_os[i]);
-        }
-    }
-    lua_pop(L, 1);
+    lua_pushnil(L); lua_setglobal(L, "dofile");
+    lua_pushnil(L); lua_setglobal(L, "loadfile");
+    lua_pushnil(L); lua_setglobal(L, "require");
+    lua_pushnil(L); lua_setglobal(L, "io");
+    lua_pushnil(L); lua_setglobal(L, "package");
+
+    return 0;
+}
+
+void lx_sandbox(lx_State state) {
+    lua_State* L = static_cast<lua_State*>(state);
+    luaL_sandbox(L);
+}
+
+void lx_open_libs(lx_State state) {
+    lx_openlibs(state, LX_LIB_STANDARD);
 }
 
 // -----------------------------------------------------------------------

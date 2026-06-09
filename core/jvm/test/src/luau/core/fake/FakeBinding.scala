@@ -26,6 +26,9 @@ object FakeBinding extends Binding[FakeState]:
 
   // ---- Push -----------------------------------------------------------
 
+  def pushCopy(state: FakeState, idx: Int): Unit =
+    state.stack.addOne(state.valueAt(idx))
+
   def pushNil(state: FakeState): Unit     = state.stack.addOne(LuaValue.Nil)
   def pushBoolean(state: FakeState, v: Boolean): Unit =
     state.stack.addOne(LuaValue.Bool(v))

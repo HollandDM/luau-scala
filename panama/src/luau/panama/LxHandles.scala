@@ -86,7 +86,9 @@ object LxHandles:
   val lx_get_suspend_token: MethodHandle = handle("lx_get_suspend_token",
     FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS))
 
-  val lx_open_libs:  MethodHandle = handle("lx_open_libs",  FunctionDescriptor.ofVoid(ADDRESS))
+  val lx_openlibs:  MethodHandle = handle("lx_openlibs",  FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
+  val lx_sandbox:   MethodHandle = handle("lx_sandbox",   FunctionDescriptor.ofVoid(ADDRESS))
+  val lx_open_libs: MethodHandle = handle("lx_open_libs", FunctionDescriptor.ofVoid(ADDRESS))
   val lx_gc_step:    MethodHandle = handle("lx_gc_step",    FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
   val lx_gc_collect: MethodHandle = handle("lx_gc_collect", FunctionDescriptor.ofVoid(ADDRESS))
 

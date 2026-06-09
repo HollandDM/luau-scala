@@ -213,11 +213,14 @@ final class PanamaState private (
     LxHandles.lx_rawset.invokeExact(L, state, LUA_GLOBALSINDEX): Unit
     LxHandles.lx_unref.invokeExact(L, saved): Unit
 
+  def pushCopy(state: MemorySegment, idx: Int): Unit =
+    LxHandles.lx_push_copy.invokeExact(L, state, idx): Unit
+
   def openLibs(state: MemorySegment, mask: Int): Unit =
-    LxHandles.lx_open_libs.invokeExact(state): Unit
+    LxHandles.lx_openlibs.invokeExact(state, mask): Unit
 
   def sandbox(state: MemorySegment): Unit =
-    LxHandles.lx_open_libs.invokeExact(state): Unit
+    LxHandles.lx_sandbox.invokeExact(state): Unit
 
   def close(): Unit =
     if !closed then
