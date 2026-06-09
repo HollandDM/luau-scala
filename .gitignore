@@ -1,14 +1,3 @@
-out/
-.idea/
-.bsp/
-.metals/
-.scala-build/
-node_modules/
-*.js.map
-*.so
-*.dylib
-*.o
-*.a
-.DS_Store
-*.bc
-*.ll
+*.wasm
+out-wasm/
+wasm/test/resources/luau-shim.*

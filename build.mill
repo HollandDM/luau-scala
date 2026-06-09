@@ -1,4 +1,5 @@
 import mill._, scalalib._, scalajslib._, scalafmt._
+import mill.scalajslib.api.ModuleKind
 
 val scalaVersion       = "3.8.3"
 val scalaJSVersion     = "1.21.0"
@@ -20,6 +21,7 @@ trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
 
 trait LuauCrossPlatformJSModule extends LuauCrossPlatformModule with ScalaJSModule {
   def scalaJSVersion = build.scalaJSVersion
+  def moduleKind = ModuleKind.CommonJSModule
 }
 
 object core extends Module {
@@ -52,71 +54,9 @@ object wasm extends LuauCrossPlatformJSModule {
   override def moduleDeps = super.moduleDeps ++ Seq(core.js)
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-  }
-}
-
-object scheduler extends Module {
-  object jvm extends LuauCrossPlatformModule {
-    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm)
-    object test extends ScalaTests with TestModule.Munit {
-      override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, core.jvm.test)
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    }
-  }
-  object js extends LuauCrossPlatformJSModule {
-    override def moduleDeps = super.moduleDeps ++ Seq(core.js)
-    object test extends ScalaJSTests with TestModule.Munit {
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    }
-  }
-}
-
-object stdlib extends Module {
-  object jvm extends LuauCrossPlatformModule {
-    override def moduleDeps = super.moduleDeps ++ Seq(scheduler.jvm)
-    object test extends ScalaTests with TestModule.Munit {
-      override def moduleDeps = super.moduleDeps ++ Seq(scheduler.jvm, core.jvm, scheduler.jvm.test)
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    }
-  }
-  object js extends LuauCrossPlatformJSModule {
-    override def moduleDeps = super.moduleDeps ++ Seq(scheduler.js)
-    def scalaSource = Task.Sources { os.pwd / "stdlib" / "jvm" / "src" }
-    object test extends ScalaJSTests with TestModule.Munit {
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    }
-  }
-}
-
-object zio extends LuauCrossPlatformModule {
-  override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, scheduler.jvm)
-  def platformDeps = Seq(
-    mvn"dev.zio::zio::${build.zioVersion}",
-    mvn"dev.zio::zio-streams::${build.zioVersion}"
-  )
-  object test extends ScalaTests with TestModule.Munit {
-    def mvnDeps = Seq(
-      mvn"org.scalameta::munit::${build.munitVersion}",
-      mvn"dev.zio::zio-test::${build.zioVersion}",
-      mvn"dev.zio::zio-test-sbt::${build.zioVersion}"
-    )
-  }
-}
-
-object ce extends Module {
-  object jvm extends LuauCrossPlatformModule {
-    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, scheduler.jvm)
-    def platformDeps = Seq(mvn"org.typelevel::cats-effect::${build.catsEffectVersion}")
-    object test extends ScalaTests with TestModule.Munit {
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    }
-  }
-  object js extends LuauCrossPlatformJSModule {
-    override def moduleDeps = super.moduleDeps ++ Seq(core.js, scheduler.js)
-    def platformDeps = Seq(mvn"org.typelevel::cats-effect::${build.catsEffectVersion}")
-    def scalaSource = Task.Sources { os.pwd / "ce" / "jvm" / "src" }
-    object test extends ScalaJSTests with TestModule.Munit {
-      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
+    override def forkEnv = Task {
+      val wasmPath = shim.wasmBuildNative().path / "luau-shim.wasm"
+      super.forkEnv() ++ Map("LUAU_WASM_PATH" -> wasmPath.toString)
     }
   }
 }
@@ -125,6 +65,7 @@ object shim extends Module {
 
   def shimSrcDir    = Task { os.pwd / "shim" }
   def shimIncDir    = Task { os.pwd / "shim" / "include" }
+  def shimSource    = Task.Source(os.pwd / "shim")
   def luauIncVm     = Task { os.pwd / "shim" / "luau" / "VM" / "include" }
   def luauIncCommon = Task { os.pwd / "shim" / "luau" / "Common" / "include" }
   def luauIncCompiler = Task { os.pwd / "shim" / "luau" / "Compiler" / "include" }
@@ -223,12 +164,17 @@ object shim extends Module {
     PathRef(dest / "luau-shim.wasm")
   }
 
-  def copyWasmToResources: Task[Unit] = Task {
-    val wasmDest = wasmBuild().path
-    val jsDest   = wasmDest / os.up / "luau-shim.js"
-    val resDir   = os.pwd / "wasm" / "test" / "resources"
-    os.makeDir.all(resDir)
-    os.copy.over(wasmDest, resDir / "luau-shim.wasm")
-    os.copy.over(jsDest,   resDir / "luau-shim.js")
+  def wasmBuildNative = Task {
+    val projectRoot = os.Path(sys.env("PWD"))
+    val script = projectRoot / "shim" / "build-wasm.sh"
+    os.proc("/usr/bin/bash", script.toString, Task.dest.toString).call(
+      cwd = projectRoot,
+      stdout = os.Inherit,
+      stderr = os.Inherit
+    )
+    val wasmFile = Task.dest / "luau-shim.wasm"
+    if !os.exists(wasmFile) then
+      sys.error("WASM not produced at $wasmFile")
+    PathRef(Task.dest)
   }
 }

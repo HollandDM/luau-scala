@@ -9,6 +9,8 @@ extern "C" {
 #include <cstdint>
 #include <cstdio>
 
+extern "C" {
+
 // Per-state metadata not held by lua_State itself.
 struct LxStateData {
     lx_HostFn  upcall;
@@ -85,7 +87,7 @@ static int lx_trampoline(lua_State* L) {
 lx_State lx_newstate(lx_HostFn upcall) {
     lua_State* L = luaL_newstate();
     if (!L) return nullptr;
-    LxStateData* d = new (std::nothrow) LxStateData{upcall, 0};
+    LxStateData* d = new LxStateData{upcall, 0};
     if (!d) { lua_close(L); return nullptr; }
     lua_setthreaddata(L, d);
     return static_cast<lx_State>(L);
@@ -119,7 +121,7 @@ int lx_thread_status(lx_State state, lx_Thread thread) {
         case LUA_CORUN:  return 0;
         case LUA_COSUS:  return 1;
         case LUA_CONOR:  return 3;
-        case LUA_CODEAD: return 2;
+        case LUA_COFIN: return 2;
         default:         return 2;
     }
 }
@@ -250,7 +252,7 @@ int lx_to_lstring(lx_State s, lx_Thread t, int idx,
 }
 
 size_t lx_rawlen(lx_State s, lx_Thread t, int idx) {
-    return (size_t)lua_rawlen(T(t), idx);
+    return (size_t)lua_objlen(T(t), idx);
 }
 
 // -----------------------------------------------------------------------
@@ -408,3 +410,4 @@ size_t lx_copy_error(lx_State s, lx_Thread t,
     errbuf[copy] = '\0';
     return copy;
 }
+} /* extern "C" */

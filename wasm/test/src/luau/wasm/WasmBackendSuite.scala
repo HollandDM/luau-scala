@@ -1,15 +1,13 @@
 package luau.wasm
 
 import luau.core.{Binding, SharedBackendSuite}
-import scala.concurrent.Await
-import scala.concurrent.duration.*
 
 class WasmBackendSuite extends SharedBackendSuite:
 
   private var binding: WasmBinding = scala.compiletime.uninitialized
 
   override def beforeAll(): Unit =
-    Await.result(WasmBackend.load(), 10.seconds)
+    WasmBackend.load()
     binding = WasmBackend.createBinding()
 
   override def afterAll(): Unit =

@@ -1,13 +1,10 @@
 package luau.wasm
 
 import scala.scalajs.js
-import scala.scalajs.js.annotation.*
-import scala.concurrent.{Future, ExecutionContext}
 
-object LuauWasmLoader {
+object LuauWasmLoader:
 
-  def load()(using ec: ExecutionContext): Future[WasmModuleExports] = {
-    val factory = LuauShimFactory.apply(js.Dynamic.literal())
-    factory.toFuture
-  }
-}
+  def load(): Unit =
+    val exports = LuauShimFactory(js.Dynamic.literal())
+    WasmModule.set(exports)
+    Trampoline.install()

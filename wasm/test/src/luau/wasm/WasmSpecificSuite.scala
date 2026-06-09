@@ -1,13 +1,11 @@
 package luau.wasm
 
 import munit.FunSuite
-import scala.concurrent.Await
-import scala.concurrent.duration.*
 
 class WasmSpecificSuite extends FunSuite:
 
   override def beforeAll(): Unit =
-    Await.result(WasmBackend.load(), 10.seconds)
+    WasmBackend.load()
 
   test("TC-WASM-01 WasmBackend.load() resolves"):
     assert(WasmModule.module != null)
