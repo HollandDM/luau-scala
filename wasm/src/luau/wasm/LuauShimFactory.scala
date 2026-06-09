@@ -29,12 +29,6 @@ object LuauShimFactory:
     ).map(b => (b.asInstanceOf[Int] & 0xff).toShort))
     js.Dynamic.newInstance(WA.Module)(bytes)
 
-  private def wrapFactory: js.Dynamic =
-    js.Dynamic.newInstance(js.Dynamic.global.Function)(
-      "f", "r",
-      "return function(){r();return f.apply(null,arguments)}"
-    )
-
   def apply(options: js.Object = js.Dynamic.literal()): WasmModuleExports =
     val env = js.Dynamic.global.process.env
     val wasmPath = env.selectDynamic("LUAU_WASM_PATH")
@@ -74,19 +68,21 @@ object LuauShimFactory:
     val mem = ex.memory
     val tbl = ex.__indirect_function_table
 
-    var HEAPU8 = new Uint8Array(mem.buffer.asInstanceOf[js.typedarray.ArrayBuffer])
-    var HEAP32 = new Int32Array(mem.buffer.asInstanceOf[js.typedarray.ArrayBuffer])
-    def refresh(): Unit =
-      val b = mem.buffer.asInstanceOf[js.typedarray.ArrayBuffer]
-      HEAPU8 = new Uint8Array(b)
-      HEAP32 = new Int32Array(b)
-
-    val refreshFn: js.Function = { () => refresh() }: js.Function
-    val prefix  = js.Dynamic.literal()
-
-    val api = js.Dynamic.literal(HEAPU8 = HEAPU8, HEAP32 = HEAP32).asInstanceOf[js.Dictionary[js.Any]]
-    api("_malloc")            = { (s: js.BigInt) => refresh(); ex.malloc(s) }: js.Function
-    api("_free")              = { (p: js.BigInt) => refresh(); ex.free(p) }: js.Function
+    // HEAPU8/HEAP32 are getters returning a *fresh* typed-array view of current
+    // linear memory. wasm memory growth detaches the backing ArrayBuffer, so a
+    // cached view goes stale ("detached ArrayBuffer"); rebuild on every access.
+    val prefix = js.Dynamic.literal()
+    val api = js.Dynamic.literal().asInstanceOf[js.Dictionary[js.Any]]
+    js.Dynamic.global.Object.defineProperty(api, "HEAPU8", js.Dynamic.literal(
+      configurable = true, enumerable = true,
+      get = { () => new Uint8Array(mem.buffer.asInstanceOf[js.typedarray.ArrayBuffer]) }: js.Function,
+    ))
+    js.Dynamic.global.Object.defineProperty(api, "HEAP32", js.Dynamic.literal(
+      configurable = true, enumerable = true,
+      get = { () => new Int32Array(mem.buffer.asInstanceOf[js.typedarray.ArrayBuffer]) }: js.Function,
+    ))
+    api("_malloc")            = { (s: Int) => ex.malloc(s) }: js.Function
+    api("_free")              = { (p: Int) => ex.free(p) }: js.Function
     api("addFunction")        = { (fn: js.Function, sig: String) =>
       // Grow the indirect function table and use the fresh slot. The table is
       // built with `--growable-table`; never overwrite the wasm's own in-use
@@ -123,7 +119,7 @@ object LuauShimFactory:
       val wasmName = if js.typeOf(src) != "undefined" then src.asInstanceOf[String] else n
       val fn = ex.selectDynamic(wasmName)
       if js.typeOf(fn) != "undefined" then
-        api("_" + n) = wrapFactory(fn, refreshFn)
+        api("_" + n) = fn
       i += 1
 
     api.asInstanceOf[WasmModuleExports]
