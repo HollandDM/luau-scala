@@ -48,7 +48,7 @@ object panama extends LuauCrossPlatformModule {
   def generatedSources = T.sources { millSourcePath / "src" / "generated" }
 
   def generateBindings: T[Unit] = T {
-    val headerFile  = millSourcePath / os.up / "shim" / "include" / "luau_shim.h"
+    val headerFile  = millSourcePath / os.up / "shim" / "include" / "lx.h"
     val outDir      = millSourcePath / "src" / "generated"
     os.makeDir.all(outDir)
     val jextractCmd = Seq(
@@ -164,11 +164,40 @@ object shim extends Module {
   def shimIncDir    = T { millSourcePath / "include" }
   def luauIncVm     = T { millSourcePath / "luau" / "VM" / "include" }
   def luauIncCommon = T { millSourcePath / "luau" / "Common" / "include" }
+  def luauIncCompiler = T { millSourcePath / "luau" / "Compiler" / "include" }
+  def luauIncAst    = T { millSourcePath / "luau" / "Ast" / "include" }
+  def luauIncBytecode = T { millSourcePath / "luau" / "Bytecode" / "include" }
+  def luauVmDir     = T { millSourcePath / "luau" / "VM" }
+  def luauCompilerDir = T { millSourcePath / "luau" / "Compiler" }
+  def luauAstDir    = T { millSourcePath / "luau" / "Ast" }
+  def luauBytecodeDir = T { millSourcePath / "luau" / "Bytecode" }
+  def luauCommonDir = T { millSourcePath / "luau" / "Common" }
 
   def luauSubmoduleHead: T[String] = T.input {
     val headFile = millSourcePath / "luau" / ".git" / "HEAD"
     if (os.exists(headFile)) os.read(headFile).trim
     else "absent"
+  }
+
+  /** Collect all Luau .cpp sources from the submodule dirs. */
+  def luauSources: T[Seq[os.Path]] = T {
+    val dirs = Seq(luauVmDir(), luauCompilerDir(), luauAstDir(), luauBytecodeDir(), luauCommonDir())
+    dirs.flatMap { d =>
+      val srcDir = d / "src"
+      if (os.exists(srcDir)) os.list(srcDir).filter(_.ext == "cpp")
+      else Seq.empty[os.Path]
+    }
+  }
+
+  def allIncludeDirs: T[Seq[String]] = T {
+    Seq(
+      shimIncDir().toString,
+      luauIncVm().toString,
+      luauIncCommon().toString,
+      luauIncCompiler().toString,
+      luauIncAst().toString,
+      luauIncBytecode().toString
+    )
   }
 
   def nativePlatform: T[(String, Seq[String])] = T {
@@ -183,19 +212,15 @@ object shim extends Module {
     val (ext, lflags) = nativePlatform()
     val outLib      = dest / s"libluau-shim.$ext"
 
-    val srcFile     = shimSrcDir() / "src" / "shim.cpp"
-    val includeDirs = Seq(
-      shimIncDir().toString,
-      luauIncVm().toString,
-      luauIncCommon().toString
-    )
-    val includeArgs = includeDirs.flatMap(d => Seq("-I", d))
+    val srcFile     = shimSrcDir() / "src" / "lx.cpp"
+    val includeArgs = allIncludeDirs().flatMap(d => Seq("-I", d))
+    val luauSrcs    = luauSources().map(_.toString)
 
     val compileCmd = Seq("clang++") ++
       Seq("-std=c++17", "-O2", "-fvisibility=hidden") ++
       includeArgs ++
       lflags ++
-      Seq("-o", outLib.toString, srcFile.toString)
+      Seq("-o", outLib.toString, srcFile.toString) ++ luauSrcs
 
     os.proc(compileCmd).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
 
@@ -207,20 +232,64 @@ object shim extends Module {
     val dest    = T.dest
     val outJs   = dest / "luau-shim.js"
 
-    val srcFile = shimSrcDir() / "src" / "shim.cpp"
-    val includeDirs = Seq(
-      shimIncDir().toString,
-      luauIncVm().toString,
-      luauIncCommon().toString
-    )
-    val includeArgs = includeDirs.flatMap(d => Seq("-I", d))
+    val srcFile   = shimSrcDir() / "src" / "lx.cpp"
+    val includeArgs = allIncludeDirs().flatMap(d => Seq("-I", d))
+    val luauSrcs  = luauSources().map(_.toString)
 
     val exportedFunctions = Seq(
-      "_lx_version",
       "_lx_newstate",
       "_lx_close",
-      "_lx_resume"
+      "_lx_main_thread",
+      "_lx_new_thread",
+      "_lx_thread_status",
+      "_lx_compile_and_load",
+      "_lx_resume",
+      "_lx_push_nil",
+      "_lx_push_boolean",
+      "_lx_push_number",
+      "_lx_push_integer",
+      "_lx_push_lstring",
+      "_lx_push_ref",
+      "_lx_push_copy",
+      "_lx_pop",
+      "_lx_stack_top",
+      "_lx_type",
+      "_lx_to_number",
+      "_lx_to_integer",
+      "_lx_to_boolean",
+      "_lx_to_lstring",
+      "_lx_rawlen",
+      "_lx_newtable",
+      "_lx_rawget",
+      "_lx_rawset",
+      "_lx_rawgeti",
+      "_lx_rawseti",
+      "_lx_setarray",
+      "_lx_ref",
+      "_lx_unref",
+      "_lx_register_native",
+      "_lx_set_suspend_token",
+      "_lx_get_suspend_token",
+      "_lx_open_libs",
+      "_lx_gc_step",
+      "_lx_gc_collect",
+      "_lx_copy_error",
+      "_malloc",
+      "_free"
     ).mkString("[", ",", "]")
+
+    val exportedRuntimeMethods = Seq(
+      "addFunction",
+      "removeFunction",
+      "dynCall_iii",
+      "dynCall_iiiiii",
+      "ccall",
+      "cwrap",
+      "getValue",
+      "setValue",
+      "UTF8ToString",
+      "stringToUTF8"
+    ).mkString("[\"", "\",\"", "\"]")
 
     val emccCmd = Seq("emcc") ++
       Seq("-std=c++17", "-O2") ++
@@ -228,15 +297,17 @@ object shim extends Module {
       Seq(
         "-s", "WASM=1",
         "-s", s"EXPORTED_FUNCTIONS=$exportedFunctions",
-        "-s", "EXPORTED_RUNTIME_METHODS=[ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,_malloc,_free]",
+        "-s", s"EXPORTED_RUNTIME_METHODS=$exportedRuntimeMethods",
         "-s", "MODULARIZE=1",
-        "-s", "EXPORT_ES6=1",
-        "-s", "ENVIRONMENT=node",
+        "-s", "EXPORT_NAME='LuauShim'",
         "-s", "ALLOW_MEMORY_GROWTH=1",
+        "-s", "ALLOW_TABLE_GROWTH=1",
         "-s", "STACK_SIZE=1048576",
+        "-s", "ENVIRONMENT='node,web,worker'",
+        "--no-entry",
         "-o", outJs.toString,
         srcFile.toString
-      )
+      ) ++ luauSrcs
 
     os.proc(emccCmd).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
 
