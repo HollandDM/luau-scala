@@ -265,7 +265,7 @@ object PanamaState:
     val dispatcher = new NativeFnDispatcher()
     val stub = dispatcher.allocateUpcallStub(stateArena)
     val L = LxHandles.lx_newstate.invokeExact(stub).asInstanceOf[MemorySegment]
-    if L == MemorySegment.NULL then
+    if L.address() == 0L then
       stateArena.close()
       throw new OutOfMemoryError("lx_newstate returned NULL")
     val ps = new PanamaState(L, stateArena, dispatcher)

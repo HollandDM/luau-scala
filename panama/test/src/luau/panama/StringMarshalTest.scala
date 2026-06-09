@@ -1,6 +1,6 @@
 package luau.panama
 
-import java.lang.foreign.MemorySegment
+import java.lang.foreign.{Arena, MemorySegment, ValueLayout}
 import luau.core.*
 
 class StringMarshalTest extends munit.FunSuite:
@@ -36,12 +36,10 @@ class StringMarshalTest extends munit.FunSuite:
   }
 
   test("toNativeString allocates null-terminated C string".ignore) {
-    val arena = Arena.ofConfined()
-    try
-      val seg = Marshal.toNativeString("abc", arena)
-      assertEquals(seg.get(ValueLayout.JAVA_BYTE, 0L), 97.toByte)
-      assertEquals(seg.get(ValueLayout.JAVA_BYTE, 1L), 98.toByte)
-      assertEquals(seg.get(ValueLayout.JAVA_BYTE, 2L), 99.toByte)
-      assertEquals(seg.get(ValueLayout.JAVA_BYTE, 3L), 0.toByte)
-    finally arena.close()
+    val arena = Arena.ofAuto()
+    val seg = Marshal.toNativeString("abc", arena)
+    assertEquals(seg.get(ValueLayout.JAVA_BYTE, 0L), 97.toByte)
+    assertEquals(seg.get(ValueLayout.JAVA_BYTE, 1L), 98.toByte)
+    assertEquals(seg.get(ValueLayout.JAVA_BYTE, 2L), 99.toByte)
+    assertEquals(seg.get(ValueLayout.JAVA_BYTE, 3L), 0.toByte)
   }

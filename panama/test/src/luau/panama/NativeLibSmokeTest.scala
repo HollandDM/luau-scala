@@ -6,13 +6,13 @@ class NativeLibSmokeTest extends FunSuite:
 
   test("lx_newstate returns non-null pointer".ignore) {
     PanamaState.use { ps =>
-      assertNot(ps.L, MemorySegment.NULL)
+      assert(ps.L.address() != 0L, s"Expected non-null state pointer")
     }
   }
 
   test("PanamaState.open() and close() lifecycle".ignore) {
     val ps = PanamaState.open()
-    assertNot(ps.L, MemorySegment.NULL)
+    assert(ps.L.address() != 0L, s"Expected non-null state pointer")
     ps.close()
     assert(ps.isClosed)
   }

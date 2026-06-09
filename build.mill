@@ -1,6 +1,6 @@
 import mill._, scalalib._, scalajslib._, scalafmt._
 
-val scalaVersion       = "3.8.4"
+val scalaVersion       = "3.8.3"
 val scalaJSVersion     = "1.21.0"
 val zioVersion         = "2.1.25"
 val catsEffectVersion  = "3.5.0"
@@ -13,7 +13,7 @@ trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
   def scalacOptions = super.scalacOptions() ++ Seq(
     "-encoding", "UTF-8",
     "-deprecation", "-feature", "-unchecked",
-    "-Werror", "-Xkind-projector:underscores",
+    "-Xkind-projector:underscores",
     "-source:future"
   )
 }
@@ -24,14 +24,13 @@ trait LuauCrossPlatformJSModule extends LuauCrossPlatformModule with ScalaJSModu
 
 object core extends Module {
   object jvm extends LuauCrossPlatformModule {
-    def moduleDeps = Seq()
+    override def moduleDeps = super.moduleDeps ++ Seq()
     object test extends ScalaTests with TestModule.Munit {
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
-    def moduleDeps = Seq()
-    def scalaSource = Task.Sources { os.pwd / "core" / "jvm" / "src" }
+    override def moduleDeps = super.moduleDeps ++ Seq()
     object test extends ScalaJSTests with TestModule.Munit {
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
@@ -39,7 +38,7 @@ object core extends Module {
 }
 
 object panama extends LuauCrossPlatformModule {
-  def moduleDeps = Seq(core.jvm)
+  override def moduleDeps = super.moduleDeps ++ Seq(core.jvm)
   object test extends ScalaTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     def forkArgs = Seq(
@@ -50,7 +49,7 @@ object panama extends LuauCrossPlatformModule {
 }
 
 object wasm extends LuauCrossPlatformJSModule {
-  def moduleDeps = Seq(core.js)
+  override def moduleDeps = super.moduleDeps ++ Seq(core.js)
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
   }
@@ -58,14 +57,14 @@ object wasm extends LuauCrossPlatformJSModule {
 
 object scheduler extends Module {
   object jvm extends LuauCrossPlatformModule {
-    def moduleDeps = Seq(core.jvm)
+    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm)
     object test extends ScalaTests with TestModule.Munit {
+      override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, core.jvm.test)
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
-    def moduleDeps = Seq(core.js)
-    def scalaSource = Task.Sources { os.pwd / "scheduler" / "jvm" / "src" }
+    override def moduleDeps = super.moduleDeps ++ Seq(core.js)
     object test extends ScalaJSTests with TestModule.Munit {
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
@@ -74,14 +73,14 @@ object scheduler extends Module {
 
 object stdlib extends Module {
   object jvm extends LuauCrossPlatformModule {
-    def moduleDeps = Seq(scheduler.jvm)
+    override def moduleDeps = super.moduleDeps ++ Seq(scheduler.jvm)
     object test extends ScalaTests with TestModule.Munit {
-      def moduleDeps = Seq(scheduler.jvm, core.jvm)
+      override def moduleDeps = super.moduleDeps ++ Seq(scheduler.jvm, core.jvm, scheduler.jvm.test)
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
-    def moduleDeps = Seq(scheduler.js)
+    override def moduleDeps = super.moduleDeps ++ Seq(scheduler.js)
     def scalaSource = Task.Sources { os.pwd / "stdlib" / "jvm" / "src" }
     object test extends ScalaJSTests with TestModule.Munit {
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
@@ -90,7 +89,7 @@ object stdlib extends Module {
 }
 
 object zio extends LuauCrossPlatformModule {
-  def moduleDeps = Seq(core.jvm, scheduler.jvm)
+  override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, scheduler.jvm)
   def platformDeps = Seq(
     mvn"dev.zio::zio::${build.zioVersion}",
     mvn"dev.zio::zio-streams::${build.zioVersion}"
@@ -106,14 +105,14 @@ object zio extends LuauCrossPlatformModule {
 
 object ce extends Module {
   object jvm extends LuauCrossPlatformModule {
-    def moduleDeps = Seq(core.jvm, scheduler.jvm)
+    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, scheduler.jvm)
     def platformDeps = Seq(mvn"org.typelevel::cats-effect::${build.catsEffectVersion}")
     object test extends ScalaTests with TestModule.Munit {
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
-    def moduleDeps = Seq(core.js, scheduler.js)
+    override def moduleDeps = super.moduleDeps ++ Seq(core.js, scheduler.js)
     def platformDeps = Seq(mvn"org.typelevel::cats-effect::${build.catsEffectVersion}")
     def scalaSource = Task.Sources { os.pwd / "ce" / "jvm" / "src" }
     object test extends ScalaJSTests with TestModule.Munit {

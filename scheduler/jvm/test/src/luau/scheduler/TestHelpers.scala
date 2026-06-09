@@ -86,7 +86,7 @@ final class ControllableAsync:
 
   val suspend: Suspend = Suspend { r =>
     resume = r
-    () => cancelled = true
+    Cancel(() => cancelled = true)
   }
 
 /** Build a Scheduler over TestBinding with programmable resume behavior. */

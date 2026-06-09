@@ -28,7 +28,8 @@ class SchedulerTests extends munit.FunSuite:
     assertEquals(task.state, TaskState.Parked)
     assert(async.resume != null, "register() was called")
 
-    async.resume(Right(LuaValue.Nil))
+    val r0 = async.resume
+    if r0 != null then r0.asInstanceOf[Resume].complete(Right(LuaValue.Nil))
     assertEquals(task.state, TaskState.Queued)
     sched.runAllReady()
     assertEquals(task.state, TaskState.Complete)
@@ -47,8 +48,8 @@ class SchedulerTests extends munit.FunSuite:
 
     val r = async.resume
     assert(r != null, "resume was captured")
-    r(Right(LuaValue.Nil))
-    r(Right(LuaValue.Nil))
+    if r != null then r.asInstanceOf[Resume].complete(Right(LuaValue.Nil))
+    if r != null then r.asInstanceOf[Resume].complete(Right(LuaValue.Nil))
 
     assertEquals(sched.runAllReady(), 1)
 
@@ -132,7 +133,8 @@ class SchedulerTests extends munit.FunSuite:
     sched.runAllReady()
     assertEquals(task.state, TaskState.Parked)
 
-    async.resume(Right(LuaValue.Nil))
+    val r1 = async.resume
+    if r1 != null then r1.asInstanceOf[Resume].complete(Right(LuaValue.Nil))
     task.setState(TaskState.Cancelled)
     sched.runAllReady()
     assertEquals(task.state, TaskState.Cancelled)

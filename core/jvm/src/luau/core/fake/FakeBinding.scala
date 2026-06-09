@@ -53,7 +53,8 @@ object FakeBinding extends Binding[FakeState]:
       case _: LuaValue.Bool       => LuaType.Boolean
       case _: LuaValue.Number     => LuaType.Number
       case _: LuaValue.LuaString  => LuaType.String
-      case _: LuaValue.LuaRef  => LuaType.Table
+      case _: FakeTable           => LuaType.Table
+      case _: LuaValue.LuaRef     => LuaType.Table
       case _                      => LuaType.Nil
 
   def toNumber(state: FakeState, idx: Int): Option[Double] =

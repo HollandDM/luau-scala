@@ -82,7 +82,9 @@ trait WasmModuleExports extends js.Object:
   def _lx_get_suspend_token(state: Int, thread: Int): js.BigInt = js.native
 
   // Open standard libraries
+  def _lx_openlibs(state: Int, mask: Int): Unit = js.native
   def _lx_open_libs(state: Int): Unit = js.native
+  def _lx_sandbox(state: Int): Unit = js.native
 
   // GC
   def _lx_gc_step(state: Int, stepsize: Int): Unit = js.native

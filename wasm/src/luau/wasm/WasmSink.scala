@@ -1,7 +1,7 @@
 package luau.wasm
 
 import luau.core.*
-import luau.core.codec.Sink
+import luau.core.codec.*
 
 final class WasmSink(val binding: WasmBinding, val state: Int) extends Sink[Int]:
 

@@ -2,6 +2,7 @@ package luau.wasm
 
 import scala.concurrent.Future
 import scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+import scala.scalajs.js
 import scala.scalajs.js.JSConverters.*
 
 object WasmBackend:
