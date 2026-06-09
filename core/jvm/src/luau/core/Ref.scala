@@ -19,3 +19,18 @@ final class Ref[H] private[core] (
       binding.unref(state, registry)
 
   def isClosed: Boolean = closed
+
+object Ref:
+  private[luau] def apply[H](
+    state:    H,
+    registry: Int,
+    binding:  Binding[H],
+    origin:   String,
+  ): Ref[H] =
+    new Ref[H](state, registry, binding, origin)
+
+  def genOrigin(): String =
+    val stack = Thread.currentThread().getStackTrace
+    stack.lift(3) match
+      case Some(e) => s"${e.getFileName}:${e.getLineNumber}"
+      case None    => "unknown"
