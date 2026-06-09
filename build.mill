@@ -1,0 +1,253 @@
+import mill._, scalalib._, scalajslib._, scalafmt._
+
+val scalaVersion      = "3.4.2"
+val scalaJSVersion    = "1.16.0"
+val zioVersion        = "2.1.6"
+val catsEffectVersion = "3.5.4"
+val munitVersion      = "1.0.0"
+
+trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
+  def scalaVersion = build.scalaVersion
+  def platformDeps: T[Agg[Dep]] = T { Agg.empty[Dep] }
+  def ivyDeps = T { platformDeps() }
+  def scalacOptions = T { Seq(
+    "-encoding", "UTF-8",
+    "-deprecation",
+    "-feature",
+    "-unchecked",
+    "-Xfatal-warnings",
+    "-Ykind-projector:underscores",
+    "-source:future"
+  )}
+}
+
+trait LuauCrossPlatformJSModule extends LuauCrossPlatformModule with ScalaJSModule {
+  def scalaJSVersion = build.scalaJSVersion
+}
+
+object core extends Module {
+  object jvm extends LuauCrossPlatformModule {
+    def moduleDeps = Seq()
+    def sources    = T.sources { millSourcePath / "src" }
+    object test extends ScalaTests with TestModule.Munit {
+      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    }
+  }
+  object js extends LuauCrossPlatformJSModule {
+    def moduleDeps = Seq()
+    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    object test extends ScalaJSTests with TestModule.Munit {
+      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    }
+  }
+}
+
+object panama extends LuauCrossPlatformModule {
+  def moduleDeps  = Seq(core.jvm)
+  def sources     = T.sources { millSourcePath / "src" }
+  def generatedSources = T.sources { millSourcePath / "src" / "generated" }
+
+  def generateBindings: T[Unit] = T {
+    val headerFile  = millSourcePath / os.up / "shim" / "include" / "luau_shim.h"
+    val outDir      = millSourcePath / "src" / "generated"
+    os.makeDir.all(outDir)
+    val jextractCmd = Seq(
+      "jextract",
+      "--output", outDir.toString,
+      "--target-package", "luau.panama.generated",
+      "--library", "luau-shim",
+      "--header-class-name", "LuauShimH",
+      headerFile.toString
+    )
+    os.proc(jextractCmd).call(stdout = os.Inherit, stderr = os.Inherit)
+  }
+
+  object test extends ScalaTests with TestModule.Munit {
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    def forkArgs = T {
+      val libDir = build.shim.nativeBuild().path / os.up
+      Seq(
+        s"-Djava.library.path=${libDir}",
+        "--enable-native-access=ALL-UNNAMED",
+        "--enable-preview"
+      )
+    }
+  }
+}
+
+object wasm extends LuauCrossPlatformJSModule {
+  def moduleDeps = Seq(core.js)
+  def sources    = T.sources { millSourcePath / "src" }
+  object test extends ScalaJSTests with TestModule.Munit {
+    def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+  }
+}
+
+object scheduler extends Module {
+  object jvm extends LuauCrossPlatformModule {
+    def moduleDeps = Seq(core.jvm)
+    def sources    = T.sources { millSourcePath / "src" }
+    object test extends ScalaTests with TestModule.Munit {
+      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    }
+  }
+  object js extends LuauCrossPlatformJSModule {
+    def moduleDeps = Seq(core.js)
+    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    object test extends ScalaJSTests with TestModule.Munit {
+      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    }
+  }
+}
+
+object stdlib extends Module {
+  object jvm extends LuauCrossPlatformModule {
+    def moduleDeps = Seq(scheduler.jvm)
+    def sources    = T.sources { millSourcePath / "src" }
+    object test extends ScalaTests with TestModule.Munit {
+      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    }
+  }
+  object js extends LuauCrossPlatformJSModule {
+    def moduleDeps = Seq(scheduler.js)
+    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    object test extends ScalaJSTests with TestModule.Munit {
+      def ivyDeps = Agg(ivy"org.scalameta::munit::${munitVersion}")
+    }
+  }
+}
+
+object zio extends LuauCrossPlatformModule {
+  def moduleDeps = Seq(core.jvm, scheduler.jvm)
+  def ivyDeps    = T { Agg(
+    ivy"dev.zio::zio::${zioVersion}",
+    ivy"dev.zio::zio-streams::${zioVersion}"
+  )}
+  def sources    = T.sources { millSourcePath / "src" }
+  object test extends ScalaTests with TestModule.Munit {
+    def ivyDeps = Agg(
+      ivy"org.scalameta::munit::${munitVersion}",
+      ivy"dev.zio::zio-test::${zioVersion}",
+      ivy"dev.zio::zio-test-sbt::${zioVersion}"
+    )
+  }
+}
+
+object ce extends Module {
+  object jvm extends LuauCrossPlatformModule {
+    def moduleDeps = Seq(core.jvm, scheduler.jvm)
+    def ivyDeps    = T { Agg(ivy"org.typelevel::cats-effect::${catsEffectVersion}") }
+    def sources    = T.sources { millSourcePath / "src" }
+    object test extends ScalaTests with TestModule.Munit {
+      def ivyDeps = Agg(
+        ivy"org.scalameta::munit::${munitVersion}",
+        ivy"org.typelevel::munit-cats-effect::1.0.7"
+      )
+    }
+  }
+  object js extends LuauCrossPlatformJSModule {
+    def moduleDeps = Seq(core.js, scheduler.js)
+    def ivyDeps    = T { Agg(ivy"org.typelevel::cats-effect::${catsEffectVersion}") }
+    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
+    object test extends ScalaJSTests with TestModule.Munit {
+      def ivyDeps = Agg(
+        ivy"org.scalameta::munit::${munitVersion}",
+        ivy"org.typelevel::munit-cats-effect::1.0.7"
+      )
+    }
+  }
+}
+
+object shim extends Module {
+
+  def shimSrcDir    = T { millSourcePath }
+  def shimIncDir    = T { millSourcePath / "include" }
+  def luauIncVm     = T { millSourcePath / "luau" / "VM" / "include" }
+  def luauIncCommon = T { millSourcePath / "luau" / "Common" / "include" }
+
+  def luauSubmoduleHead: T[String] = T.input {
+    val headFile = millSourcePath / "luau" / ".git" / "HEAD"
+    if (os.exists(headFile)) os.read(headFile).trim
+    else "absent"
+  }
+
+  def nativePlatform: T[(String, Seq[String])] = T {
+    val _     = luauSubmoduleHead()
+    val osStr = System.getProperty("os.name", "").toLowerCase
+    if (osStr.contains("mac")) ("dylib", Seq("-dynamiclib"))
+    else                        ("so",    Seq("-shared", "-fPIC"))
+  }
+
+  def nativeBuild: T[PathRef] = T {
+    val dest        = T.dest
+    val (ext, lflags) = nativePlatform()
+    val outLib      = dest / s"libluau-shim.$ext"
+
+    val srcFile     = shimSrcDir() / "src" / "shim.cpp"
+    val includeDirs = Seq(
+      shimIncDir().toString,
+      luauIncVm().toString,
+      luauIncCommon().toString
+    )
+    val includeArgs = includeDirs.flatMap(d => Seq("-I", d))
+
+    val compileCmd = Seq("clang++") ++
+      Seq("-std=c++17", "-O2", "-fvisibility=hidden") ++
+      includeArgs ++
+      lflags ++
+      Seq("-o", outLib.toString, srcFile.toString)
+
+    os.proc(compileCmd).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(outLib)
+  }
+
+  def wasmBuild: T[PathRef] = T {
+    val dest    = T.dest
+    val outJs   = dest / "luau-shim.js"
+
+    val srcFile = shimSrcDir() / "src" / "shim.cpp"
+    val includeDirs = Seq(
+      shimIncDir().toString,
+      luauIncVm().toString,
+      luauIncCommon().toString
+    )
+    val includeArgs = includeDirs.flatMap(d => Seq("-I", d))
+
+    val exportedFunctions = Seq(
+      "_lx_version",
+      "_lx_newstate",
+      "_lx_close",
+      "_lx_resume"
+    ).mkString("[", ",", "]")
+
+    val emccCmd = Seq("emcc") ++
+      Seq("-std=c++17", "-O2") ++
+      includeArgs ++
+      Seq(
+        "-s", "WASM=1",
+        "-s", s"EXPORTED_FUNCTIONS=$exportedFunctions",
+        "-s", "EXPORTED_RUNTIME_METHODS=[ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,_malloc,_free]",
+        "-s", "MODULARIZE=1",
+        "-s", "EXPORT_ES6=1",
+        "-s", "ENVIRONMENT=node",
+        "-s", "ALLOW_MEMORY_GROWTH=1",
+        "-s", "STACK_SIZE=1048576",
+        "-o", outJs.toString,
+        srcFile.toString
+      )
+
+    os.proc(emccCmd).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(dest / "luau-shim.wasm")
+  }
+
+  def copyWasmToResources: T[Unit] = T {
+    val wasmDest = wasmBuild().path
+    val jsDest   = wasmDest / os.up / "luau-shim.js"
+    val resDir   = millSourcePath / os.up / "wasm" / "test" / "resources"
+    os.makeDir.all(resDir)
+    os.copy.over(wasmDest, resDir / "luau-shim.wasm")
+    os.copy.over(jsDest,   resDir / "luau-shim.js")
+  }
+}

@@ -1,0 +1,4 @@
+[submodule "shim/luau"]
+    path = shim/luau
+    url = https://github.com/luau-lang/luau.git
+    shallow = true
