@@ -21,7 +21,7 @@ object LuaValue:
     def fromUtf8(s: String): LuaString =
       LuaString(IArray.unsafeFromArray(s.getBytes(java.nio.charset.StandardCharsets.UTF_8)))
 
-  final class LuaRef(val ref: Ref[?]) extends LuaValue
+  final class LuaRef[+H](val ref: Ref[H]) extends LuaValue
 
   def isTruthy(v: LuaValue): Boolean = v match
     case Nil | False => false
