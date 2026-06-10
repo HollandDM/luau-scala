@@ -14,7 +14,7 @@ class StdlibSuite extends munit.FunSuite:
     val state   = binding.newState()
     val sched   = Scheduler(binding, state)
 
-    StdlibOpener.open(binding, state, sched, StdlibMask.Base)
+    StdlibOpener.open(binding, state, sched, Set(LuauLib.Base))
 
     val order = binding.callOrder.toList
     assert(order.contains("openLibs"), "openLibs was not called")
@@ -23,22 +23,6 @@ class StdlibSuite extends munit.FunSuite:
     val si = order.indexOf("sandbox")
     assert(oi >= 0 && si >= 0 && oi < si,
       s"openLibs ($oi) must be called before sandbox ($si)")
-
-  // ── StdlibMask values ────────────────────────────────────────────────
-
-  test("StdlibMask.Standard includes all expected libs, excludes Debug"):
-    val mask = StdlibMask.Standard
-    assert((mask & StdlibMask.Base) != 0)
-    assert((mask & StdlibMask.Math) != 0)
-    assert((mask & StdlibMask.String) != 0)
-    assert((mask & StdlibMask.Table) != 0)
-    assert((mask & StdlibMask.Bit32) != 0)
-    assert((mask & StdlibMask.Utf8) != 0)
-    assert((mask & StdlibMask.Os) != 0)
-    assert((mask & StdlibMask.Coroutine) != 0)
-    assert((mask & StdlibMask.Vector) != 0)
-    assert((mask & StdlibMask.Buffer) != 0)
-    assert((mask & StdlibMask.Debug) == 0)
 
   // ── Scheduler: spawnImmediate ─────────────────────────────────────────
 
@@ -132,9 +116,9 @@ class StdlibSuite extends munit.FunSuite:
 private class CallOrderBinding extends TestBinding:
   val callOrder = scala.collection.mutable.ArrayBuffer[String]()
 
-  override def openLibs(state: FakeState, mask: Int): Unit =
+  override def openLibs(state: FakeState, libs: Set[LuauLib]): Unit =
     callOrder += "openLibs"
-    super.openLibs(state, mask)
+    super.openLibs(state, libs)
 
   override def sandbox(state: FakeState): Unit =
     callOrder += "sandbox"

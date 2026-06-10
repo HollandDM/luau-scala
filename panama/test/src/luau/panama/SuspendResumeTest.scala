@@ -79,7 +79,7 @@ class SuspendResumeTest extends munit.FunSuite:
 
   test("resumeError injects the failure at the suspension point") {
     PanamaState.use { ps =>
-      ps.openLibs(ps.L, 1) // LX_LIB_BASE — the script needs pcall
+      ps.openLibs(ps.L, LuauLib.Base) // the script needs pcall
       ps.registerNativeFn(ps.L, (thread, nargs) =>
         NativeFnResult.Suspend { resume =>
           Cancel.noop

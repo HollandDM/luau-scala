@@ -215,8 +215,8 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── Library loading / sandbox ──────────────────────────────────────────
 
-  override def openLibs(state: Int, mask: Int): Unit =
-    module._lx_openlibs(state, mask)
+  override def openLibs(state: Int, libs: Set[LuauLib]): Unit =
+    module._lx_openlibs(state, LuauLib.mask(libs))
 
   override def sandbox(state: Int): Unit =
     module._lx_sandbox(state)

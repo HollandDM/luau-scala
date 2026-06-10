@@ -50,7 +50,7 @@ abstract class ConformanceSuiteBase[H] extends FunSuite:
       withBinding { b =>
         val state = b.newState()
         try
-          b.openLibs(state, ConformanceManifest.fullLibsMask)
+          b.openLibs(state, ConformanceManifest.fullLibs)
 
           val preludeBytes = IArray.unsafeFromArray(
             ConformanceManifest.luaPrelude.getBytes("UTF-8"))

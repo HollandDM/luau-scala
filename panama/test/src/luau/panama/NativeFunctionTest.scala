@@ -24,7 +24,7 @@ class NativeFunctionTest extends munit.FunSuite:
 
   test("native function Fail — script sees error") {
     PanamaState.use { ps =>
-      ps.openLibs(ps.L, 1) // LX_LIB_BASE — the script needs pcall
+      ps.openLibs(ps.L, LuauLib.Base) // the script needs pcall
       ps.registerNativeFn(ps.L, (thread, nargs) =>
         ps.pushString(thread, "boom")
         NativeFnResult.Fail(LuaValue.Nil)

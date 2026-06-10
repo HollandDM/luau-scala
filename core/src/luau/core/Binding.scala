@@ -102,6 +102,14 @@ trait Binding[H]:
 
   // ---- Library loading / sandbox (P07) --------------------------------
 
-  def openLibs(state: H, mask: Int): Unit
+  /** Open the given standard libraries into the VM. Backends translate the
+    * set to the shim's bitmask via [[LuauLib.mask]]; raw bits never appear in
+    * user code.
+    */
+  def openLibs(state: H, libs: Set[LuauLib]): Unit
+
+  /** Varargs convenience: `b.openLibs(state, LuauLib.Base, LuauLib.Coroutine)`. */
+  final def openLibs(state: H, libs: LuauLib*): Unit =
+    openLibs(state, libs.toSet)
 
   def sandbox(state: H): Unit

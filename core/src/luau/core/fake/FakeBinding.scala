@@ -170,6 +170,6 @@ object FakeBinding extends Binding[FakeState]:
 
   // ---- Library loading / sandbox (stub) -------------------------------
 
-  def openLibs(state: FakeState, mask: Int): Unit = ()
+  def openLibs(state: FakeState, libs: Set[LuauLib]): Unit = ()
 
   def sandbox(state: FakeState): Unit = ()

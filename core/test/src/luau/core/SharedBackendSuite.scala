@@ -82,7 +82,7 @@ abstract class SharedBackendSuite[H] extends FunSuite:
     withBinding { b =>
       val state = b.newState()
       try
-        b.openLibs(state, 1) // LX_LIB_BASE — need pcall
+        b.openLibs(state, LuauLib.Base) // need pcall
         val fn: NativeFn[H] = (s, _) =>
           b.pushString(s, "deliberate error")
           NativeFnResult.Fail(LuaValue.Nil)
@@ -106,7 +106,7 @@ abstract class SharedBackendSuite[H] extends FunSuite:
     withBinding { b =>
       val state = b.newState()
       try
-        b.openLibs(state, 0)
+        b.openLibs(state, Set.empty)
         val src = IArray.unsafeFromArray("return {sentinel=true}".getBytes("UTF-8"))
         b.compileAndLoad(state, src, "test06").fold(e => fail(e.message), identity)
         b.resume(state, 0)
@@ -125,7 +125,7 @@ abstract class SharedBackendSuite[H] extends FunSuite:
     withBinding { b =>
       val state = b.newState()
       try
-        b.openLibs(state, 0)
+        b.openLibs(state, Set.empty)
         val scope = b.openScope(state)
         val src = IArray.unsafeFromArray("return {}".getBytes("UTF-8"))
         b.compileAndLoad(state, src, "test07").fold(e => fail(e.message), identity)
@@ -143,7 +143,7 @@ abstract class SharedBackendSuite[H] extends FunSuite:
     withBinding { b =>
       val state = b.newState()
       try
-        b.openLibs(state, 1 | (1 << 7)) // LX_LIB_BASE | LX_LIB_COROUTINE
+        b.openLibs(state, LuauLib.Base, LuauLib.Coroutine)
         val src = IArray.unsafeFromArray("return coroutine.yield(42)".getBytes("UTF-8"))
         b.compileAndLoad(state, src, "test08").fold(e => fail(e.message), identity)
         val first = b.resume(state, 0)

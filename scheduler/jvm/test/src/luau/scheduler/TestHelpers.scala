@@ -76,7 +76,7 @@ class TestBinding extends Binding[FakeState]:
   override def openScope(state: FakeState): Scope[FakeState] =
     FakeBinding.openScope(state)
 
-  def openLibs(state: FakeState, mask: Int): Unit = FakeBinding.openLibs(state, mask)
+  def openLibs(state: FakeState, libs: Set[LuauLib]): Unit = FakeBinding.openLibs(state, libs)
   def sandbox(state: FakeState): Unit              = FakeBinding.sandbox(state)
 
 /** A controllable async op: captures the Resume so tests can fire it. */

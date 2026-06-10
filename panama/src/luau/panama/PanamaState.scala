@@ -256,8 +256,8 @@ final class PanamaState private (
   def pushCopy(state: MemorySegment, idx: Int): Unit =
     LxHandles.lx_push_copy.invokeExact(state, idx): Unit
 
-  def openLibs(state: MemorySegment, mask: Int): Unit =
-    val _: Int = LxHandles.lx_openlibs.invokeExact(state, mask)
+  def openLibs(state: MemorySegment, libs: Set[LuauLib]): Unit =
+    val _: Int = LxHandles.lx_openlibs.invokeExact(state, LuauLib.mask(libs))
 
   def sandbox(state: MemorySegment): Unit =
     LxHandles.lx_sandbox.invokeExact(state): Unit

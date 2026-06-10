@@ -18,8 +18,8 @@ package luau.core.conformance
   */
 object ConformanceManifest:
 
-  /** LX_LIB_STANDARD | LX_LIB_DEBUG — everything lx_openlibs can open. */
-  val fullLibsMask: Int = (1 << 11) - 1
+  /** Everything lx_openlibs can open — Standard plus Debug. */
+  val fullLibs: Set[luau.core.LuauLib] = luau.core.LuauLib.All
 
   val portable: Seq[String] = Seq(
     "apicalls.luau",
