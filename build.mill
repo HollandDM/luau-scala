@@ -15,7 +15,10 @@ trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
     "-encoding", "UTF-8",
     "-deprecation", "-feature", "-unchecked",
     "-Xkind-projector:underscores",
-    "-source:future"
+    "-source:future",
+    // Required on stable releases for `import language.experimental.captureChecking`
+    // (capture checking itself stays per-file opt-in via that import).
+    "-experimental"
   )
 }
 
