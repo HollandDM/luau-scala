@@ -25,32 +25,63 @@ users hit immediately:
 
 ## 2. Proposal
 
-### 2.1 Handle getters on `LuaTbl`
+### 2.1 One shared accessor abstraction: `LuaAccess[H, K]`
+
+Globals, table fields, and array elements are the same thing: a **keyed place
+holding a Lua value**. Instead of duplicating typed accessors on `LuaState`
+(globals), `LuaTbl` (string fields), and again for indices, every typed
+operation is written once over two abstract stack primitives:
 
 ```scala
-final class LuaTbl[H] ...:
-  def getFn(key: String)(using s: RefScope[H]^):  Try[LuaFn[H]^{s}]
-  def getTbl(key: String)(using s: RefScope[H]^): Try[LuaTbl[H]^{s}]
-  def getFnAt(i: Int)(using s: RefScope[H]^):  Try[LuaFn[H]^{s}]
-  def getTblAt(i: Int)(using s: RefScope[H]^): Try[LuaTbl[H]^{s}]
+/** A keyed place holding Lua values. Concrete cases: globals (K = String),
+  * table fields (K = String), array elements (K = Int). All typed access —
+  * copy-out, copy-in, handle minting — is implemented here once.
+  */
+abstract class LuaAccess[H, K]:
+  /** Push the value at `key` onto the main stack, run `f` with it at -1,
+    * then restore the stack (the impl pops everything it pushed).
+    */
+  protected def withValueAt[A](key: K)(f: => A): A
+
+  /** Run `push` (which must push exactly one value), then consume it into
+    * the slot at `key`.
+    */
+  protected def storeAt(key: K)(push: => Unit): Unit
+
+  final def get[V: LuauDecoder](key: K): Try[V]
+  final def set[A: LuauEncoder](key: K, value: A): Unit
+  final def getFn(key: K)(using s: RefScope[H]^):  Try[LuaFn[H]^{s}]
+  final def getTbl(key: K)(using s: RefScope[H]^): Try[LuaTbl[H]^{s}]
 ```
 
-Implementation is the existing chain internalized: `ref.push` → push key /
-`rawGeti` → type-check top → pin → rebind Ref to the main-thread handle
-(same `pinTop` helper `LuaState` already uses; it moves to a `private[api]`
-shared spot).
+Concrete cases:
 
-Scoping note: the minted handle is pinned in whichever scope is in context at
-the mint site, **not** the scope that owns the source table. Registry pins are
-independent objects, so `tbl^{s1}` minting `fn^{s2}` inside a nested scope is
-sound — the fn handle dies with `s2` regardless of `s1`. Nested chains
-compose: `cfg.getTbl("callbacks").flatMap(_.getFn("onTick"))`.
+- **`LuaState extends LuaAccess[H, String]`** — globals.
+  `withValueAt` = `getGlobal` + cleanup; `storeAt` = encode + `setGlobal`.
+  The existing `global` / `setGlobal` / `globalFn` / `globalTbl` collapse
+  into the inherited `get` / `set` / `getFn` / `getTbl` (breaking rename,
+  pre-1.0, tests migrate in the same change).
+- **`LuaTbl extends LuaAccess[H, String]`** — fields.
+  `withValueAt` = `ref.push; pushString; rawGet; f; pop(2)` — the impl owns
+  cleanup, so no `lua_remove` is needed in the shim ABI.
+- **`tbl.at: LuaAccess[H, Int]`** — array elements, via `rawGeti`/`rawSeti`.
+  An inner member rather than a second parent: inheriting the same trait
+  twice with different `K` is illegal. Usage: `tbl.at.get[Double](3)`,
+  `tbl.at.getFn(1)`.
 
-### 2.2 Array / bulk ops on `LuaTbl`
+What does NOT generalize: `eval*` (compiles chunks — only a state does
+that), `evalFn`, `coro`, and the bulk/array extras below stay on their
+owning class.
+
+Scoping note for the minted handles: the handle is pinned in whichever scope
+is in context at the mint site, **not** the scope owning the source table.
+Registry pins are independent, so `tbl^{s1}` minting `fn^{s2}` in a nested
+scope is sound. Nested chains compose:
+`st.getTbl("config").flatMap(_.getTbl("callbacks")).flatMap(_.getFn("onTick"))`.
+
+### 2.2 `LuaTbl`-only extras
 
 ```scala
-def get[V: LuauDecoder](i: Int): Try[V]      // rawGeti + decode + pop
-def set[A: LuauEncoder](i: Int, value: A): Unit
 def length: Long                              // rawLen on the pinned table
 def toSeq[V: LuauDecoder]: Try[Seq[V]]        // push table, decodeAt(-1), pop
 def toMap[V: LuauDecoder]: Try[Map[String, V]]
@@ -64,17 +95,18 @@ members, same rule as the value plane.
 
 Two options considered:
 
-- **O1 — fixed-arity variants**: `eval2[A, B](src): Try[(A, B)]`,
-  `eval3[...]`, and matching `call2`/`call3` / `resume2` on handles. Decode at
-  `-n`, `-n+1`, ... — ~30 lines, no new abstractions.
+- **O1 — fixed-arity variants**: `eval2[A, B](src): Try[(A, B)]` …
+  `eval6[...]`, and matching `call2`…`call6` / `resume2`…`resume6` on
+  handles. Decode at `-n`, `-n+1`, ... — mechanical, no new abstractions.
 - **O2 — window decoder**: a `ResultsDecoder[T <: Tuple]` that consumes a
   stack *window* rather than one index. Generalizes to any arity, but it is a
   second decoder concept living next to `LuauDecoder`, and every instance
   must agree on window-position bookkeeping.
 
-**Recommendation: O1 now.** Arity >3 returns are rare in embedding practice;
-O2 can subsume O1 later without breaking callers. Single-result `eval[V]`
-keeps first-result semantics (documented), no strict mode for now.
+**Decision: O1, arities 2–6.** Six is enough for now; O2 can subsume O1
+later without breaking callers. `defineGlobal` argument arities extend from
+0–4 to 0–6 in the same change for symmetry. Single-result `eval[V]` keeps
+first-result semantics (documented), no strict mode for now.
 
 ### 2.4 `LuaArg` ergonomics via `into`
 
@@ -102,23 +134,26 @@ Conversion for users who opt into implicitConversions).
 
 ## 4. Test plan
 
-Extends `ApiSuite` (runs on both backends): nested handle mint + call; array
-get/set/length round-trip; `toSeq`/`toMap` snapshot + ref-data rejection;
-`eval2`/`call2` happy path + arity-mismatch failure; `into` call-site
-ergonomics (compile-level). CC escape negatives for tbl-minted handles
+Extends `ApiSuite` (runs on both backends): the LuaAccess contract exercised
+through all three concrete cases (global / field / array elem) — get/set
+round-trips, handle mint + call, type-mismatch failures; nested handle
+chains; `toSeq`/`toMap` snapshot + ref-data rejection; `eval2`/`call2`
+happy paths and an arity-6 case; `into` call-site ergonomics
+(compile-level). CC escape negatives for tbl-minted handles
 verified the established way (cc rejection recorded, blind spot pinned in
 CcCompileSpec).
 
 ## 5. Open questions (grill here)
 
-1. `getFn`/`getTbl` naming — or overload `get` and disambiguate by type
-   param? (`tbl.get[LuaFn[H]]` reads nicely but makes the decoder/type-class
-   story muddier; separate names keep planes visibly distinct.)
-2. Should `set` accept a handle (`tbl.set("cb", fn)`) — writing ref data INTO
+1. Naming for the array-element view: `tbl.at` (`tbl.at.get[Double](3)`) vs
+   `tbl.arr` vs index overloads directly on `LuaTbl`?
+2. The `LuaState` rename is breaking: `global`/`setGlobal`/`globalFn`/
+   `globalTbl` become inherited `get`/`set`/`getFn`/`getTbl`. OK to break
+   now (pre-1.0), or keep deprecated aliases for one cycle?
+3. Should `set` accept a handle (`tbl.set("cb", fn)`) — writing ref data INTO
    a table? Sound (push via pin, rawSet), but it lets a short-lived scope
    install a long-lived reference; the Lua side keeps it alive after the pin
    drops, which is fine GC-wise but may surprise. Include or defer?
-3. `eval2`/`call2` vs waiting for a real tuple-window decoder — anyone feel
-   strongly the other way?
 4. Is first-result-wins for plain `eval[V]` acceptable long-term, or should
    extra results be a `Failure` under a strict flag?
+5. `LuaAccess` name — alternatives: `LuaSlots`, `LuaFields`, `KeyedAccess`.
