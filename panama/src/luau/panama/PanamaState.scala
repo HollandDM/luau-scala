@@ -10,6 +10,7 @@ final class PanamaState private (
   val L: MemorySegment,
   stateArena: Arena,
   val dispatcher: NativeFnDispatcher,
+  upcallStub: MemorySegment,
 ) extends Binding[MemorySegment]:
 
   private val LUA_GLOBALSINDEX = -10002
@@ -21,12 +22,16 @@ final class PanamaState private (
 
   def isClosed: Boolean = closed
 
-  // A PanamaState owns exactly one Luau state (created by PanamaState.open()
-  // together with its upcall stub). Binding.newState therefore hands out the
-  // main thread of that state rather than allocating a second one.
+  // Every newState() call creates a genuinely fresh Luau VM sharing this
+  // binding's upcall stub and dispatcher (the shim attaches per-state
+  // LxStateData, so states are independent). Callers own the state and must
+  // closeState it; the binding's own VM (L) exists for the legacy direct API
+  // and is torn down by close().
   def newState(): MemorySegment =
     checkOpen()
-    LxHandles.lx_main_thread.invokeExact(L): MemorySegment
+    val s: MemorySegment = LxHandles.lx_newstate.invokeExact(upcallStub)
+    if s.address() == 0L then throw new OutOfMemoryError("lx_newstate returned NULL")
+    s
 
   def closeState(state: MemorySegment): Unit =
     if state.address() == L.address() then close()
@@ -219,7 +224,10 @@ final class PanamaState private (
     // value, so consume it off the stack — matches WasmBinding and luaL_ref.
     LxHandles.lx_pop.invokeExact(L, state, 1): Unit
     val origin = Ref.genOrigin()
-    Ref(L, key, this, origin)
+    // The Ref must remember the state it was created against — pushRef/unref
+    // route through it. Storing the binding's own L here breaks as soon as
+    // newState() hands out a different VM.
+    Ref(state, key, this, origin)
 
   def unref(state: MemorySegment, key: RefKey): Unit =
     if !closed then
@@ -298,7 +306,7 @@ object PanamaState:
     if L.address() == 0L then
       stateArena.close()
       throw new OutOfMemoryError("lx_newstate returned NULL")
-    val ps = new PanamaState(L, stateArena, dispatcher)
+    val ps = new PanamaState(L, stateArena, dispatcher, stub)
     dispatcher.init(ps)
     ps
 
