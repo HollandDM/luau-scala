@@ -1,6 +1,6 @@
 # Deterministic Ref lifetime, no GC finalizer
 
-A **Ref** pins a Luau object in the registry so Luau's GC won't collect it while the Host holds it; it must be `luaL_unref`'d or the object leaks. We release Refs **only** explicitly — `Ref` is `AutoCloseable`, owned by a Scala `Resource` (cats-effect `Resource` / ZIO `Scoped`), `Using`, or a **Scope** that closes everything it owns on exit. We deliberately do **not** use `java.lang.ref.Cleaner` (JVM) or `FinalizationRegistry` (JS) as a backstop, even though both are available.
+A **Ref** pins a Luau object in the registry so Luau's GC won't collect it while the Host holds it; it must be `luaL_unref`'d or the object leaks. We release Refs **only** explicitly — `Ref` is `AutoCloseable`, owned by `Using` or a **Scope** that closes everything it owns on exit. We deliberately do **not** use `java.lang.ref.Cleaner` (JVM) or `FinalizationRegistry` (JS) as a backstop, even though both are available.
 
 The JS engine's GC cannot trace into Luau's heap regardless: Luau objects live in opaque WASM linear memory with their own collector, so "link GC to JS native" can only mean firing a handle-release callback — which is exactly the non-deterministic mechanism we are rejecting.
 

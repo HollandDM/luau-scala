@@ -690,8 +690,7 @@ In Scala 3, `enum` cases with recursive fields work fine since case classes are 
 
 full-moon generates ~139 visitor methods via proc-macro. In Scala, use:
 1. Pattern matching directly on sealed hierarchies (simplest for transforms)
-2. Cats `Traverse` typeclass for structural traversal
-3. A hand-written `Visitor` trait with default no-op methods (mirrors full-moon design)
+2. A hand-written `Visitor` trait with default no-op methods (mirrors full-moon design)
 
 The `_end` suffix pattern (enter + exit hooks) is valuable for stateful visitors like scope analysis.
 

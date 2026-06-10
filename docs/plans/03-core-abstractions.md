@@ -10,7 +10,7 @@ This plan delivers the `core` cross-platform module: the complete set of backend
 
 **Requires P01** (`docs/plans/01-project-scaffold-and-build-toolchain.md`) to be complete:
 - The Mill cross-build is configured. `core` is a `CrossPlatform` module (JVM + Scala.js).
-- Scala 3 toolchain is pinned and the module layout (`core/`, `panama/`, `wasm/`, `scheduler/`, `stdlib/`, `zio/`, `ce/`) compiles.
+- Scala 3 toolchain is pinned and the module layout (`core/`, `panama/`, `wasm/`, `scheduler/`, `stdlib/`) compiles.
 - No artifact from the Shim is needed by `core` directly — `core` abstracts over it via `Binding`.
 
 **Requires P02** (`docs/plans/02-cpp-shim-abi.md`) to be complete (for conceptual grounding, not a compile-time dep of `core`):
@@ -46,7 +46,7 @@ When a Native function needs to await something, it cannot block the upcall — 
 
 ### 3.3 Deterministic Ref Lifetime, No Finalizer (ADR-0005)
 
-`Ref` is `AutoCloseable`. It is **never** backed by a GC finalizer. Ownership is via explicit `close()`, `Using`, a `Scope`, or an effect-system `Resource`/`Scoped` (those live in P08). The `core` module keeps `Ref` as a bare `AutoCloseable` — effect wrappers are added in `zio`/`ce` modules. A leaked Ref pins its Luau object until state teardown. A dev-mode leak detector (allocation site tracking, reported at state close) is required; it must be gated behind a system property or build flag and is not a finalizer.
+`Ref` is `AutoCloseable`. It is **never** backed by a GC finalizer. Ownership is via explicit `close()`, `Using`, or a scope that releases everything it owns on exit. The `core` module keeps `Ref` as a bare `AutoCloseable`. A leaked Ref pins its Luau object until state teardown. A dev-mode leak detector (allocation site tracking, reported at state close) is required; it must be gated behind a system property or build flag and is not a finalizer.
 
 ### 3.4 Copy-Only Data Boundary via Codec (ADR-0006)
 
@@ -201,7 +201,6 @@ package luau.core
  *  The idiomatic owners are:
  *  - scala.util.Using  (for lexical scope)
  *  - Scope             (for grouped deterministic release)
- *  - cats-effect Resource / ZIO Scoped  (in the zio/ce modules — P08)
  */
 final class Ref[H] private[core] (
   private[core] val state:    H,
@@ -613,7 +612,7 @@ enum NativeFnResult:
 
 ### File 9: `core/src/luau/core/Async.scala`
 
-**Purpose:** The callback-based async primitive types. Defined in `core` so that P06 (Scheduler), P08 (ZIO/CE adapters), and any other consumer can depend on stable types without circular dependencies.
+**Purpose:** The callback-based async primitive types. Defined in `core` so that P06 (Scheduler) and any other consumer can depend on stable types without circular dependencies.
 
 ```scala
 package luau.core
@@ -624,8 +623,8 @@ package luau.core
  *  MUST only enqueue onto the Run queue — never call lua_resume inline
  *  (ADR-0002: off-Driver completions enqueue, never resume inline).
  *
- *  Thread-safe: may be called from any thread (e.g. a ZIO fiber, a JS
- *  microtask, a ThreadPoolExecutor callback).
+ *  Thread-safe: may be called from any thread (e.g. a JS microtask, a
+ *  ThreadPoolExecutor callback).
  *
  *  One-shot: calling Resume more than once is a no-op in production;
  *  in dev mode it throws IllegalStateException.
@@ -1762,8 +1761,7 @@ The `LuaValue.LuaRef[H]` case introduces a type parameter on the otherwise unpar
 | Scheduler / Run queue / Task type | P06 (`docs/plans/06-scheduler-and-task-model.md`) |
 | `Resume` callback enqueuing (the Run queue is not defined here) | P06 |
 | Luau standard library loading (base, math, string, table, etc.) | P07 (`docs/plans/07-stdlib-and-task-library.md`) |
-| ZIO `Scoped` / cats-effect `Resource` wrappers for `Ref` | P08 (`docs/plans/08-effect-adapters-zio-cats.md`) |
-| Isolate management (multiple states) | P06, P08 |
+| Isolate management (multiple states) | P06 |
 | `LuauDecoder[Map[String, V]]` full implementation (requires `Binding.tableNext`) | P04/P05 integration; add `tableNext` to `Binding` at that point |
 | Dev-mode Ref leak detector (detailed allocation-site capture) | Can be implemented in P04 where native stack traces are available |
 | `lx_interrupt` / Luau VM interrupt hook | P07 (sandboxing) |
@@ -1811,4 +1809,3 @@ Cross-reference by exact filename:
 - `docs/plans/05-wasm-backend-js.md` — implements `Binding[Int]` (WASM linear memory address) against this plan's trait
 - `docs/plans/06-scheduler-and-task-model.md` — consumes `Resume`, `Cancel`, `NativeFnResult.Suspend` from this plan
 - `docs/plans/07-stdlib-and-task-library.md` — uses `Binding`, `LuauEncoder`, `LuauDecoder` from this plan
-- `docs/plans/08-effect-adapters-zio-cats.md` — wraps `Ref`, `Scope`, `Async primitive` from this plan in effect-system resources

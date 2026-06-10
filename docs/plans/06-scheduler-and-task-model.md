@@ -989,7 +989,6 @@ From `/home/hoangdinh/OSS/luau-scala/docs/research/runtime-piccolo-rust.md` §6.
 | Multi-Driver worker pool (movable-state actor concurrency, ADR-0002) | Future plan — ADR-0002 is deferred |
 | `task.spawn`, `task.defer`, `task.delay`, `task.wait`, `task.cancel` — the Roblox Task library built on top of the Scheduler | P07 `docs/plans/07-stdlib-and-task-library.md` |
 | Luau standard libraries (base, math, string, coroutine, …) | P07 |
-| ZIO / Cats Effect adapters wrapping Suspend as `ZIO.asyncInterrupt` / `IO.async` | P08 `docs/plans/08-effect-adapters-zio-cats.md` |
 | `lua_resetthread` coroutine reuse (reset a dead coroutine for respawning) | P07 |
 | Fuel / instruction budget for DoS prevention | Future plan |
 | Dev-mode double-resume assertion (throw instead of no-op) | Can be added in this plan but is optional for MVP |

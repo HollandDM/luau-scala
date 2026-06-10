@@ -41,7 +41,7 @@ The single sanctioned entry point for executing Luau code from the **Host**. All
 _Avoid_: call, invoke, pcall.
 
 **Ref**:
-A stable **Host**-held handle to a Luau-heap object (registry reference). Lets the **Host** reference Luau-owned tables and functions across **Resume boundary** crossings without keeping them on the stack. (Refs point Host→Luau only; host objects never cross the other way by reference — see **Codec**.) `AutoCloseable`: released **only** by explicit `close()`, by exiting the **Scope** that owns it, or by tearing down the state — never by a GC finalizer. The idiomatic owner is a Scala `Resource` (cats-effect `Resource` / ZIO `Scoped`) or `Using`; `core` keeps Ref as bare `AutoCloseable` and lets the effect modules wrap it. A leaked Ref pins its Luau object until the state closes.
+A stable **Host**-held handle to a Luau-heap object (registry reference). Lets the **Host** reference Luau-owned tables and functions across **Resume boundary** crossings without keeping them on the stack. (Refs point Host→Luau only; host objects never cross the other way by reference — see **Codec**.) `AutoCloseable`: released **only** by explicit `close()`, by exiting the **Scope** that owns it, or by tearing down the state — never by a GC finalizer. The idiomatic owner is a `useRef` scope in `luau.api` (or `Using` at the SPI level); `core` keeps Ref as bare `AutoCloseable`. A leaked Ref pins its Luau object until the state closes.
 _Avoid_: pointer, handle (use "Ref"), reference.
 
 **Codec**:
@@ -61,7 +61,7 @@ What a **Task** produces when it yields to the **Host**: a request describing wh
 _Avoid_: pause, await, blocking.
 
 **Async primitive**:
-The callback-based completion model in `core`: a **Native function** suspends by handing back `Suspend(register)`, where `register: Resume => Cancel` wires an async op against a one-shot, thread-safe `resume` callback and returns a `Cancel` for teardown. Effect-system-agnostic — it is the bedrock ZIO/CE adapters build on (their `async`/`asyncInterrupt` are already callback-shaped); a declarative `Future`/`F[A]` form layers on top. Calling `resume` only *enqueues* onto the **Run queue**; it never resumes inline.
+The callback-based completion model in `core`: a **Native function** suspends by handing back `Suspend(register)`, where `register: Resume => Cancel` wires an async op against a one-shot, thread-safe `resume` callback and returns a `Cancel` for teardown. Effect-system-agnostic bedrock — a declarative `Future`-shaped form can layer on top. Calling `resume` only *enqueues* onto the **Run queue**; it never resumes inline.
 _Avoid_: effect, IO, monad, Future (in `core`).
 
 **Native function**:

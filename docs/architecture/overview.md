@@ -23,8 +23,6 @@ The table below reflects what `build.mill` actually declares. Modules marked **u
 | Shim build | `shim` | C++ / shell | `shim/src/`, `shim/include/` | Active |
 | Scheduler | _(none)_ | JVM only | `scheduler/jvm/src/` | **Unwired** |
 | Standard library / Task | _(none)_ | JVM only | `stdlib/jvm/src/` | **Unwired** |
-| ZIO adapter | _(none)_ | — | `zio/src/luau/zio/` | **Unwired, empty** |
-| CE adapter | _(none)_ | — | `ce/jvm/src/luau/ce/` | **Unwired, empty** |
 
 Scala version: **3.8.3**. ScalaJS version: **1.21.0**. munit **1.2.0** is the test framework for all active modules.
 
@@ -39,8 +37,6 @@ graph TD
     subgraph Host["Host (Scala 3)"]
         SCHED["Scheduler[H]\nscheduler/jvm — unwired"]
         STDLIB["TaskLibrary / StdlibOpener\nstdlib/jvm — unwired"]
-        ZIO["ZIO adapter\nzio/ — empty"]
-        CE["CE adapter\nce/ — empty"]
         CORE["core\nBinding[H], Ref, Scope,\nCodec (LuauEncoder/Decoder),\nSink, NativeFn, Async"]
         FAKE["FakeBinding[FakeState]\ncore/jvm/test — unit tests only"]
         PANAMA["PanamaState: Binding[MemorySegment]\npanama/src/"]
@@ -48,8 +44,6 @@ graph TD
         SCHED --> CORE
         STDLIB --> SCHED
         STDLIB --> CORE
-        ZIO --> CORE
-        CE --> CORE
         PANAMA --> CORE
         WASM --> CORE
         FAKE --> CORE
@@ -325,11 +319,6 @@ The Scheduler depends on `java.util.concurrent.atomic.AtomicLong`, `java.util.Ti
 - `StdlibOpener.scala` — `open[H](binding, state, scheduler, mask)` calls `binding.openLibs(state, mask)`, `TaskLibrary.install(...)`, then `binding.sandbox(state)`.
 - `TaskLibrary.scala` — installs the Roblox-style `task.*` API (`task.spawn`, `task.defer`, `task.delay`, `task.wait`, `task.cancel`) as Native functions via `binding.registerNativeFn`. `task.wait` returns `NativeFnResult.Suspend` wired against the Scheduler's timer.
 
-### Effect Adapters (`zio/`, `ce/`)
-
-Both directories exist but contain **zero Scala source files**. The ZIO and cats-effect adapters are completely unimplemented. Their dependency versions are pinned in `build.mill` (`zioVersion = "2.1.25"`, `catsEffectVersion = "3.5.0"`) but no modules are declared using them.
-
----
 
 ## 12. CI and Known Issues
 

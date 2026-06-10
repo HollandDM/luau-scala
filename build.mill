@@ -3,8 +3,6 @@ import mill.scalajslib.api.{ModuleKind, JsEnvConfig}
 
 val scalaVersion       = "3.8.3"
 val scalaJSVersion     = "1.21.0"
-val zioVersion         = "2.1.25"
-val catsEffectVersion  = "3.5.0"
 val munitVersion       = "1.2.0"
 
 trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {

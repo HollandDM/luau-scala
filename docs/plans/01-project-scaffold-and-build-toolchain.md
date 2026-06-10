@@ -8,7 +8,7 @@
 
 This plan establishes the complete project skeleton that every subsequent plan builds on. When done, the repository contains:
 
-- A Mill cross-build (`build.mill`) defining all Scala 3 modules — `core` (cross-platform), `panama` (JVM only), `wasm` (Scala.js only), `scheduler` (cross), `stdlib` (cross), `zio` (cross), `ce` (cross) — with correct inter-module dependencies and Scala.js configuration.
+- A Mill cross-build (`build.mill`) defining all Scala 3 modules — `core` (cross-platform), `panama` (JVM only), `wasm` (Scala.js only), `scheduler` (cross), `stdlib` (cross) — with correct inter-module dependencies and Scala.js configuration.
 - A `shim/` directory containing a pinned Luau git submodule and a trivial stub `shim.cpp` (not the real Shim; that is P02's deliverable) whose only purpose is to exercise the build pipeline end-to-end.
 - A native shared-library build pipeline driven by a Mill task that shells out to `clang++` / `llvm-ar`, producing `libluau-shim.so` (Linux) / `libluau-shim.dylib` (macOS) suitable for Panama consumption.
 - An Emscripten build pipeline driven by a separate Mill task shelling out to `emcc`, producing `luau-shim.wasm` + `luau-shim.js` (loader).
@@ -57,7 +57,7 @@ The Resume boundary rule states that **all Luau execution must enter via `lua_re
 
 ### 3.3 Cross-build topology (CONTEXT terms)
 
-The project's two **Binding backends** (Panama and WASM) require different Scala compilation targets: the **Panama backend** is a JVM `ScalaModule`; the **WASM backend** is a `ScalaJSModule`. The modules `core`, `scheduler`, `stdlib`, `zio`, and `ce` are platform-agnostic and must be published as cross-built (JVM + JS). Mill's `CrossPlatformScalaModule` pattern (a `trait` mixed into both a JVM object and an `object extends ScalaJSModule`) is the idiomatic way to achieve this without duplicating source.
+The project's two **Binding backends** (Panama and WASM) require different Scala compilation targets: the **Panama backend** is a JVM `ScalaModule`; the **WASM backend** is a `ScalaJSModule`. The modules `core`, `scheduler`, and `stdlib` are platform-agnostic and must be published as cross-built (JVM + JS). Mill's `CrossPlatformScalaModule` pattern (a `trait` mixed into both a JVM object and an `object extends ScalaJSModule`) is the idiomatic way to achieve this without duplicating source.
 
 ### 3.4 Stackless tasks and WASM (ADR-0003, ADR-0004)
 
@@ -123,8 +123,6 @@ import mill._, scalalib._, scalajslib._, scalafmt._
 
 val scalaVersion     = "3.4.2"
 val scalaJSVersion   = "1.16.0"
-val zioVersion       = "2.1.6"
-val catsEffectVersion= "3.5.4"
 val munitVersion     = "1.0.0"
 ```
 
@@ -132,7 +130,7 @@ Pin these versions. Do not use version ranges. Updating versions is a deliberate
 
 #### 2.2 Cross-platform module trait
 
-The pattern for `core`, `scheduler`, `stdlib`, `zio`, and `ce` is a shared `trait` mixed into both a `jvm` and `js` submodule object. This avoids duplicating source declarations.
+The pattern for `core`, `scheduler`, and `stdlib` is a shared `trait` mixed into both a `jvm` and `js` submodule object. This avoids duplicating source declarations.
 
 ```scala
 /** Shared source + settings for a cross-platform module. */
@@ -251,49 +249,6 @@ object stdlib extends Module {
   }
 }
 
-/** zio: ZIO effect adapter. JVM-only (ZIO 2 is JVM + native, not JS). */
-object zio extends LuauCrossPlatformModule {
-  def moduleDeps = Seq(core.jvm, scheduler.jvm)
-  def ivyDeps    = T { Agg(
-    ivy"dev.zio::zio::${zioVersion}",
-    ivy"dev.zio::zio-streams::${zioVersion}"
-  )}
-  def sources    = T.sources { millSourcePath / "src" }
-  object test extends ScalaTests with TestModule.Munit {
-    def ivyDeps = Agg(
-      ivy"org.scalameta::munit::${munitVersion}",
-      ivy"dev.zio::zio-test::${zioVersion}",
-      ivy"dev.zio::zio-test-sbt::${zioVersion}"
-    )
-  }
-}
-
-/** ce: Cats Effect 3 adapter. Cross-platform (CE3 supports JS). */
-object ce extends Module {
-  object jvm extends LuauCrossPlatformModule {
-    def moduleDeps = Seq(core.jvm, scheduler.jvm)
-    def ivyDeps    = T { Agg(ivy"org.typelevel::cats-effect::${catsEffectVersion}") }
-    def sources    = T.sources { millSourcePath / "src" }
-    object test extends ScalaTests with TestModule.Munit {
-      def ivyDeps = Agg(
-        ivy"org.scalameta::munit::${munitVersion}",
-        ivy"org.typelevel::munit-cats-effect::1.0.7"
-      )
-    }
-  }
-  object js extends LuauCrossPlatformJSModule {
-    def moduleDeps = Seq(core.js, scheduler.js)
-    def ivyDeps    = T { Agg(ivy"org.typelevel::cats-effect::${catsEffectVersion}") }
-    def sources    = T.sources { millSourcePath / os.up / "jvm" / "src" }
-    object test extends ScalaJSTests with TestModule.Munit {
-      def ivyDeps = Agg(
-        ivy"org.scalameta::munit::${munitVersion}",
-        ivy"org.typelevel::munit-cats-effect::1.0.7"
-      )
-    }
-  }
-}
-
 /** shim: C++ build tasks — not a ScalaModule. Houses native + WASM builds. */
 object shim extends Module {
   // See Tasks 5a and 5b for task definitions.
@@ -346,13 +301,6 @@ The Mill `sources` declarations above map to this directory tree:
         luau/stdlib/
       test/
         src/
-  zio/
-    src/
-      luau/zio/
-    test/
-      src/
-  ce/
-    jvm/
       src/
         luau/ce/
       test/
@@ -842,8 +790,6 @@ For each Scala module that has no real code yet, create a minimal package object
 /home/hoangdinh/OSS/luau-scala/core/jvm/src/luau/core/package.scala
 /home/hoangdinh/OSS/luau-scala/scheduler/jvm/src/luau/scheduler/package.scala
 /home/hoangdinh/OSS/luau-scala/stdlib/jvm/src/luau/stdlib/package.scala
-/home/hoangdinh/OSS/luau-scala/zio/src/luau/zio/package.scala
-/home/hoangdinh/OSS/luau-scala/ce/jvm/src/luau/ce/package.scala
 ```
 
 Template (replace `<module>` with the module name):
@@ -1119,7 +1065,7 @@ Every criterion below must pass before this plan is considered complete. All tes
 ./mill __.compile
 ```
 
-Expected: no compilation errors across `core.jvm`, `core.js`, `panama`, `wasm`, `scheduler.jvm`, `scheduler.js`, `stdlib.jvm`, `stdlib.js`, `zio`, `ce.jvm`, `ce.js`.
+Expected: no compilation errors across `core.jvm`, `core.js`, `panama`, `wasm`, `scheduler.jvm`, `scheduler.js`, `stdlib.jvm`, `stdlib.js`.
 
 ### AC-2: `core.js` does not reference any JVM-only API
 
@@ -1247,7 +1193,6 @@ ADR-0002 notes that WASM cross-worker migration would require `SharedArrayBuffer
 | WASM backend implementation (`cwrap`, linear memory marshaling, `addFunction` upcall) | P05 — `docs/plans/05-wasm-backend-js.md` |
 | Single-threaded Scheduler (Run queue, Task lifecycle, Driver loop) | P06 — `docs/plans/06-scheduler-and-task-model.md` |
 | Luau stdlib opening + `task` library natives | P07 — `docs/plans/07-stdlib-and-task-library.md` |
-| ZIO and Cats Effect effect adapters | P08 — `docs/plans/08-effect-adapters-zio-cats.md` |
 | Multi-core parallelism via Isolates across worker pool | ADR-0002 (deferred MVP) |
 | Native codegen (`--!native`, `@native`) | Intentionally excluded; upstream feature, no build changes needed |
 | Analysis / type checker (`luau-analyze`) | Out of scope for this runtime-embedding project |

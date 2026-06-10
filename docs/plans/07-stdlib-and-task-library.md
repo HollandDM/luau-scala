@@ -1186,7 +1186,6 @@ check is secondary and can be loosened or removed if it causes flakiness.
 
 | Item | Deferred to |
 |------|------------|
-| ZIO / Cats Effect wrappers for stdlib and task library | P08 `08-effect-adapters-zio-cats.md` |
 | `require` module loading system | A future plan (not in the master index as of this writing); for now `require` is nil in the sandbox |
 | `debug` library (full access) | Controlled by the `LX_LIB_DEBUG` flag; disabled by default; enabling it is a Host opt-in not specified further here |
 | `task.desynchronize` / `task.synchronize` | Roblox-specific task primitives tied to RunService; not in scope for the base scheduler |

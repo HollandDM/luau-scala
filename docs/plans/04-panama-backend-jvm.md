@@ -1408,7 +1408,6 @@ compatibility if P01 enables it.
 | The Run queue and multi-worker Scheduler | P06 (`docs/plans/06-scheduler-and-task-model.md`) |
 | Task lifecycle (spawn / park / complete) | P06 |
 | `task.*` library natives | P07 (`docs/plans/07-stdlib-and-task-library.md`) |
-| ZIO / Cats Effect wrappers for Suspend | P08 (`docs/plans/08-effect-adapters-zio-cats.md`) |
 | Opening Luau standard libraries (base, math, string, …) | P07 |
 | Multi-core parallelism across Isolates | ADR-0002 (deferred); P06 scaffolds the queue |
 | WASM backend for Scala.js | P05 (`docs/plans/05-wasm-backend-js.md`) |

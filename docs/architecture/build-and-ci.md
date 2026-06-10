@@ -19,8 +19,6 @@ The repo has five active Mill modules declared in `build.mill` and three on-disk
 | `shim/` | `shim` | Active (task-only, no Scala sources) |
 | `scheduler/jvm/` | — | **Not registered** |
 | `stdlib/jvm/` | — | **Not registered** |
-| `zio/` | — | **Not registered** |
-| `ce/` | — | **Not registered** |
 
 The `shim/` module contains no Scala sources; it only contributes build tasks that compile the C++ Shim layer and produce native or WASM binary artifacts.
 
@@ -62,8 +60,6 @@ No custom meta-build logic exists. Any changes to Mill plugin imports in `build.
 ```scala
 val scalaVersion       = "3.8.3"
 val scalaJSVersion     = "1.21.0"
-val zioVersion         = "2.1.25"      // unused by active modules
-val catsEffectVersion  = "3.5.0"       // unused by active modules
 val munitVersion       = "1.2.0"
 ```
 
@@ -507,7 +503,7 @@ Described above in §5.4. CI calls `shim.wasmBuild` but nothing consumes its out
 
 ### 9.7 Unregistered modules
 
-`scheduler/jvm/`, `stdlib/jvm/`, `zio/`, and `ce/` contain source files but have no entries in `build.mill`. They are invisible to all builds, tests, and CI. Changes to `core.jvm`'s public API (e.g., `Binding[H]`, `NativeFn[H]`) will silently break these modules without any compilation failure to signal the breakage.
+`scheduler/jvm/` and `stdlib/jvm/` contain source files but have no entries in `build.mill`. They are invisible to all builds, tests, and CI. Changes to `core.jvm`'s public API (e.g., `Binding[H]`, `NativeFn[H]`) will silently break these modules without any compilation failure to signal the breakage.
 
 ---
 

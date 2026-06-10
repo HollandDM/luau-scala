@@ -1549,7 +1549,6 @@ The following are explicitly NOT part of this plan. The named later plans own th
 | WASM backend Scala.js interop, `addFunction` wiring | `docs/plans/05-wasm-backend-js.md` (P05) |
 | Task library (`task.spawn`, `task.wait`, etc.) | `docs/plans/07-stdlib-and-task-library.md` (P07) |
 | Full sandboxing policy and safeenv | P07 |
-| ZIO/Cats Effect effect adapters | `docs/plans/08-effect-adapters-zio-cats.md` (P08) |
 | Cross-Isolate parallelism / multiple Drivers | `docs/plans/02-movable-state-actor-concurrency.md` context; deferred per ADR-0002 |
 | Luau `--!native` JIT activation | Not exposed via `lx_*`; Luau activates it internally if the native codegen is compiled in |
 | Luau debug hooks / coverage | Out of scope for MVP |
@@ -1590,4 +1589,4 @@ The implementing agent must read all of the following before touching code:
 - `docs/plans/01-project-scaffold-and-build-toolchain.md` — build targets and artifact paths this plan's source files feed into
 
 **Later plans (for cross-reference only, do NOT implement):**
-- `docs/plans/03-core-abstractions.md` through `docs/plans/08-effect-adapters-zio-cats.md`
+- `docs/plans/03-core-abstractions.md` through `docs/plans/07-stdlib-and-task-library.md`

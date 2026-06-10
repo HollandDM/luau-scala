@@ -16,7 +16,7 @@ This document describes the design, implementation, and known gaps of two subsys
   `task.*` API and standard library opening layer built on top of the Scheduler.
 
 Both subsystems are pure Scala 3 over the `luau.core.Binding[H]` abstraction. They depend on no
-Panama, WASM, or ZIO/CE APIs directly; all platform specifics are hidden behind `Binding[H]`.
+Panama or WASM APIs directly; all platform specifics are hidden behind `Binding[H]`.
 
 Use the domain vocabulary from `CONTEXT.md` throughout this document. Capital-T "Task", capital-D
 "Driver", capital-R "Ref" and so on match that glossary exactly.

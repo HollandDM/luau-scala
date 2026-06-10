@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-10  
 **Status:** Draft  
-**Related plans:** `docs/plans/01-project-scaffold-and-build-toolchain.md`, `docs/plans/04-panama-backend-jvm.md`, `docs/plans/06-scheduler-and-task-model.md`, `docs/plans/07-stdlib-and-task-library.md`, `docs/plans/08-effect-adapters-zio-cats.md`
+**Related plans:** `docs/plans/01-project-scaffold-and-build-toolchain.md`, `docs/plans/04-panama-backend-jvm.md`, `docs/plans/06-scheduler-and-task-model.md`, `docs/plans/07-stdlib-and-task-library.md`
 
 ---
 
@@ -13,8 +13,6 @@ The JVM completion work proceeds in three successive milestones:
 1. **JVM/Panama green parity.** The Panama Binding backend passes the same 10 shared contract behaviors (TC-SHARED-01 through TC-SHARED-10) that the WASM/JS backend already passes. All 22 currently-ignored Panama tests are unignored and passing. `./mill panama.test` produces zero failures.
 
 2. **Scheduler and Task Library wired and passing.** The `scheduler.jvm` and `stdlib.jvm` modules are declared in `build.mill`, compile, and their test suites pass against both the `FakeBinding` harness (unit) and the Panama backend (integration). `./mill scheduler.jvm.test` and `./mill stdlib.jvm.test` both pass.
-
-3. **Effect adapters bootstrapped.** The `zio` and `ce` module stubs are wired into `build.mill` with correct dependency graphs. Placeholder implementations or initial bridging code for ZIO and Cats Effect are present. Full production adapters are out of scope for this roadmap (they are plan-08 scope) but the module structure, dependency wiring, and at least one smoke integration test per adapter must be in place.
 
 ---
 
@@ -516,7 +514,7 @@ Two distinct ref lifecycle types coexist in the `panama` module:
 
 `RefLifecycleTest` uses `ps.ref(ps.L)` returning `Ref[MemorySegment]` and `ps.pushRef(ps.L, ref.registryKey)` directly (bypassing `Ref.push()`). `PanamaState.scoped` uses `Scope[MemorySegment]` from `core`, not `PanamaScope`.
 
-Effect adapters (ZIO `Scoped`, Cats Effect `Resource`) will need a single Ref type. The recommended resolution is to deprecate and remove `PanamaRef` / `PanamaScope` in favor of the `core` `Ref[MemorySegment]` / `Scope[MemorySegment]` pair, ensuring `Ref.push()` correctly pushes onto the active thread (not stored main-state `L`) when the Ref is used from a coroutine context.
+A single Ref type is needed. The recommended resolution is to deprecate and remove `PanamaRef` / `PanamaScope` in favor of the `core` `Ref[MemorySegment]` pair, ensuring `Ref.push()` correctly pushes onto the active thread (not stored main-state `L`) when the Ref is used from a coroutine context.
 
 **Depends on:** P0-D, P0-F.
 
@@ -543,19 +541,6 @@ Effect adapters (ZIO `Scoped`, Cats Effect `Resource`) will need a single Ref ty
 `wasm/test/src/luau/wasm/WasmSpecificSuite.scala TC-WASM-04` verifies that two `WasmBinding` instances have independent stacks. The equivalent JVM test verifies that two `PanamaState` instances created via `PanamaState.open()` have independent stacks. `NativeLibSmokeTest` has a lifecycle test but no independence test.
 
 **Depends on:** P0-J.
-
----
-
-#### P2-F: Declare `zio` and `ce` module stubs in `build.mill`
-
-**Area:** `build.mill`, effect adapters  
-**Effort:** S (stubs) + XL (full implementation)
-
-`zio/` and `ce/` directories exist with no Scala source files. Plan 08 describes full ZIO and Cats Effect adapters. The module declarations (with correct `moduleDeps` on `scheduler.jvm` and appropriate library dependencies) should be added to `build.mill` so the module graph is coherent, even if the source directories contain only placeholder files.
-
-Full adapter implementations are XL scope and depend on the JVM Scheduler and stdlib being fully passing.
-
-**Depends on:** P1-A, P1-F.
 
 ---
 
@@ -643,8 +628,6 @@ graph TD
     P1F -->|scheduler.jvm.test + stdlib.jvm.test green| MILESTONE2[MILESTONE 2: Scheduler + Stdlib wired]
 
     P2A[P2-A: scheduler.js + stdlib.js stubs] -.->|optional| MILESTONE2
-    P2F[P2-F: zio + ce stubs in build.mill] --> MILESTONE3[MILESTONE 3: Effect adapter structure]
-    MILESTONE2 --> P2F
 
     P1B[P1-B: wasmBuildNative PWD fix] -.->|CI reliability| A
     P1C[P1-C: NativeFnDispatcher AtomicInteger] -.->|thread safety| P1A
@@ -684,7 +667,6 @@ The critical path to Milestone 2:
 | P2-C | P2 | Panama Ref | Unify `PanamaRef` / `Ref[MemorySegment]` lifecycle types | M | P0-D, P0-F |
 | P2-D | P2 | Panama Codec | Add `PanamaSink` integration tests against real state | M | P0-J |
 | P2-E | P2 | Panama tests | Two-PanamaState stack independence test | S | P0-J |
-| P2-F | P2 | build.mill | Add `zio` + `ce` stub modules to `build.mill` | S+XL | P1-A, P1-F |
 | P3-A | P3 | Panama dead code | Remove `LuauShimBindings.scala` stub | S | — |
 | P3-B | P3 | Shim header | Formalize `lx_set_global` / `lx_get_global` in ABI or remove from exports | S | P0-G |
 | P3-C | P3 | Documentation | Document `lx_ref` "value remains on stack" behavior | S | P0-D |
@@ -770,4 +752,3 @@ This mismatch means `Scheduler.spawn()` in unit tests sees `stackTop(state) == 1
 | M2: Scheduler unit | `./mill scheduler.jvm.test` | All SchedulerTests (TC-01..08) passing |
 | M2: Stdlib unit | `./mill stdlib.jvm.test` | All StdlibSuite tests passing |
 | M2: Integration | `./mill integration.test` (or equivalent) | ITC-01 and ITC-02 passing with real PanamaState |
-| M3: Adapter stubs | `./mill __.compile` | `zio` and `ce` modules compile; at least one smoke test per adapter passes |

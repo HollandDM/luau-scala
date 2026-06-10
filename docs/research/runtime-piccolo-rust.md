@@ -634,7 +634,7 @@ The executor obeys these instructions. Callbacks never directly invoke other Lua
 
 The `async_sequence` / `Sequence` duality lets embedders write natural sequential code (the async block) while the compiler generates the state machine. The shadow stack / `Locals` pattern shows how to bridge a GC system that needs explicit tracing with opaque async state.
 
-**Scala lesson**: In Scala, `scala.coroutines` or Cats Effect `IO`/`Resource` can play the same role for complex callback chains. Define a `Sequence[F[_]]` or `Callback[F[_]]` abstraction that returns `StepSignal` wrapped in the effect type `F`. Embedders write monadic code; the trampoline drives `F.flatMap` chains.
+**Scala lesson**: a callback/continuation abstraction can play the same role for complex callback chains — a `Sequence` that returns `StepSignal` steps which the trampoline drives to completion.
 
 ### 11.7 Separation of Mutation and Collection
 

@@ -1223,7 +1223,6 @@ If this test passes, the full call chain — `WasmBackend.load` → `WasmBinding
 |------|-------------|
 | Scheduler / Run queue / Task lifecycle on JS | P06 `06-scheduler-and-task-model.md` |
 | `task.*` library natives (spawn, defer, delay, wait, cancel) | P07 `07-stdlib-and-task-library.md` |
-| ZIO / Cats Effect wrappers for WASM binding | P08 `08-effect-adapters-zio-cats.md` |
 | Cross-worker state migration on JS (`SharedArrayBuffer` + `Atomics`) | ADR-0002 "deferred" — no owning plan yet |
 | Standard library opening (`luaL_openlibs` subset) | P07 |
 | `LuauEncoder[A]` / `LuauDecoder[A]` derivation for case classes | P03 |
