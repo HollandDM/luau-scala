@@ -68,7 +68,11 @@ object Trampoline:
         }
         LxReturn.Fail
       case Some(fn) =>
-        try fn(state, nArgs) match
+        // The fn operates on the CALLING thread's stack (args live there,
+        // results go there) — same contract as the Panama dispatcher. Passing
+        // `state` (the main thread) here was a latent wrong-stack bug masked
+        // while all chunks ran on the main thread.
+        try fn(thread, nArgs) match
           case NativeFnResult.Return(n) =>
             writeNResults(nResultsPtr, n)
             LxReturn.Return
