@@ -94,3 +94,12 @@ object LxHandles:
 
   val lx_copy_error: MethodHandle = handle("lx_copy_error",
     FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG))
+
+  val lx_set_global: MethodHandle = handle("lx_set_global", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS))
+  val lx_get_global: MethodHandle = handle("lx_get_global", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS))
+
+  val lx_conformance_setup: MethodHandle = handle("lx_conformance_setup",
+    FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+
+  val lx_resume_error: MethodHandle = handle("lx_resume_error",
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS))

@@ -2,7 +2,7 @@ package luau.wasm
 
 import luau.core.{Binding, SharedBackendSuite}
 
-class WasmBackendSuite extends SharedBackendSuite:
+class WasmBackendSuite extends SharedBackendSuite[Int]:
 
   // Each test gets a brand-new wasm instance. The backend shares one wasm module
   // across all states; a state's create/teardown leaves the shared heap/registry

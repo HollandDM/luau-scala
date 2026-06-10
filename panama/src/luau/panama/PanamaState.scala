@@ -21,11 +21,16 @@ final class PanamaState private (
 
   def isClosed: Boolean = closed
 
+  // A PanamaState owns exactly one Luau state (created by PanamaState.open()
+  // together with its upcall stub). Binding.newState therefore hands out the
+  // main thread of that state rather than allocating a second one.
   def newState(): MemorySegment =
-    throw new UnsupportedOperationException("use PanamaState.open() instead")
+    checkOpen()
+    LxHandles.lx_main_thread.invokeExact(L): MemorySegment
 
   def closeState(state: MemorySegment): Unit =
-    LxHandles.lx_close.invokeExact(state): Unit
+    if state.address() == L.address() then close()
+    else LxHandles.lx_close.invokeExact(state): Unit
 
   def compileAndLoad(
     state: MemorySegment,
@@ -39,11 +44,11 @@ final class PanamaState private (
       srcSeg.set(ValueLayout.JAVA_BYTE, source.length.toLong, 0.toByte)
       val nameSeg = Marshal.toNativeString(chunkname, arena)
       val errbuf = arena.allocate(4096L, 1L)
-      val rc = LxHandles.lx_compile_and_load.invokeExact(
+      val rc: Int = LxHandles.lx_compile_and_load.invokeExact(
         state, srcSeg, source.length.toLong, nameSeg,
-        1, 0,
+        1, 1, // optLevel 1, debugLevel 1 (line info — upstream default)
         errbuf, 4096L,
-      ).asInstanceOf[Int]
+      )
       if rc == 0 then Right(())
       else
         val errMsg = Marshal.fromNativeString(errbuf, strnlen(errbuf, 4096))
@@ -54,8 +59,7 @@ final class PanamaState private (
     checkOpen()
     withArena { arena =>
       val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
-      val rc = LxHandles.lx_resume.invokeExact(L, thread, nargs, nResultsSeg)
-        .asInstanceOf[Int]
+      val rc: Int = LxHandles.lx_resume.invokeExact(L, thread, nargs, nResultsSeg)
       val nResults = nResultsSeg.get(ValueLayout.JAVA_INT, 0L)
       rc match
         case LX_RESUME_OK    => ResumeResult.Returned(nResults)
@@ -69,9 +73,30 @@ final class PanamaState private (
           ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume status: $rc"))
     }
 
+  /** Resume a yielded thread by raising `error` inside it (the value is
+    * pushed onto the thread's stack, then lx_resume_error raises it at the
+    * suspension point). How the Host fails a Suspension.
+    */
+  def resumeError(thread: MemorySegment, error: LuaError): ResumeResult =
+    checkOpen()
+    pushString(thread, error.message)
+    withArena { arena =>
+      val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
+      val rc: Int = LxHandles.lx_resume_error.invokeExact(L, thread, nResultsSeg)
+      val nResults = nResultsSeg.get(ValueLayout.JAVA_INT, 0L)
+      rc match
+        case LX_RESUME_OK    => ResumeResult.Returned(nResults)
+        case LX_RESUME_YIELD => ResumeResult.Yielded(nResults)
+        case LX_RESUME_ERR   => ResumeResult.Error(LuaError.runtime(readError(thread)))
+        case LX_RESUME_MEMERR =>
+          ResumeResult.Error(LuaError.memory("lx_resume_error: memory allocation failed"))
+        case _ =>
+          ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume_error status: $rc"))
+    }
+
   def newThread(state: MemorySegment): MemorySegment =
     checkOpen()
-    LxHandles.lx_new_thread.invokeExact(state).asInstanceOf[MemorySegment]
+    LxHandles.lx_new_thread.invokeExact(state): MemorySegment
 
   def pushNil(state: MemorySegment): Unit =
     LxHandles.lx_push_nil.invokeExact(L, state): Unit
@@ -102,7 +127,7 @@ final class PanamaState private (
     LxHandles.lx_push_ref.invokeExact(L, state, registry): Unit
 
   def typeAt(state: MemorySegment, idx: Int): LuaType =
-    val code = LxHandles.lx_type.invokeExact(L, state, idx).asInstanceOf[Int]
+    val code: Int = LxHandles.lx_type.invokeExact(L, state, idx)
     code match
       case LX_TNONE     => LuaType.None
       case LX_TNIL      => LuaType.Nil
@@ -118,19 +143,17 @@ final class PanamaState private (
   def toNumber(state: MemorySegment, idx: Int): Option[Double] =
     withArena { arena =>
       val flag = arena.allocate(ValueLayout.JAVA_INT)
-      val n = LxHandles.lx_to_number.invokeExact(L, state, idx, flag)
-        .asInstanceOf[Double]
+      val n: Double = LxHandles.lx_to_number.invokeExact(L, state, idx, flag)
       if flag.get(ValueLayout.JAVA_INT, 0L) != 0 then Some(n) else None
     }
 
   def toBoolean(state: MemorySegment, idx: Int): Boolean =
-    val result: Int = LxHandles.lx_to_boolean.invokeExact(L, state, idx).asInstanceOf[Int]
+    val result: Int = LxHandles.lx_to_boolean.invokeExact(L, state, idx)
     result != 0
 
   def toBytes(state: MemorySegment, idx: Int): Option[IArray[Byte]] =
     withArena { arena =>
-      val rawLen = LxHandles.lx_rawlen.invokeExact(L, state, idx)
-        .asInstanceOf[Long]
+      val rawLen: Long = LxHandles.lx_rawlen.invokeExact(L, state, idx)
       if rawLen == 0L then
         val t = typeAt(state, idx)
         if t == LuaType.String then Some(IArray.empty[Byte])
@@ -139,9 +162,9 @@ final class PanamaState private (
         val bufSize = rawLen + 1L
         val buf = arena.allocate(bufSize, 1L)
         val lenPtr = arena.allocate(ValueLayout.JAVA_LONG)
-        val ok = LxHandles.lx_to_lstring.invokeExact(
+        val ok: Int = LxHandles.lx_to_lstring.invokeExact(
           L, state, idx, buf, bufSize, lenPtr,
-        ).asInstanceOf[Int]
+        )
         if ok != 0 then
           val actualLen = lenPtr.get(ValueLayout.JAVA_LONG, 0L)
           val bytes = new Array[Byte](actualLen.toInt)
@@ -151,7 +174,7 @@ final class PanamaState private (
     }
 
   def stackTop(state: MemorySegment): Int =
-    LxHandles.lx_stack_top.invokeExact(L, state).asInstanceOf[Int]
+    LxHandles.lx_stack_top.invokeExact(L, state): Int
 
   def setStackTop(state: MemorySegment, idx: Int): Unit =
     val top = stackTop(state)
@@ -180,13 +203,16 @@ final class PanamaState private (
     LxHandles.lx_rawgeti.invokeExact(L, state, tableIdx, n): Unit
 
   def rawLen(state: MemorySegment, idx: Int): Long =
-    LxHandles.lx_rawlen.invokeExact(L, state, idx).asInstanceOf[Long]
+    LxHandles.lx_rawlen.invokeExact(L, state, idx): Long
 
   def ref(state: MemorySegment): Ref[MemorySegment] =
     checkOpen()
-    val key = LxHandles.lx_ref.invokeExact(L, state, -1).asInstanceOf[Int]
+    val key: Int = LxHandles.lx_ref.invokeExact(L, state, -1)
     if key == -1 then
       throw new IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
+    // lx_ref pins by index without popping (see lx.h); the Ref now owns the
+    // value, so consume it off the stack — matches WasmBinding and luaL_ref.
+    LxHandles.lx_pop.invokeExact(L, state, 1): Unit
     val origin = Ref.genOrigin()
     Ref(L, key, this, origin)
 
@@ -203,22 +229,22 @@ final class PanamaState private (
     }
 
   def getGlobal(state: MemorySegment, name: String): Unit =
-    pushString(state, name)
-    LxHandles.lx_rawget.invokeExact(L, state, LUA_GLOBALSINDEX): Unit
+    withArena { arena =>
+      val nameSeg = Marshal.toNativeString(name, arena)
+      LxHandles.lx_get_global.invokeExact(state, nameSeg): Unit
+    }
 
   def setGlobal(state: MemorySegment, name: String): Unit =
-    val saved = LxHandles.lx_ref.invokeExact(L, state, -1).asInstanceOf[Int]
-    LxHandles.lx_pop.invokeExact(L, state, 1): Unit
-    pushString(state, name)
-    LxHandles.lx_push_ref.invokeExact(L, state, saved): Unit
-    LxHandles.lx_rawset.invokeExact(L, state, LUA_GLOBALSINDEX): Unit
-    LxHandles.lx_unref.invokeExact(L, saved): Unit
+    withArena { arena =>
+      val nameSeg = Marshal.toNativeString(name, arena)
+      LxHandles.lx_set_global.invokeExact(state, nameSeg): Unit
+    }
 
   def pushCopy(state: MemorySegment, idx: Int): Unit =
     LxHandles.lx_push_copy.invokeExact(L, state, idx): Unit
 
   def openLibs(state: MemorySegment, mask: Int): Unit =
-    LxHandles.lx_openlibs.invokeExact(state, mask): Unit
+    val _: Int = LxHandles.lx_openlibs.invokeExact(state, mask)
 
   def sandbox(state: MemorySegment): Unit =
     LxHandles.lx_sandbox.invokeExact(state): Unit
@@ -244,8 +270,7 @@ final class PanamaState private (
   private def readError(thread: MemorySegment): String =
     withArena { arena =>
       val buf = arena.allocate(4096L, 1L)
-      val n = LxHandles.lx_copy_error.invokeExact(L, thread, buf, 4096L)
-        .asInstanceOf[Long]
+      val n: Long = LxHandles.lx_copy_error.invokeExact(L, thread, buf, 4096L)
       Marshal.fromNativeString(buf, n)
     }
 
@@ -264,7 +289,7 @@ object PanamaState:
     val stateArena = Arena.ofShared()
     val dispatcher = new NativeFnDispatcher()
     val stub = dispatcher.allocateUpcallStub(stateArena)
-    val L = LxHandles.lx_newstate.invokeExact(stub).asInstanceOf[MemorySegment]
+    val L: MemorySegment = LxHandles.lx_newstate.invokeExact(stub)
     if L.address() == 0L then
       stateArena.close()
       throw new OutOfMemoryError("lx_newstate returned NULL")

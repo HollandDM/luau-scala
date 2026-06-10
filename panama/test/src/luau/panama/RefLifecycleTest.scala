@@ -5,12 +5,11 @@ import luau.core.*
 
 class RefLifecycleTest extends munit.FunSuite:
 
-  test("lx_ref stores table and lx_push_ref retrieves it".ignore) {
+  test("lx_ref stores table and lx_push_ref retrieves it") {
     PanamaState.use { ps =>
       ps.newTable(ps.L)
+      // ref() consumes the value off the stack (luaL_ref semantics).
       val ref = ps.ref(ps.L)
-      assertEquals(ps.stackTop(ps.L), 1)
-      ps.pop(ps.L, 1)
       assertEquals(ps.stackTop(ps.L), 0)
       ps.pushRef(ps.L, ref.registryKey)
       assertEquals(ps.stackTop(ps.L), 1)
@@ -18,7 +17,7 @@ class RefLifecycleTest extends munit.FunSuite:
     }
   }
 
-  test("PanamaRef.close() is idempotent".ignore) {
+  test("PanamaRef.close() is idempotent") {
     PanamaState.use { ps =>
       ps.pushNil(ps.L)
       val ref = ps.ref(ps.L)
@@ -27,12 +26,12 @@ class RefLifecycleTest extends munit.FunSuite:
     }
   }
 
-  test("scoped block releases Refs on exit".ignore) {
+  test("scoped block releases Refs on exit") {
     PanamaState.use { ps =>
       ps.scoped { scope ?=>
         ps.newTable(ps.L)
+        // captureTop refs the value and consumes it off the stack.
         val ref = scope.captureTop()
-        ps.pop(ps.L, 1)
         assertEquals(ps.stackTop(ps.L), 0)
         ref.push()
         assertEquals(ps.typeAt(ps.L, -1), LuaType.Table)
@@ -42,7 +41,7 @@ class RefLifecycleTest extends munit.FunSuite:
     }
   }
 
-  test("leaked Ref does not crash; state teardown frees it".ignore) {
+  test("leaked Ref does not crash; state teardown frees it") {
     val ref = PanamaState.use { ps =>
       ps.newTable(ps.L)
       ps.ref(ps.L)

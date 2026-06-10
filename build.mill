@@ -43,10 +43,24 @@ object panama extends LuauCrossPlatformModule {
   override def moduleDeps = super.moduleDeps ++ Seq(core.jvm)
   object test extends ScalaTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    def forkArgs = Seq(
-      "--enable-native-access=ALL-UNNAMED",
-      "--enable-preview"
-    )
+    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm.test)
+    override def forkArgs = Task {
+      val lib = shim.nativeBuild()
+      Seq(
+        "--enable-native-access=ALL-UNNAMED",
+        "--enable-preview",
+        s"-Dluau.shim.lib=${lib.path}"
+      )
+    }
+    override def forkEnv = Task {
+      super.forkEnv() ++ Map(
+        "LUAU_CONFORMANCE_DIR" -> (shim.moduleDir / "luau" / "tests" / "conformance").toString,
+        // Luau's number lexing/printing goes through libc strtod/snprintf,
+        // which honor LC_NUMERIC. A comma-decimal locale (vi_VN, de_DE, ...)
+        // breaks parsing of literals like 3.14 inside the native Runtime.
+        "LC_ALL" -> "C"
+      )
+    }
   }
 }
 
@@ -55,37 +69,57 @@ object wasm extends LuauCrossPlatformJSModule {
   override def jsEnvConfig = Task {
     val wasmDir = shim.wasmBuildNative()
     val wasmPath = wasmDir.path / "luau-shim.wasm"
-    JsEnvConfig.NodeJs().copy(env = Map("LUAU_WASM_PATH" -> wasmPath.toString))
+    JsEnvConfig.NodeJs().copy(env = Map(
+      "LUAU_WASM_PATH" -> wasmPath.toString,
+      "LUAU_CONFORMANCE_DIR" -> (shim.moduleDir / "luau" / "tests" / "conformance").toString
+    ))
   }
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
+    override def moduleDeps = super.moduleDeps ++ Seq(core.js.test)
   }
 }
 
 object shim extends Module {
 
-  def shimSrcDir    = Task { os.pwd / "shim" }
-  def shimIncDir    = Task { os.pwd / "shim" / "include" }
-  def shimSource    = Task.Source(os.pwd / "shim")
-  def luauIncVm     = Task { os.pwd / "shim" / "luau" / "VM" / "include" }
-  def luauIncCommon = Task { os.pwd / "shim" / "luau" / "Common" / "include" }
-  def luauIncCompiler = Task { os.pwd / "shim" / "luau" / "Compiler" / "include" }
-  def luauIncAst    = Task { os.pwd / "shim" / "luau" / "Ast" / "include" }
-  def luauIncBytecode = Task { os.pwd / "shim" / "luau" / "Bytecode" / "include" }
-  def luauVmDir     = Task { os.pwd / "shim" / "luau" / "VM" }
-  def luauCompilerDir = Task { os.pwd / "shim" / "luau" / "Compiler" }
-  def luauAstDir    = Task { os.pwd / "shim" / "luau" / "Ast" }
-  def luauBytecodeDir = Task { os.pwd / "shim" / "luau" / "Bytecode" }
-  def luauCommonDir = Task { os.pwd / "shim" / "luau" / "Common" }
+  // Mill 1.x sandboxes os.pwd inside tasks; moduleDir is this module's real
+  // source directory (<repo>/shim).
+  def shimSrcDir    = Task { moduleDir }
+  def shimIncDir    = Task { moduleDir / "include" }
+  // Content-tracked shim sources: editing lx.cpp/lx.h/build-wasm.sh must
+  // invalidate nativeBuild and wasmBuildNative.
+  def shimSources   = Task.Sources(
+    moduleDir / "src",
+    moduleDir / "include",
+    moduleDir / "build-wasm.sh"
+  )
+  def luauIncVm     = Task { moduleDir / "luau" / "VM" / "include" }
+  def luauIncCommon = Task { moduleDir / "luau" / "Common" / "include" }
+  def luauIncCompiler = Task { moduleDir / "luau" / "Compiler" / "include" }
+  def luauIncAst    = Task { moduleDir / "luau" / "Ast" / "include" }
+  def luauIncBytecode = Task { moduleDir / "luau" / "Bytecode" / "include" }
+  def luauVmDir     = Task { moduleDir / "luau" / "VM" }
+  def luauCompilerDir = Task { moduleDir / "luau" / "Compiler" }
+  def luauAstDir    = Task { moduleDir / "luau" / "Ast" }
+  def luauBytecodeDir = Task { moduleDir / "luau" / "Bytecode" }
+  def luauCommonDir = Task { moduleDir / "luau" / "Common" }
 
   def luauSubmoduleHead: Task[String] = Task.Input {
-    val headFile = os.pwd / "shim" / "luau" / ".git" / "HEAD"
+    val headFile = moduleDir / "luau" / ".git" / "HEAD"
     if (os.exists(headFile)) os.read(headFile).trim
     else "absent"
   }
 
-  def luauSources: Task[Seq[os.Path]] = Task {
-    val dirs = Seq(luauVmDir(), luauCompilerDir(), luauAstDir(), luauBytecodeDir(), luauCommonDir())
+  // Task.Input: listing the vendored submodule is an untracked read in Mill's
+  // execution checker; Input tasks may read freely and re-evaluate per run.
+  def luauSources: Task[Seq[os.Path]] = Task.Input {
+    val dirs = Seq(
+      moduleDir / "luau" / "VM",
+      moduleDir / "luau" / "Compiler",
+      moduleDir / "luau" / "Ast",
+      moduleDir / "luau" / "Bytecode",
+      moduleDir / "luau" / "Common"
+    )
     dirs.flatMap { d =>
       val srcDir = d / "src"
       if (os.exists(srcDir)) os.list(srcDir).filter(_.ext == "cpp")
@@ -108,6 +142,7 @@ object shim extends Module {
   }
 
   def nativeBuild: Task[PathRef] = Task {
+    val _           = shimSources()
     val dest        = Task.dest
     val (ext, lflags) = nativePlatform()
     val outLib      = dest / s"libluau-shim.$ext"
@@ -142,7 +177,7 @@ object shim extends Module {
       "_lx_set_suspend_token", "_lx_get_suspend_token",
       "_lx_set_global", "_lx_get_global",
       "_lx_openlibs", "_lx_sandbox", "_lx_open_libs",
-      "_lx_gc_step", "_lx_gc_collect", "_lx_copy_error",
+      "_lx_gc_step", "_lx_gc_collect", "_lx_copy_error", "_lx_conformance_setup", "_lx_resume_error",
       "_malloc", "_free"
     ).mkString("[", ",", "]")
     val exportedRuntimeMethods = Seq(
@@ -166,10 +201,11 @@ object shim extends Module {
   }
 
   def wasmBuildNative = Task {
-    val projectRoot = os.Path(sys.env("PWD"))
-    val script = projectRoot / "shim" / "build-wasm.sh"
+    val _ = luauSubmoduleHead()
+    val _sources = shimSources()
+    val script = moduleDir / "build-wasm.sh"
     os.proc("/usr/bin/bash", script.toString, Task.dest.toString).call(
-      cwd = projectRoot,
+      cwd = moduleDir / os.up,
       stdout = os.Inherit,
       stderr = os.Inherit
     )

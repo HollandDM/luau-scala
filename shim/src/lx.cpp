@@ -4,10 +4,12 @@ extern "C" {
 #include "lua.h"
 #include "lualib.h"
 #include "luacode.h"
+#include "Luau/Common.h"
 #include <cstring>
 #include <cstdlib>
 #include <cstdint>
 #include <cstdio>
+#include <cmath>
 
 extern "C" {
 
@@ -174,13 +176,7 @@ int lx_compile_and_load(
 // Resume boundary
 // -----------------------------------------------------------------------
 
-int lx_resume(lx_State state, lx_Thread thread, int nArgs, int* nResults) {
-    lua_State* L  = static_cast<lua_State*>(state);
-    lua_State* co = static_cast<lua_State*>(thread);
-    (void)L;
-
-    int status = lua_resume(co, nullptr, nArgs);
-
+static int lx_map_resume_status(lua_State* co, int status, int* nResults) {
     switch (status) {
         case LUA_OK:
             *nResults = lua_gettop(co);
@@ -195,6 +191,21 @@ int lx_resume(lx_State state, lx_Thread thread, int nArgs, int* nResults) {
             *nResults = 0;
             return LX_RESUME_ERR;
     }
+}
+
+int lx_resume(lx_State state, lx_Thread thread, int nArgs, int* nResults) {
+    lua_State* co = static_cast<lua_State*>(thread);
+    (void)state;
+    return lx_map_resume_status(co, lua_resume(co, nullptr, nArgs), nResults);
+}
+
+int lx_resume_error(lx_State state, lx_Thread thread, int* nResults) {
+    lua_State* co = static_cast<lua_State*>(thread);
+    (void)state;
+    // Resumes the yielded thread by raising the value at the top of its
+    // stack as an error inside it (a script pcall around the suspension
+    // point observes the failure). Wraps lua_resumeerror.
+    return lx_map_resume_status(co, lua_resumeerror(co, nullptr), nResults);
 }
 
 // -----------------------------------------------------------------------
@@ -243,8 +254,8 @@ int lx_to_lstring(lx_State s, lx_Thread t, int idx,
     size_t slen = 0;
     const char* p = lua_tolstring(T(t), idx, &slen);
     *len = slen;
-    size_t copy = (slen < dstlen - 1) ? slen : dstlen - 1;
     if (dst && dstlen > 0) {
+        size_t copy = (slen < dstlen - 1) ? slen : dstlen - 1;
         memcpy(dst, p, copy);
         dst[copy] = '\0';
     }
@@ -345,6 +356,9 @@ void lx_get_global(lx_State state, const char* name) {
 
 int lx_openlibs(lx_State state, uint32_t mask) {
     lua_State* L = static_cast<lua_State*>(state);
+    // luaopen_* leave their library table on the stack; restore the caller's
+    // stack height once registration into globals is done.
+    int base = lua_gettop(L);
 
     if (mask & LX_LIB_BASE)      luaopen_base(L);
     if (mask & LX_LIB_MATH)      luaopen_math(L);
@@ -371,6 +385,7 @@ int lx_openlibs(lx_State state, uint32_t mask) {
     lua_pushnil(L); lua_setglobal(L, "io");
     lua_pushnil(L); lua_setglobal(L, "package");
 
+    lua_settop(L, base);
     return 0;
 }
 
@@ -399,6 +414,7 @@ void lx_gc_collect(lx_State state) {
 
 size_t lx_copy_error(lx_State s, lx_Thread t,
                       char* errbuf, size_t errbufsz) {
+    if (!errbuf || errbufsz == 0) return 0;
     lua_State* L = T(t);
     size_t slen = 0;
     const char* p = nullptr;
@@ -409,5 +425,205 @@ size_t lx_copy_error(lx_State s, lx_Thread t,
     memcpy(errbuf, p, copy);
     errbuf[copy] = '\0';
     return copy;
+}
+
+// -----------------------------------------------------------------------
+// Conformance-harness environment
+// Replicates the script environment of the upstream Luau conformance
+// runner (tests/Conformance.test.cpp runConformance): the extra globals
+// scripts expect, then sandbox + sandboxthread + _G. Host calls this
+// once after lx_openlibs and before lx_compile_and_load.
+// -----------------------------------------------------------------------
+
+static int conf_collectgarbage(lua_State* L) {
+    const char* option = luaL_optstring(L, 1, "collect");
+    int data = luaL_optinteger(L, 2, 0);
+
+    int what = -1;
+    int boolResult = 0;
+    if      (strcmp(option, "collect") == 0)     what = LUA_GCCOLLECT;
+    else if (strcmp(option, "count") == 0)       what = LUA_GCCOUNT;
+    else if (strcmp(option, "stop") == 0)        what = LUA_GCSTOP;
+    else if (strcmp(option, "restart") == 0)     what = LUA_GCRESTART;
+    else if (strcmp(option, "step") == 0)        { what = LUA_GCSTEP; boolResult = 1; }
+    else if (strcmp(option, "isrunning") == 0)   { what = LUA_GCISRUNNING; boolResult = 1; }
+    else if (strcmp(option, "setgoal") == 0)     what = LUA_GCSETGOAL;
+    else if (strcmp(option, "setstepmul") == 0)  what = LUA_GCSETSTEPMUL;
+    else if (strcmp(option, "setstepsize") == 0) what = LUA_GCSETSTEPSIZE;
+    else luaL_error(L, "collectgarbage: unsupported option '%s'", option);
+
+    int res = lua_gc(L, what, data);
+    if (boolResult) lua_pushboolean(L, res);
+    else            lua_pushnumber(L, res);
+    return 1;
+}
+
+static int conf_loadstring(lua_State* L) {
+    size_t len = 0;
+    const char* source = luaL_checklstring(L, 1, &len);
+    const char* chunkname = luaL_optstring(L, 2, source);
+
+    // The chunk produced by loadstring must not inherit the safeenv bit.
+    lua_setsafeenv(L, LUA_ENVIRONINDEX, false);
+
+    size_t bytecodeLen = 0;
+    char* bytecode = luau_compile(source, len, nullptr, &bytecodeLen);
+    int rc = luau_load(L, chunkname, bytecode, bytecodeLen, 0);
+    free(bytecode);
+    if (rc == 0)
+        return 1; // compiled closure
+    lua_pushnil(L);
+    lua_insert(L, -2);
+    return 2; // nil, error message
+}
+
+static int conf_silence(lua_State* L) {
+    return 0;
+}
+
+static int conf_false(lua_State* L) {
+    lua_pushboolean(L, 0);
+    return 1;
+}
+
+// This embedding never runs codegen, so "native if supported" is vacuously
+// satisfied (mirrors the upstream helper's !codegen_supported branch).
+static int conf_true(lua_State* L) {
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+// ---- vector test helpers: Magnitude/Unit properties, Dot/Cross methods ----
+
+static int conf_vector_dot(lua_State* L) {
+    const float* a = luaL_checkvector(L, 1);
+    const float* b = luaL_checkvector(L, 2);
+    lua_pushnumber(L, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
+    return 1;
+}
+
+static int conf_vector_cross(lua_State* L) {
+    const float* a = luaL_checkvector(L, 1);
+    const float* b = luaL_checkvector(L, 2);
+    lua_pushvector(L,
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]);
+    return 1;
+}
+
+static int conf_vector_index(lua_State* L) {
+    const float* v = luaL_checkvector(L, 1);
+    const char* name = luaL_checkstring(L, 2);
+
+    // Component access: once an __index metamethod is installed, dynamic
+    // string indexing routes here, so serve both lower- and uppercase.
+    if (name[0] != '\0' && name[1] == '\0') {
+        switch (name[0]) {
+            case 'x': case 'X': lua_pushnumber(L, v[0]); return 1;
+            case 'y': case 'Y': lua_pushnumber(L, v[1]); return 1;
+            case 'z': case 'Z': lua_pushnumber(L, v[2]); return 1;
+        }
+    }
+    if (strcmp(name, "Magnitude") == 0) {
+        lua_pushnumber(L, sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]));
+        return 1;
+    }
+    if (strcmp(name, "Unit") == 0) {
+        float inv = 1.0f / sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        lua_pushvector(L, v[0] * inv, v[1] * inv, v[2] * inv);
+        return 1;
+    }
+    if (strcmp(name, "Dot") == 0) {
+        lua_pushcfunction(L, conf_vector_dot, nullptr);
+        return 1;
+    }
+    if (strcmp(name, "Cross") == 0) {
+        lua_pushcfunction(L, conf_vector_cross, nullptr);
+        return 1;
+    }
+    // Match the VM's own unknown-member message (vector_library.luau
+    // asserts on its exact wording).
+    luaL_error(L, "attempt to index vector with '%s'", name);
+}
+
+static int conf_vector_namecall(lua_State* L) {
+    if (const char* name = lua_namecallatom(L, nullptr)) {
+        if (strcmp(name, "Dot") == 0)
+            return conf_vector_dot(L);
+        if (strcmp(name, "Cross") == 0)
+            return conf_vector_cross(L);
+    }
+    luaL_error(L, "%s is not a valid method of vector", luaL_checkstring(L, 1));
+}
+
+static void conf_install_vector_metatable(lua_State* L) {
+    lua_pushvector(L, 0.0f, 0.0f, 0.0f);
+    luaL_newmetatable(L, "vector");
+
+    lua_pushstring(L, "__index");
+    lua_pushcfunction(L, conf_vector_index, nullptr);
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "__namecall");
+    lua_pushcfunction(L, conf_vector_namecall, nullptr);
+    lua_settable(L, -3);
+
+    lua_setreadonly(L, -1, true);
+    lua_setmetatable(L, -2);
+    lua_pop(L, 1);
+}
+
+static void conf_enable_fflag(const char* name) {
+    for (Luau::FValue<bool>* flag = Luau::FValue<bool>::list; flag; flag = flag->next) {
+        if (strcmp(flag->name, name) == 0) {
+            flag->value = true;
+            return;
+        }
+    }
+}
+
+static int conf_makelud(lua_State* L) {
+    if (lua_isnumber(L, 1)) {
+        double v = lua_tonumber(L, 1);
+        lua_pushlightuserdata(L, reinterpret_cast<void*>(static_cast<uintptr_t>(v)));
+    } else {
+        lua_pushlightuserdata(L, const_cast<void*>(lua_topointer(L, 1)));
+    }
+    return 1;
+}
+
+void lx_conformance_setup(lx_State state, int silencePrint) {
+    lua_State* L = static_cast<lua_State*>(state);
+
+    // The upstream harness runs iter.luau with LuauYieldIter2 enabled
+    // (yield inside a for-in iterator). Process-global, test-only.
+    conf_enable_fflag("LuauYieldIter2");
+
+    lua_pushcfunction(L, conf_collectgarbage, "collectgarbage");
+    lua_setglobal(L, "collectgarbage");
+    lua_pushcfunction(L, conf_loadstring, "loadstring");
+    lua_setglobal(L, "loadstring");
+    lua_pushcfunction(L, conf_false, "is_native");
+    lua_setglobal(L, "is_native");
+    lua_pushcfunction(L, conf_true, "is_native_if_supported");
+    lua_setglobal(L, "is_native_if_supported");
+    lua_pushcfunction(L, conf_makelud, "makelud");
+    lua_setglobal(L, "makelud");
+    if (silencePrint) {
+        lua_pushcfunction(L, conf_silence, "print");
+        lua_setglobal(L, "print");
+    }
+
+    conf_install_vector_metatable(L);
+
+    // Freeze the shared globals, then give the running thread its own
+    // writable global table proxying the frozen one.
+    luaL_sandbox(L);
+    luaL_sandboxthread(L);
+
+    // Scripts treat _G as a synonym for their global environment.
+    lua_pushvalue(L, LUA_GLOBALSINDEX);
+    lua_setfield(L, -1, "_G");
 }
 } /* extern "C" */

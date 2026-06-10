@@ -26,6 +26,7 @@ trait WasmModuleExports extends js.Object:
   def _lx_compile_and_load(state: Int, srcPtr: Int, srcLen: Int, chunknamePtr: Int, optLevel: Int, debugLevel: Int, errbufPtr: Int, errbufSz: Int): Int = js.native
 
   def _lx_resume(state: Int, thread: Int, nArgs: Int, nResultsPtr: Int): Int = js.native
+  def _lx_resume_error(state: Int, thread: Int, nResultsPtr: Int): Int = js.native
 
   def _lx_push_nil(state: Int, thread: Int): Unit = js.native
   def _lx_push_boolean(state: Int, thread: Int, b: Int): Unit = js.native
@@ -64,6 +65,7 @@ trait WasmModuleExports extends js.Object:
   def _lx_openlibs(state: Int, mask: Int): Unit = js.native
   def _lx_open_libs(state: Int): Unit = js.native
   def _lx_sandbox(state: Int): Unit = js.native
+  def _lx_conformance_setup(state: Int, silencePrint: Int): Unit = js.native
 
   def _lx_gc_step(state: Int, stepsize: Int): Unit = js.native
   def _lx_gc_collect(state: Int): Unit = js.native

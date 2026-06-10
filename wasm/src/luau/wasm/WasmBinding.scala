@@ -29,7 +29,7 @@ final class WasmBinding private () extends Binding[Int]:
       WasmMarshal.withIArrayBytes(source) { (srcPtr, srcLen) =>
         WasmMarshal.withString(chunkname) { (cnPtr, _) =>
           val status = module._lx_compile_and_load(
-            state, srcPtr, srcLen, cnPtr, 1, 0, errbufPtr, errbufSz
+            state, srcPtr, srcLen, cnPtr, 1, 1, errbufPtr, errbufSz
           )
           if status == 0 then Right(())
           else
@@ -103,21 +103,7 @@ final class WasmBinding private () extends Binding[Int]:
 
   override def typeAt(state: Int, idx: Int): LuaType =
     val thread = mainThread(state)
-    val code = module._lx_type(state, thread, idx)
-    code match
-      case -1 => LuaType.None
-      case 0  => LuaType.Nil
-      case 1  => LuaType.Boolean
-      case 2  => LuaType.Nil
-      case 3 => LuaType.Number
-      case 4 => LuaType.Number
-      case 5 => LuaType.Number
-      case 6 => LuaType.String
-      case 7 => LuaType.Table
-      case 8 => LuaType.Function
-      case 9 => LuaType.Userdata
-      case 10 => LuaType.Thread
-      case _ => LuaType.Nil
+    LuaType.fromCode(module._lx_type(state, thread, idx))
 
   override def toNumber(state: Int, idx: Int): Option[Double] =
     val thread = mainThread(state)
@@ -205,6 +191,8 @@ final class WasmBinding private () extends Binding[Int]:
   override def ref(state: Int): Ref[Int] =
     val thread = mainThread(state)
     val refId = module._lx_ref(state, thread, -1)
+    if refId == -1 then
+      throw IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
     // lx_ref pins by index without popping (see lx.h); the Ref now owns the
     // value, so consume it off the stack to match luaL_ref semantics.
     module._lx_pop(state, thread, 1)

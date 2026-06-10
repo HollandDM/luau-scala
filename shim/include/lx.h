@@ -400,6 +400,49 @@ void lx_gc_collect(lx_State state);
 size_t lx_copy_error(lx_State state, lx_Thread thread,
                       char* errbuf, size_t errbufsz);
 
+/* ------------------------------------------------------------------ */
+/* Global access                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Pop the value at the top of the main thread's stack and assign it to
+ * the named global. Wraps lua_setglobal.
+ */
+void lx_set_global(lx_State state, const char* name);
+
+/**
+ * Push the named global onto the main thread's stack.
+ * Wraps lua_getglobal.
+ */
+void lx_get_global(lx_State state, const char* name);
+
+/* ------------------------------------------------------------------ */
+/* Resume with error injection                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Resume a yielded thread by raising the value at the top of its stack
+ * as an error inside it. Used by the Host to fail a Suspension: a script
+ * pcall around the suspension point observes the failure. Wraps
+ * lua_resumeerror; returns the same LX_RESUME_* codes as lx_resume.
+ */
+int lx_resume_error(lx_State state, lx_Thread thread, int* nResults);
+
+/* ------------------------------------------------------------------ */
+/* Conformance-harness environment                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Set up the script environment the upstream Luau conformance tests
+ * expect (mirrors tests/Conformance.test.cpp runConformance):
+ *   - registers globals: collectgarbage, loadstring, is_native,
+ *     is_native_if_supported, makelud, and (if silencePrint) a no-op print
+ *   - luaL_sandbox + luaL_sandboxthread
+ *   - sets _G to the thread's global environment
+ * Call once after lx_openlibs and before lx_compile_and_load.
+ */
+void lx_conformance_setup(lx_State state, int silencePrint);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

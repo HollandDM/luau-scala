@@ -5,7 +5,7 @@ import luau.core.*
 
 class NativeFunctionTest extends munit.FunSuite:
 
-  test("native function Return(1) — script receives correct value".ignore) {
+  test("native function Return(1) — script receives correct value") {
     PanamaState.use { ps =>
       ps.registerNativeFn(ps.L, (thread, nargs) =>
         val n = ps.toNumber(thread, -1).getOrElse(0.0)
@@ -22,8 +22,9 @@ class NativeFunctionTest extends munit.FunSuite:
     }
   }
 
-  test("native function Fail — script sees error".ignore) {
+  test("native function Fail — script sees error") {
     PanamaState.use { ps =>
+      ps.openLibs(ps.L, 1) // LX_LIB_BASE — the script needs pcall
       ps.registerNativeFn(ps.L, (thread, nargs) =>
         ps.pushString(thread, "boom")
         NativeFnResult.Fail(LuaValue.Nil)
@@ -40,7 +41,7 @@ class NativeFunctionTest extends munit.FunSuite:
     }
   }
 
-  test("multiple native functions coexist by fnId".ignore) {
+  test("multiple native functions coexist by fnId") {
     PanamaState.use { ps =>
       ps.registerNativeFn(ps.L, (thread, nargs) =>
         ps.pushNumber(thread, 1.0)

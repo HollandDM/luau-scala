@@ -10,19 +10,20 @@ import luau.panama.LxHandles.*
 final class NativeFnDispatcher:
   private var ps: PanamaState = null
   private val fns = new ConcurrentHashMap[Int, NativeFn[MemorySegment]]()
-  private var nextId = 1
+  private val nextId = new java.util.concurrent.atomic.AtomicInteger(1)
 
   private[panama] def init(state: PanamaState): Unit =
     ps = state
 
   def register(fn: NativeFn[MemorySegment]): Int =
-    val id = nextId
-    nextId += 1
+    val id = nextId.getAndIncrement()
     fns.put(id, fn)
     id
 
   def unregister(id: Int): Unit = fns.remove(id)
 
+  // No exception may escape this method: it runs inside a Panama upcall
+  // frame and an escaping throwable terminates the JVM.
   def dispatch(
     state:    MemorySegment,
     thread:   MemorySegment,
@@ -30,31 +31,40 @@ final class NativeFnDispatcher:
     nArgs:    Int,
     nResults: MemorySegment,
   ): Int =
-    val fn = fns.get(fnId)
-    if fn == null then
-      pushErrorMessage(thread, s"unknown fnId: $fnId")
-      return LX_FAIL
+    try
+      val fn = fns.get(fnId)
+      if fn == null then
+        pushErrorMessage(thread, s"unknown fnId: $fnId")
+        return LX_FAIL
 
-    val result =
-      try fn(thread, nArgs)
-      catch case t: Throwable =>
-        pushErrorMessage(thread, t.getMessage.nn)
-        NativeFnResult.Fail(LuaValue.Nil)
+      val result =
+        try fn(thread, nArgs)
+        catch case t: Throwable =>
+          val msg = Option(t.getMessage).getOrElse(t.getClass.getSimpleName)
+          pushErrorMessage(thread, msg)
+          NativeFnResult.Fail(LuaValue.Nil)
 
-    result match
-      case NativeFnResult.Return(n) =>
-        nResults.set(ValueLayout.JAVA_INT, 0L, n)
-        LX_RETURN
+      result match
+        case NativeFnResult.Return(n) =>
+          // Pointer args cross the upcall boundary as zero-length segments;
+          // resize before dereferencing.
+          nResults.reinterpret(ValueLayout.JAVA_INT.byteSize())
+            .set(ValueLayout.JAVA_INT, 0L, n)
+          LX_RETURN
 
-      case NativeFnResult.Fail(_) =>
-        LX_FAIL
+        case NativeFnResult.Fail(_) =>
+          LX_FAIL
 
-      case s @ NativeFnResult.Suspend(_) =>
-        val panamaState = ps
-        val token = panamaState.suspendRegistry.allocToken(s)
-        panamaState.lastYieldToken = token
-        lx_set_suspend_token.invokeExact(state, thread, token): Unit
-        LX_SUSPEND
+        case s @ NativeFnResult.Suspend(_) =>
+          val panamaState = ps
+          val token = panamaState.suspendRegistry.allocToken(s)
+          panamaState.lastYieldToken = token
+          lx_set_suspend_token.invokeExact(state, thread, token): Unit
+          LX_SUSPEND
+    catch case t: Throwable =>
+      try pushErrorMessage(thread, s"luau-scala: dispatch failed: ${t.getClass.getSimpleName}")
+      catch case _: Throwable => ()
+      LX_FAIL
 
   def allocateUpcallStub(arena: Arena): MemorySegment =
     val mh = MethodHandles.lookup().bind(

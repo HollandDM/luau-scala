@@ -2,9 +2,9 @@ package luau.core
 
 import munit.FunSuite
 
-abstract class SharedBackendSuite extends FunSuite:
+abstract class SharedBackendSuite[H] extends FunSuite:
 
-  def withBinding[A](f: Binding[Int] => A): A
+  def withBinding[A](f: Binding[H] => A): A
 
   test("TC-SHARED-01 basic execution returns integer"):
     withBinding { b =>
@@ -61,7 +61,7 @@ abstract class SharedBackendSuite extends FunSuite:
       val state = b.newState()
       try
         var called = false
-        val fn: NativeFn[Int] = (s, nargs) =>
+        val fn: NativeFn[H] = (s, nargs) =>
           called = true
           val a = b.toNumber(s, 1).get
           val bb = b.toNumber(s, 2).get
@@ -83,7 +83,7 @@ abstract class SharedBackendSuite extends FunSuite:
       val state = b.newState()
       try
         b.openLibs(state, 1) // LX_LIB_BASE — need pcall
-        val fn: NativeFn[Int] = (s, _) =>
+        val fn: NativeFn[H] = (s, _) =>
           b.pushString(s, "deliberate error")
           NativeFnResult.Fail(LuaValue.Nil)
         b.registerNativeFn(state, fn)

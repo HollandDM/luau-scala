@@ -43,17 +43,43 @@ object LuauShimFactory:
     // wasm signature: i32 → Int, i64 → js.BigInt, errno result → 0, void → ().
     // i64 args arrive as JS BigInt; typing them Int would make Scala.js unbox
     // the BigInt → ClassCastException. fd_seek/clock_time_get carry the i64s.
+    // Stubs that take result pointers MUST write them — returning errno 0
+    // while leaving the buffer untouched hands the libc garbage (os.time()
+    // read uninitialized memory until clock_time_get wrote its result).
+    var wasiMemory: js.Dynamic = null
+    def memDataView(): js.Dynamic =
+      js.Dynamic.newInstance(js.Dynamic.global.DataView)(wasiMemory.buffer)
     val wasi = js.Dynamic.literal(
-      fd_write = { (_: Int, _: Int, _: Int, _: Int) => 0 }: js.Function,
+      fd_write = { (_: Int, _: Int, _: Int, nwrittenPtr: Int) =>
+        memDataView().setUint32(nwrittenPtr, 0, true)
+        0
+      }: js.Function,
       fd_close = { (_: Int) => 0 }: js.Function,
       fd_seek = { (_: Int, _: js.BigInt, _: Int, _: Int) => 0 }: js.Function,
-      fd_read = { (_: Int, _: Int, _: Int, _: Int) => 0 }: js.Function,
+      fd_read = { (_: Int, _: Int, _: Int, nreadPtr: Int) =>
+        memDataView().setUint32(nreadPtr, 0, true)
+        0
+      }: js.Function,
       fd_fdstat_get = { (_: Int, _: Int) => 0 }: js.Function,
-      environ_sizes_get = { (_: Int, _: Int) => 0 }: js.Function,
+      environ_sizes_get = { (countPtr: Int, bufSizePtr: Int) =>
+        val dv = memDataView()
+        dv.setUint32(countPtr, 0, true)
+        dv.setUint32(bufSizePtr, 0, true)
+        0
+      }: js.Function,
       environ_get = { (_: Int, _: Int) => 0 }: js.Function,
       proc_exit = { (_: Int) => () }: js.Function,
-      clock_time_get = { (_: Int, _: js.BigInt, _: Int) => 0 }: js.Function,
-      args_sizes_get = { (_: Int, _: Int) => 0 }: js.Function,
+      clock_time_get = { (_: Int, _: js.BigInt, resultPtr: Int) =>
+        val ns = js.BigInt(js.Date.now()) * js.BigInt(1000000)
+        memDataView().setBigUint64(resultPtr, ns, true)
+        0
+      }: js.Function,
+      args_sizes_get = { (countPtr: Int, bufSizePtr: Int) =>
+        val dv = memDataView()
+        dv.setUint32(countPtr, 0, true)
+        dv.setUint32(bufSizePtr, 0, true)
+        0
+      }: js.Function,
       args_get = { (_: Int, _: Int) => 0 }: js.Function,
     )
 
@@ -64,8 +90,9 @@ object LuauShimFactory:
     // Reactor model: run C++ static constructors once. Exports are NOT wrapped
     // with per-call ctors/dtors (that's the WASI *command* model, which tears
     // global state down after every call and corrupts the embedded Runtime).
-    if js.typeOf(ex._initialize) != "undefined" then ex._initialize()
     val mem = ex.memory
+    wasiMemory = mem
+    if js.typeOf(ex._initialize) != "undefined" then ex._initialize()
     val tbl = ex.__indirect_function_table
 
     // HEAPU8/HEAP32 are getters returning a *fresh* typed-array view of current
@@ -100,7 +127,7 @@ object LuauShimFactory:
 
     val names = js.Array(
       "lx_newstate", "lx_close", "lx_main_thread", "lx_new_thread",
-      "lx_thread_status", "lx_compile_and_load", "lx_resume",
+      "lx_thread_status", "lx_compile_and_load", "lx_resume", "lx_resume_error",
       "lx_push_nil", "lx_push_boolean", "lx_push_number", "lx_push_integer",
       "lx_push_lstring", "lx_push_ref", "lx_push_copy", "lx_pop", "lx_stack_top",
       "lx_type", "lx_to_number", "lx_to_integer", "lx_to_boolean", "lx_to_lstring",
@@ -108,7 +135,7 @@ object LuauShimFactory:
       "lx_setarray", "lx_ref", "lx_unref", "lx_register_native",
       "lx_set_suspend_token", "lx_get_suspend_token",
       "lx_set_global", "lx_get_global",
-      "lx_openlibs", "lx_sandbox", "lx_open_libs",
+      "lx_openlibs", "lx_sandbox", "lx_open_libs", "lx_conformance_setup",
       "lx_gc_step", "lx_gc_collect", "lx_copy_error",
     )
 

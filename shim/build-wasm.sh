@@ -38,6 +38,9 @@ CFLAGS=(
   -O2
   -fwasm-exceptions
   -mllvm -wasm-use-legacy-eh=false
+  # Out-of-range float->int casts must wrap/saturate like native C, not trap.
+  # bit32 and number coercions rely on it (i32.trunc_f64 traps on overflow).
+  -mnontrapping-fptoint
   -fno-rtti
   -D_LUAU_HAS_VECTOR_SIZE=0
   -D_WASI_EMULATED_PROCESS_CLOCKS
@@ -53,6 +56,7 @@ WASM_LDFLAGS=(
   -O2
   -fwasm-exceptions
   -mllvm -wasm-use-legacy-eh=false
+  -mnontrapping-fptoint
   -fno-rtti
   -mexec-model=reactor
   -lc++abi
@@ -97,6 +101,8 @@ WASM_LDFLAGS=(
   -Wl,--export=lx_gc_step
   -Wl,--export=lx_gc_collect
   -Wl,--export=lx_copy_error
+  -Wl,--export=lx_conformance_setup
+  -Wl,--export=lx_resume_error
   -Wl,--export=lx_push_integer
   -Wl,--export=lx_to_integer
   -Wl,--export=malloc
@@ -104,7 +110,9 @@ WASM_LDFLAGS=(
   -Wl,--export-table
   -Wl,--growable-table
   -Wl,-z,stack-size=1048576
-  -Wl,--max-memory=33554432
+  # buffers.luau allocates a full 1GiB buffer (bitops stress); growth is
+  # on-demand, so the cap only needs to be high enough. wasm32 max: 4GiB.
+  -Wl,--max-memory=4294967296
 )
 
 echo "=== Compiling Luau sources ==="

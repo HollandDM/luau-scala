@@ -5,7 +5,7 @@ import luau.core.*
 
 class CompileAndRunTest extends munit.FunSuite:
 
-  test("compile valid script returns Right(())".ignore) {
+  test("compile valid script returns Right(())") {
     PanamaState.use { ps =>
       val result = ps.compileAndLoad(
         ps.L, IArray.unsafeFromArray("return 42".getBytes), "test"
@@ -14,7 +14,7 @@ class CompileAndRunTest extends munit.FunSuite:
     }
   }
 
-  test("compile syntax error returns Left(LuaError)".ignore) {
+  test("compile syntax error returns Left(LuaError)") {
     PanamaState.use { ps =>
       val result = ps.compileAndLoad(
         ps.L, IArray.unsafeFromArray("syntax error !!!".getBytes), "test"
@@ -26,7 +26,7 @@ class CompileAndRunTest extends munit.FunSuite:
     }
   }
 
-  test("resume returns Returned for trivial script".ignore) {
+  test("resume returns Returned for trivial script") {
     PanamaState.use { ps =>
       ps.compileAndLoad(
         ps.L, IArray.unsafeFromArray("return 42".getBytes), "test"
@@ -38,7 +38,7 @@ class CompileAndRunTest extends munit.FunSuite:
     }
   }
 
-  test("run 'return 1 + 1' yields integer 2 on stack".ignore) {
+  test("run 'return 1 + 1' yields integer 2 on stack") {
     PanamaState.use { ps =>
       ps.compileAndLoad(
         ps.L, IArray.unsafeFromArray("return 1 + 1".getBytes), "test"
@@ -49,7 +49,7 @@ class CompileAndRunTest extends munit.FunSuite:
     }
   }
 
-  test("run multi-line script with local variables".ignore) {
+  test("run multi-line script with local variables") {
     PanamaState.use { ps =>
       ps.compileAndLoad(
         ps.L, IArray.unsafeFromArray(
