@@ -2,7 +2,7 @@
 out-wasm/
 wasm/test/resources/luau-shim.*
 
-# build caches / IDE
-/out/
+# build caches / IDE — out/ at any depth (worktrees included)
+out/
 /.metals/
 /mill/
