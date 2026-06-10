@@ -368,9 +368,11 @@ int64_t lx_get_suspend_token(lx_Thread thread);
 int  lx_openlibs(lx_State state, uint32_t mask);
 
 /**
- * Null out unsafe globals (io, os.execute, os.exit, os.getenv, package,
- * dofile, loadfile) and freeze the global table via luaL_sandbox.
- * Must be called once, after all libraries and host tables are installed.
+ * Freeze the global table via luaL_sandbox, then give the state's main
+ * thread a writable proxy environment via luaL_sandboxthread (upstream
+ * embedding pattern). Stdlib globals become immutable; new globals written
+ * by the host or by scripts land in the proxy. Threads created afterwards
+ * inherit the proxy. Call once, after lx_openlibs.
  */
 void lx_sandbox(lx_State state);
 

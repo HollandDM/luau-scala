@@ -16,6 +16,17 @@ trait Binding[H]:
     chunkname: String,
   ): Either[LuaError, Unit]
 
+  final def compileAndLoad(
+    state:     H,
+    source:    String,
+    chunkname: String,
+  ): Either[LuaError, Unit] =
+    compileAndLoad(
+      state,
+      IArray.unsafeFromArray(source.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+      chunkname,
+    )
+
   // ---- Resume boundary ------------------------------------------------
 
   def resume(thread: H, nargs: Int): ResumeResult
@@ -51,6 +62,13 @@ trait Binding[H]:
   def toBoolean(state: H, idx: Int): Boolean
 
   def toBytes(state: H, idx: Int): Option[IArray[Byte]]
+
+  def toStringAt(state: H, idx: Int): Option[String] =
+    toBytes(state, idx).map(bytes =>
+      new String(
+        IArray.genericWrapArray(bytes).toArray,
+        java.nio.charset.StandardCharsets.UTF_8,
+      ))
 
   def isNil(state: H, idx: Int): Boolean = typeAt(state, idx) == LuaType.Nil
 

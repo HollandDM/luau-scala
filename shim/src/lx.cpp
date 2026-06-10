@@ -394,6 +394,12 @@ int lx_openlibs(lx_State state, uint32_t mask) {
 void lx_sandbox(lx_State state) {
     lua_State* L = static_cast<lua_State*>(state);
     luaL_sandbox(L);
+    // Upstream embedding pattern: freeze the shared globals, then give the
+    // executing thread a writable proxy environment. Without this, every
+    // post-sandbox global write (host setGlobal, script `x = ...`) raises
+    // "attempt to modify a readonly table". Threads created later inherit
+    // the proxy.
+    luaL_sandboxthread(L);
 }
 
 void lx_open_libs(lx_State state) {
