@@ -91,22 +91,32 @@ def toMap[V: LuauDecoder]: Try[Map[String, V]]
 `Seq`/`Map` decoders — zero new decoding machinery. They fail on ref-data
 members, same rule as the value plane.
 
-### 2.3 Multi-result: explicit arities, not a tuple decoder
+### 2.3 Multi-result: strict, count-suffixed arities over a private tuple kernel
 
-Two options considered:
+**Decided shape:**
 
-- **O1 — fixed-arity variants**: `eval2[A, B](src): Try[(A, B)]` …
-  `eval6[...]`, and matching `call2`…`call6` / `resume2`…`resume6` on
-  handles. Decode at `-n`, `-n+1`, ... — mechanical, no new abstractions.
-- **O2 — window decoder**: a `ResultsDecoder[T <: Tuple]` that consumes a
-  stack *window* rather than one index. Generalizes to any arity, but it is a
-  second decoder concept living next to `LuauDecoder`, and every instance
-  must agree on window-position bookkeeping.
+- **Public surface — count-suffixed variants, 1–6:**
+  `eval1[A]` … `eval6[A..F]` returning `Try[A]` / `Try[(A, .., F)]`, with
+  matching `call1`…`call6` and `resume1`…`resume6` on handles
+  (`resumeK` yields `Try[CoroStep[(..)]]`). Plain `eval[V]` stays as the
+  common-case spelling of `eval1[V]` (same semantics, same strictness).
+- **Strict on extras:** a chunk/function producing **more** results than the
+  requested arity is a `Failure` ("returned n results, evalK consumes K") —
+  silently ignoring results is the bug this kills. Producing **fewer** is
+  nil-padded, mirroring Lua's multiple-assignment semantics: the missing
+  positions decode as nil, so `Option[A]`/`Unit` accept them and `Double`
+  fails with the decoder's own clear error.
+- **Private kernel:** one central decoder
+  `private[api] decodeResultsT[T <: Tuple](thread, n, arity): Either[LuaError, T]`
+  built from `summonAll[Tuple.Map[T, LuauDecoder]]` — decodes the window at
+  `-arity`, `-arity+1`, …, balances the stack on every path. The public
+  arity-K methods are one-line delegates instantiating `T = (A, …, K)`.
+  The kernel stays `private[api]`: its signature is inline/Mirror machinery
+  that cannot be presented as a clean typed public API, and exposing it
+  would invite unchecked-arity misuse.
 
-**Decision: O1, arities 2–6.** Six is enough for now; O2 can subsume O1
-later without breaking callers. `defineGlobal` argument arities extend from
-0–4 to 0–6 in the same change for symmetry. Single-result `eval[V]` keeps
-first-result semantics (documented), no strict mode for now.
+`defineGlobal` argument arities extend from 0–4 to 0–6 in the same change
+for symmetry.
 
 ### 2.4 `LuaArg` ergonomics via `into`
 
@@ -138,7 +148,8 @@ Extends `ApiSuite` (runs on both backends): the LuaAccess contract exercised
 through all three concrete cases (global / field / array elem) — get/set
 round-trips, handle mint + call, type-mismatch failures; nested handle
 chains; `toSeq`/`toMap` snapshot + ref-data rejection; `eval2`/`call2`
-happy paths and an arity-6 case; `into` call-site ergonomics
+happy paths and an arity-6 case; extra-results strictness (`eval1` on a
+2-result chunk fails; nil-padding on fewer); `into` call-site ergonomics
 (compile-level). CC escape negatives for tbl-minted handles
 verified the established way (cc rejection recorded, blind spot pinned in
 CcCompileSpec).
@@ -154,6 +165,4 @@ CcCompileSpec).
    a table? Sound (push via pin, rawSet), but it lets a short-lived scope
    install a long-lived reference; the Lua side keeps it alive after the pin
    drops, which is fine GC-wise but may surprise. Include or defer?
-4. Is first-result-wins for plain `eval[V]` acceptable long-term, or should
-   extra results be a `Failure` under a strict flag?
-5. `LuaAccess` name — alternatives: `LuaSlots`, `LuaFields`, `KeyedAccess`.
+4. `LuaAccess` name — alternatives: `LuaSlots`, `LuaFields`, `KeyedAccess`.
