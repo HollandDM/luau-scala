@@ -64,7 +64,7 @@ object Trampoline:
     table.get(fnId) match
       case None =>
         WasmMarshal.withString(s"luau-scala: unknown fnId $fnId in trampoline") { (ptr, len) =>
-          WasmModule.module._lx_push_lstring(state, thread, ptr, len)
+          WasmModule.module._lx_push_lstring(thread, ptr, len)
         }
         LxReturn.Fail
       case Some(fn) =>
@@ -81,7 +81,7 @@ object Trampoline:
           case t: Throwable =>
             val msg = Option(t.getMessage).getOrElse(t.getClass.getSimpleName)
             WasmMarshal.withString(s"luau-scala: native fn threw: $msg") { (ptr, len) =>
-              WasmModule.module._lx_push_lstring(state, thread, ptr, len)
+              WasmModule.module._lx_push_lstring(thread, ptr, len)
             }
             LxReturn.Fail
 

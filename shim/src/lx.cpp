@@ -114,11 +114,11 @@ lx_Thread lx_new_thread(lx_State state) {
     return static_cast<lx_Thread>(co);
 }
 
-int lx_thread_status(lx_State state, lx_Thread thread) {
-    lua_State* L  = static_cast<lua_State*>(state);
+int lx_thread_status(lx_Thread thread) {
     lua_State* co = static_cast<lua_State*>(thread);
-    (void)L;
-    int s = lua_costatus(L, co);
+    // lua_costatus needs a "current thread" perspective; the main thread of
+    // co's VM reproduces the old (state, thread) behaviour for every caller.
+    int s = lua_costatus(lua_mainthread(co), co);
     switch (s) {
         case LUA_CORUN:  return 0;
         case LUA_COSUS:  return 1;
@@ -193,15 +193,13 @@ static int lx_map_resume_status(lua_State* co, int status, int* nResults) {
     }
 }
 
-int lx_resume(lx_State state, lx_Thread thread, int nArgs, int* nResults) {
+int lx_resume(lx_Thread thread, int nArgs, int* nResults) {
     lua_State* co = static_cast<lua_State*>(thread);
-    (void)state;
     return lx_map_resume_status(co, lua_resume(co, nullptr, nArgs), nResults);
 }
 
-int lx_resume_error(lx_State state, lx_Thread thread, int* nResults) {
+int lx_resume_error(lx_Thread thread, int* nResults) {
     lua_State* co = static_cast<lua_State*>(thread);
-    (void)state;
     // Resumes the yielded thread by raising the value at the top of its
     // stack as an error inside it (a script pcall around the suspension
     // point observes the failure). Wraps lua_resumeerror.
@@ -212,43 +210,43 @@ int lx_resume_error(lx_State state, lx_Thread thread, int* nResults) {
 // Push/pop operations
 // -----------------------------------------------------------------------
 
-void lx_push_nil    (lx_State s, lx_Thread t) { lua_pushnil(T(t)); }
-void lx_push_boolean(lx_State s, lx_Thread t, int b) { lua_pushboolean(T(t), b); }
-void lx_push_number (lx_State s, lx_Thread t, double n) { lua_pushnumber(T(t), n); }
-void lx_push_integer(lx_State s, lx_Thread t, int64_t i) { lua_pushinteger(T(t), (lua_Integer)i); }
-void lx_push_lstring(lx_State s, lx_Thread t, const char* b, size_t l) { lua_pushlstring(T(t), b, l); }
-void lx_push_ref    (lx_State s, lx_Thread t, int ref) { lua_getref(T(t), ref); }
-void lx_push_copy   (lx_State s, lx_Thread t, int idx) { lua_pushvalue(T(t), idx); }
-void lx_pop         (lx_State s, lx_Thread t, int n)   { lua_pop(T(t), n); }
-int  lx_stack_top   (lx_State s, lx_Thread t)          { return lua_gettop(T(t)); }
+void lx_push_nil    (lx_Thread t) { lua_pushnil(T(t)); }
+void lx_push_boolean(lx_Thread t, int b) { lua_pushboolean(T(t), b); }
+void lx_push_number (lx_Thread t, double n) { lua_pushnumber(T(t), n); }
+void lx_push_integer(lx_Thread t, int64_t i) { lua_pushinteger(T(t), (lua_Integer)i); }
+void lx_push_lstring(lx_Thread t, const char* b, size_t l) { lua_pushlstring(T(t), b, l); }
+void lx_push_ref    (lx_Thread t, int ref) { lua_getref(T(t), ref); }
+void lx_push_copy   (lx_Thread t, int idx) { lua_pushvalue(T(t), idx); }
+void lx_pop         (lx_Thread t, int n)   { lua_pop(T(t), n); }
+int  lx_stack_top   (lx_Thread t)          { return lua_gettop(T(t)); }
 
 // -----------------------------------------------------------------------
 // Non-raising read accessors
 // -----------------------------------------------------------------------
 
-int lx_type(lx_State s, lx_Thread t, int idx) {
+int lx_type(lx_Thread t, int idx) {
     return lua_type(T(t), idx);
 }
 
-double lx_to_number(lx_State s, lx_Thread t, int idx, int* ok) {
+double lx_to_number(lx_Thread t, int idx, int* ok) {
     int isnum = 0;
     double v = lua_tonumberx(T(t), idx, &isnum);
     *ok = isnum;
     return v;
 }
 
-int64_t lx_to_integer(lx_State s, lx_Thread t, int idx, int* ok) {
+int64_t lx_to_integer(lx_Thread t, int idx, int* ok) {
     int isok = 0;
     lua_Integer v = lua_tointegerx(T(t), idx, &isok);
     *ok = isok;
     return (int64_t)v;
 }
 
-int lx_to_boolean(lx_State s, lx_Thread t, int idx) {
+int lx_to_boolean(lx_Thread t, int idx) {
     return lua_toboolean(T(t), idx);
 }
 
-int lx_to_lstring(lx_State s, lx_Thread t, int idx,
+int lx_to_lstring(lx_Thread t, int idx,
                    char* dst, size_t dstlen, size_t* len) {
     if (lua_type(T(t), idx) != LUA_TSTRING) { *len = 0; return 0; }
     size_t slen = 0;
@@ -262,7 +260,7 @@ int lx_to_lstring(lx_State s, lx_Thread t, int idx,
     return 1;
 }
 
-size_t lx_rawlen(lx_State s, lx_Thread t, int idx) {
+size_t lx_rawlen(lx_Thread t, int idx) {
     return (size_t)lua_objlen(T(t), idx);
 }
 
@@ -270,31 +268,31 @@ size_t lx_rawlen(lx_State s, lx_Thread t, int idx) {
 // Table operations
 // -----------------------------------------------------------------------
 
-void lx_newtable(lx_State s, lx_Thread t, int narr, int nrec) {
+void lx_newtable(lx_Thread t, int narr, int nrec) {
     lua_createtable(T(t), narr, nrec);
 }
 
-void lx_rawget(lx_State s, lx_Thread t, int tidx) {
+void lx_rawget(lx_Thread t, int tidx) {
     lua_rawget(T(t), tidx);
 }
 
-void lx_rawset(lx_State s, lx_Thread t, int tidx) {
+void lx_rawset(lx_Thread t, int tidx) {
     lua_rawset(T(t), tidx);
 }
 
-void lx_rawgeti(lx_State s, lx_Thread t, int tidx, int n) {
+void lx_rawgeti(lx_Thread t, int tidx, int n) {
     lua_rawgeti(T(t), tidx, n);
 }
 
-void lx_rawseti(lx_State s, lx_Thread t, int tidx, int n) {
+void lx_rawseti(lx_Thread t, int tidx, int n) {
     lua_rawseti(T(t), tidx, n);
 }
 
-int lx_table_next(lx_State s, lx_Thread t, int tidx) {
+int lx_table_next(lx_Thread t, int tidx) {
     return lua_next(T(t), tidx);
 }
 
-void lx_setarray(lx_State s, lx_Thread t, int tidx, int startIdx, int count) {
+void lx_setarray(lx_Thread t, int tidx, int startIdx, int count) {
     lua_State* L = T(t);
     int base = lua_gettop(L) - count + 1;
     for (int i = 0; i < count; i++) {
@@ -307,7 +305,7 @@ void lx_setarray(lx_State s, lx_Thread t, int tidx, int startIdx, int count) {
 // Registry Refs
 // -----------------------------------------------------------------------
 
-int lx_ref(lx_State s, lx_Thread t, int idx) {
+int lx_ref(lx_Thread t, int idx) {
     return lua_ref(T(t), idx);
 }
 
@@ -330,12 +328,12 @@ void lx_register_native(lx_State state, int32_t fnId, const char* debugname) {
 // Suspend token
 // -----------------------------------------------------------------------
 
-void lx_set_suspend_token(lx_State s, lx_Thread t, int64_t token) {
+void lx_set_suspend_token(lx_Thread t, int64_t token) {
     LxStateData* d = get_state_data(static_cast<lua_State*>(t));
     d->suspendToken = token;
 }
 
-int64_t lx_get_suspend_token(lx_State s, lx_Thread t) {
+int64_t lx_get_suspend_token(lx_Thread t) {
     LxStateData* d = get_state_data(static_cast<lua_State*>(t));
     return d->suspendToken;
 }
@@ -416,7 +414,7 @@ void lx_gc_collect(lx_State state) {
     lua_gc(L, LUA_GCCOLLECT, 0);
 }
 
-size_t lx_copy_error(lx_State s, lx_Thread t,
+size_t lx_copy_error(lx_Thread t,
                       char* errbuf, size_t errbufsz) {
     if (!errbuf || errbufsz == 0) return 0;
     lua_State* L = T(t);

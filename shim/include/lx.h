@@ -78,7 +78,7 @@ lx_Thread lx_main_thread(lx_State state);
 lx_Thread lx_new_thread(lx_State state);
 
 /** Query thread status. Returns 0=ok/running, 1=suspended, 2=dead, 3=normal. */
-int lx_thread_status(lx_State state, lx_Thread thread);
+int lx_thread_status(lx_Thread thread);
 
 /* ------------------------------------------------------------------ */
 /* Compile and load                                                     */
@@ -133,7 +133,6 @@ int lx_compile_and_load(
 #define LX_RESUME_MEMERR 3
 
 int lx_resume(
-    lx_State  state,
     lx_Thread thread,
     int       nArgs,
     int*      nResults
@@ -144,31 +143,31 @@ int lx_resume(
 /* ------------------------------------------------------------------ */
 
 /** Push nil onto thread's stack. */
-void lx_push_nil    (lx_State state, lx_Thread thread);
+void lx_push_nil    (lx_Thread thread);
 /** Push boolean. b != 0 → true. */
-void lx_push_boolean(lx_State state, lx_Thread thread, int b);
+void lx_push_boolean(lx_Thread thread, int b);
 /** Push double. */
-void lx_push_number (lx_State state, lx_Thread thread, double n);
+void lx_push_number (lx_Thread thread, double n);
 /** Push 64-bit integer. */
-void lx_push_integer(lx_State state, lx_Thread thread, int64_t i);
+void lx_push_integer(lx_Thread thread, int64_t i);
 /**
  * Push a byte string. The Shim copies the bytes; the caller may free
  * the buffer immediately after.  len is byte count (not NUL-terminated).
  */
-void lx_push_lstring(lx_State state, lx_Thread thread,
+void lx_push_lstring(lx_Thread thread,
                      const char* s, size_t len);
 
 /** Push a value from the registry (by ref key) onto thread's stack. */
-void lx_push_ref    (lx_State state, lx_Thread thread, int ref);
+void lx_push_ref    (lx_Thread thread, int ref);
 
 /** Duplicate stack slot at index idx (1-based from bottom) onto top. */
-void lx_push_copy   (lx_State state, lx_Thread thread, int idx);
+void lx_push_copy   (lx_Thread thread, int idx);
 
 /** Pop n values from thread's stack. */
-void lx_pop         (lx_State state, lx_Thread thread, int n);
+void lx_pop         (lx_Thread thread, int n);
 
 /** Return the current stack height of the thread (number of values). */
-int  lx_stack_top   (lx_State state, lx_Thread thread);
+int  lx_stack_top   (lx_Thread thread);
 
 /* ------------------------------------------------------------------ */
 /* Value read (Luau stack → Host) — NON-RAISING ONLY                   */
@@ -181,7 +180,7 @@ int  lx_stack_top   (lx_State state, lx_Thread thread);
  *                 LX_TSTRING, LX_TTABLE, LX_TFUNCTION, LX_TTHREAD,
  *                 LX_TBUFFER, LX_TVECTOR, LX_TUSERDATA, or LX_TNONE (-1).
  */
-int    lx_type      (lx_State state, lx_Thread thread, int idx);
+int    lx_type      (lx_Thread thread, int idx);
 
 /* lx_type return constants — mirror lua_Type */
 #define LX_TNONE      (-1)
@@ -201,19 +200,19 @@ int    lx_type      (lx_State state, lx_Thread thread, int idx);
  * Read number at idx. Sets *ok=1 if the slot is a number, 0 otherwise.
  * Never errors.
  */
-double  lx_to_number (lx_State state, lx_Thread thread, int idx, int* ok);
+double  lx_to_number (lx_Thread thread, int idx, int* ok);
 
 /**
  * Read integer at idx. Sets *ok=1 if the slot is an integer (LUA_TINTEGER),
  * 0 otherwise.  Does NOT coerce from number.
  */
-int64_t lx_to_integer(lx_State state, lx_Thread thread, int idx, int* ok);
+int64_t lx_to_integer(lx_Thread thread, int idx, int* ok);
 
 /**
  * Read boolean at idx.  Returns 0 for nil/false, 1 for everything else.
  * Never errors.
  */
-int     lx_to_boolean(lx_State state, lx_Thread thread, int idx);
+int     lx_to_boolean(lx_Thread thread, int idx);
 
 /**
  * Copy the string at idx into dst (up to dstlen bytes, NUL-terminated).
@@ -225,45 +224,45 @@ int     lx_to_boolean(lx_State state, lx_Thread thread, int idx);
  * Uses lua_type check + lua_tolstring only when it IS a string.
  * The Shim copies immediately; caller does not need the Lua heap alive.
  */
-int     lx_to_lstring(lx_State state, lx_Thread thread, int idx,
+int     lx_to_lstring(lx_Thread thread, int idx,
                        char* dst, size_t dstlen, size_t* len);
 
 /**
  * Read the raw byte length of string, table, or buffer at idx.
  * Uses lua_rawlen; never errors.  Returns 0 if wrong type.
  */
-size_t  lx_rawlen    (lx_State state, lx_Thread thread, int idx);
+size_t  lx_rawlen    (lx_Thread thread, int idx);
 
 /* ------------------------------------------------------------------ */
 /* Table operations                                                     */
 /* ------------------------------------------------------------------ */
 
 /** Push a new empty table with array hint narr and hash hint nrec. */
-void lx_newtable     (lx_State state, lx_Thread thread, int narr, int nrec);
+void lx_newtable     (lx_Thread thread, int narr, int nrec);
 
 /**
  * Raw table get: pops key from stack top, pushes value at table index tidx.
  * Uses lua_rawget (no __index metamethod).
  */
-void lx_rawget       (lx_State state, lx_Thread thread, int tidx);
+void lx_rawget       (lx_Thread thread, int tidx);
 
 /**
  * Raw table set: pops value then key from stack top, sets table[key]=value
  * at table index tidx.  Uses lua_rawset.
  */
-void lx_rawset       (lx_State state, lx_Thread thread, int tidx);
+void lx_rawset       (lx_Thread thread, int tidx);
 
 /**
  * Raw integer-keyed table get: pushes table[n] at table index tidx.
  * Uses lua_rawgeti.  n is 1-based (Luau convention).
  */
-void lx_rawgeti      (lx_State state, lx_Thread thread, int tidx, int n);
+void lx_rawgeti      (lx_Thread thread, int tidx, int n);
 
 /**
  * Raw integer-keyed table set: pops value from top, sets table[n]=value.
  * Uses lua_rawseti.  n is 1-based.
  */
-void lx_rawseti      (lx_State state, lx_Thread thread, int tidx, int n);
+void lx_rawseti      (lx_Thread thread, int tidx, int n);
 
 /**
  * Batch-set the array part: values are at stack indices [base, base+count).
@@ -272,7 +271,7 @@ void lx_rawseti      (lx_State state, lx_Thread thread, int tidx, int n);
  * because no extra stack manipulation per element.
  * Does NOT pop the values.
  */
-void lx_setarray     (lx_State state, lx_Thread thread,
+void lx_setarray     (lx_Thread thread,
                        int tidx, int startIdx, int count);
 
 /**
@@ -283,7 +282,7 @@ void lx_setarray     (lx_State state, lx_Thread thread,
  * string-keyed tables — and to detect non-copyable members (functions,
  * userdata, threads) while doing so.
  */
-int  lx_table_next   (lx_State state, lx_Thread thread, int tidx);
+int  lx_table_next   (lx_Thread thread, int tidx);
 
 /* ------------------------------------------------------------------ */
 /* Registry Refs                                                        */
@@ -294,7 +293,7 @@ int  lx_table_next   (lx_State state, lx_Thread thread, int tidx);
  * Returns an integer ref key. The value remains on the stack (not popped).
  * Wraps lua_ref.  Never errors (returns LUA_NOREF on empty stack; treat as error).
  */
-int  lx_ref          (lx_State state, lx_Thread thread, int idx);
+int  lx_ref          (lx_Thread thread, int idx);
 
 /**
  * Release a registry ref (wraps lua_unref).
@@ -332,7 +331,7 @@ void lx_register_native(lx_State state, int32_t fnId, const char* debugname);
  * Stores a 64-bit suspend token so the continuation can retrieve it.
  * The token is an opaque value the Host uses to identify the pending async op.
  */
-void lx_set_suspend_token(lx_State state, lx_Thread thread, int64_t token);
+void lx_set_suspend_token(lx_Thread thread, int64_t token);
 
 /**
  * Retrieve the suspend token stored before LX_SUSPEND was returned.
@@ -340,7 +339,7 @@ void lx_set_suspend_token(lx_State state, lx_Thread thread, int64_t token);
  * to discover which async operation to wire.
  * Returns 0 if no token was set.
  */
-int64_t lx_get_suspend_token(lx_State state, lx_Thread thread);
+int64_t lx_get_suspend_token(lx_Thread thread);
 
 /* ------------------------------------------------------------------ */
 /* Standard libraries                                                   */
@@ -407,7 +406,7 @@ void lx_gc_collect(lx_State state);
  * Returns the number of bytes written (excluding NUL).
  * Used after lx_resume returns LX_RESUME_ERR to retrieve the message.
  */
-size_t lx_copy_error(lx_State state, lx_Thread thread,
+size_t lx_copy_error(lx_Thread thread,
                       char* errbuf, size_t errbufsz);
 
 /* ------------------------------------------------------------------ */
@@ -436,7 +435,7 @@ void lx_get_global(lx_State state, const char* name);
  * pcall around the suspension point observes the failure. Wraps
  * lua_resumeerror; returns the same LX_RESUME_* codes as lx_resume.
  */
-int lx_resume_error(lx_State state, lx_Thread thread, int* nResults);
+int lx_resume_error(lx_Thread thread, int* nResults);
 
 /* ------------------------------------------------------------------ */
 /* Conformance-harness environment                                      */

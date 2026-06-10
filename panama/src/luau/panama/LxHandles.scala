@@ -34,59 +34,59 @@ object LxHandles:
   val lx_main_thread: MethodHandle = handle("lx_main_thread", FunctionDescriptor.of(ADDRESS, ADDRESS))
   val lx_new_thread:  MethodHandle = handle("lx_new_thread",  FunctionDescriptor.of(ADDRESS, ADDRESS))
   val lx_thread_status: MethodHandle = handle("lx_thread_status",
-    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS))
+    FunctionDescriptor.of(JAVA_INT, ADDRESS))
 
   val lx_compile_and_load: MethodHandle = handle("lx_compile_and_load",
     FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS,
       JAVA_INT, JAVA_INT, ADDRESS, JAVA_LONG))
 
   val lx_resume: MethodHandle = handle("lx_resume",
-    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS))
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS))
 
-  val lx_push_nil:     MethodHandle = handle("lx_push_nil",     FunctionDescriptor.ofVoid(ADDRESS, ADDRESS))
-  val lx_push_boolean: MethodHandle = handle("lx_push_boolean", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT))
-  val lx_push_number:  MethodHandle = handle("lx_push_number",  FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_DOUBLE))
-  val lx_push_integer: MethodHandle = handle("lx_push_integer", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_LONG))
+  val lx_push_nil:     MethodHandle = handle("lx_push_nil",     FunctionDescriptor.ofVoid(ADDRESS))
+  val lx_push_boolean: MethodHandle = handle("lx_push_boolean", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+  val lx_push_number:  MethodHandle = handle("lx_push_number",  FunctionDescriptor.ofVoid(ADDRESS, JAVA_DOUBLE))
+  val lx_push_integer: MethodHandle = handle("lx_push_integer", FunctionDescriptor.ofVoid(ADDRESS, JAVA_LONG))
   val lx_push_lstring: MethodHandle = handle("lx_push_lstring",
-    FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, ADDRESS, JAVA_LONG))
-  val lx_push_ref:   MethodHandle = handle("lx_push_ref",   FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT))
-  val lx_push_copy:  MethodHandle = handle("lx_push_copy",  FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT))
-  val lx_pop:        MethodHandle = handle("lx_pop",        FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT))
-  val lx_stack_top:  MethodHandle = handle("lx_stack_top",  FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS))
+    FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_LONG))
+  val lx_push_ref:   MethodHandle = handle("lx_push_ref",   FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+  val lx_push_copy:  MethodHandle = handle("lx_push_copy",  FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+  val lx_pop:        MethodHandle = handle("lx_pop",        FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+  val lx_stack_top:  MethodHandle = handle("lx_stack_top",  FunctionDescriptor.of(JAVA_INT, ADDRESS))
 
-  val lx_type:      MethodHandle = handle("lx_type",      FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT))
+  val lx_type:      MethodHandle = handle("lx_type",      FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
   val lx_to_number: MethodHandle = handle("lx_to_number",
-    FunctionDescriptor.of(JAVA_DOUBLE, ADDRESS, ADDRESS, JAVA_INT, ADDRESS))
+    FunctionDescriptor.of(JAVA_DOUBLE, ADDRESS, JAVA_INT, ADDRESS))
   val lx_to_integer: MethodHandle = handle("lx_to_integer",
-    FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS, JAVA_INT, ADDRESS))
+    FunctionDescriptor.of(JAVA_LONG, ADDRESS, JAVA_INT, ADDRESS))
   val lx_to_boolean: MethodHandle = handle("lx_to_boolean",
-    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT))
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
   val lx_to_lstring: MethodHandle = handle("lx_to_lstring",
-    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT, ADDRESS, JAVA_LONG, ADDRESS))
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, JAVA_LONG, ADDRESS))
   val lx_rawlen: MethodHandle = handle("lx_rawlen",
-    FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS, JAVA_INT))
+    FunctionDescriptor.of(JAVA_LONG, ADDRESS, JAVA_INT))
 
   val lx_newtable: MethodHandle = handle("lx_newtable",
-    FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT))
-  val lx_rawget:  MethodHandle = handle("lx_rawget",  FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT))
-  val lx_rawset:  MethodHandle = handle("lx_rawset",  FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT))
-  val lx_rawgeti: MethodHandle = handle("lx_rawgeti", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT))
-  val lx_rawseti: MethodHandle = handle("lx_rawseti", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT))
+    FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_INT))
+  val lx_rawget:  MethodHandle = handle("lx_rawget",  FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+  val lx_rawset:  MethodHandle = handle("lx_rawset",  FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
+  val lx_rawgeti: MethodHandle = handle("lx_rawgeti", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_INT))
+  val lx_rawseti: MethodHandle = handle("lx_rawseti", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_INT))
   val lx_setarray: MethodHandle = handle("lx_setarray",
-    FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT))
+    FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT))
   val lx_table_next: MethodHandle = handle("lx_table_next",
-    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT))
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
 
-  val lx_ref:   MethodHandle = handle("lx_ref",   FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT))
+  val lx_ref:   MethodHandle = handle("lx_ref",   FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
   val lx_unref: MethodHandle = handle("lx_unref", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
 
   val lx_register_native: MethodHandle = handle("lx_register_native",
     FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, ADDRESS))
 
   val lx_set_suspend_token: MethodHandle = handle("lx_set_suspend_token",
-    FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_LONG))
+    FunctionDescriptor.ofVoid(ADDRESS, JAVA_LONG))
   val lx_get_suspend_token: MethodHandle = handle("lx_get_suspend_token",
-    FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS))
+    FunctionDescriptor.of(JAVA_LONG, ADDRESS))
 
   val lx_openlibs:  MethodHandle = handle("lx_openlibs",  FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
   val lx_sandbox:   MethodHandle = handle("lx_sandbox",   FunctionDescriptor.ofVoid(ADDRESS))
@@ -95,7 +95,7 @@ object LxHandles:
   val lx_gc_collect: MethodHandle = handle("lx_gc_collect", FunctionDescriptor.ofVoid(ADDRESS))
 
   val lx_copy_error: MethodHandle = handle("lx_copy_error",
-    FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG))
+    FunctionDescriptor.of(JAVA_LONG, ADDRESS, ADDRESS, JAVA_LONG))
 
   val lx_set_global: MethodHandle = handle("lx_set_global", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS))
   val lx_get_global: MethodHandle = handle("lx_get_global", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS))
@@ -104,4 +104,4 @@ object LxHandles:
     FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
 
   val lx_resume_error: MethodHandle = handle("lx_resume_error",
-    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, ADDRESS))
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS))

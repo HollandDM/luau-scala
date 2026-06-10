@@ -59,7 +59,7 @@ final class NativeFnDispatcher:
           val panamaState = ps
           val token = panamaState.suspendRegistry.allocToken(s)
           panamaState.lastYieldToken = token
-          lx_set_suspend_token.invokeExact(state, thread, token): Unit
+          lx_set_suspend_token.invokeExact(thread, token): Unit
           LX_SUSPEND
     catch case t: Throwable =>
       try pushErrorMessage(thread, s"luau-scala: dispatch failed: ${t.getClass.getSimpleName}")
@@ -82,13 +82,12 @@ final class NativeFnDispatcher:
     Linker.nativeLinker().upcallStub(mh, NativeFnDispatcher.HOST_FN_DESC, arena)
 
   private def pushErrorMessage(thread: MemorySegment, msg: String): Unit =
-    val panamaState = ps
     val a = Arena.ofConfined()
     try
       val bytes = msg.getBytes(java.nio.charset.StandardCharsets.UTF_8)
       val seg = a.allocate(bytes.length.toLong, 1L)
       MemorySegment.copy(bytes, 0, seg, ValueLayout.JAVA_BYTE, 0L, bytes.length)
-      lx_push_lstring.invokeExact(panamaState.L, thread, seg, bytes.length.toLong): Unit
+      lx_push_lstring.invokeExact(thread, seg, bytes.length.toLong): Unit
     finally a.close()
 
 object NativeFnDispatcher:

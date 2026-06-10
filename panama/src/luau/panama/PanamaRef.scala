@@ -14,4 +14,4 @@ final class PanamaRef(val luaRef: RefKey, state: PanamaState) extends AutoClosea
       state.releaseRef(luaRef)
 
   def push(thread: MemorySegment): Unit =
-    LxHandles.lx_push_ref.invokeExact(state.L, thread, luaRef.raw): Unit
+    LxHandles.lx_push_ref.invokeExact(thread, luaRef.raw): Unit

@@ -64,7 +64,7 @@ final class PanamaState private (
     checkOpen()
     withArena { arena =>
       val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
-      val rc: Int = LxHandles.lx_resume.invokeExact(L, thread, nargs, nResultsSeg)
+      val rc: Int = LxHandles.lx_resume.invokeExact(thread, nargs, nResultsSeg)
       val nResults = nResultsSeg.get(ValueLayout.JAVA_INT, 0L)
       rc match
         case LX_RESUME_OK    => ResumeResult.Returned(nResults)
@@ -87,7 +87,7 @@ final class PanamaState private (
     pushString(thread, error.message)
     withArena { arena =>
       val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
-      val rc: Int = LxHandles.lx_resume_error.invokeExact(L, thread, nResultsSeg)
+      val rc: Int = LxHandles.lx_resume_error.invokeExact(thread, nResultsSeg)
       val nResults = nResultsSeg.get(ValueLayout.JAVA_INT, 0L)
       rc match
         case LX_RESUME_OK    => ResumeResult.Returned(nResults)
@@ -104,19 +104,19 @@ final class PanamaState private (
     LxHandles.lx_new_thread.invokeExact(state): MemorySegment
 
   def pushNil(state: MemorySegment): Unit =
-    LxHandles.lx_push_nil.invokeExact(L, state): Unit
+    LxHandles.lx_push_nil.invokeExact(state): Unit
 
   def pushBoolean(state: MemorySegment, value: Boolean): Unit =
-    LxHandles.lx_push_boolean.invokeExact(L, state, if value then 1 else 0): Unit
+    LxHandles.lx_push_boolean.invokeExact(state, if value then 1 else 0): Unit
 
   def pushNumber(state: MemorySegment, value: Double): Unit =
-    LxHandles.lx_push_number.invokeExact(L, state, value): Unit
+    LxHandles.lx_push_number.invokeExact(state, value): Unit
 
   def pushBytes(state: MemorySegment, bytes: IArray[Byte]): Unit =
     withArena { arena =>
       val seg = arena.allocate(bytes.length.toLong, 1L)
       MemorySegment.copy(bytes.toArray, 0, seg, ValueLayout.JAVA_BYTE, 0L, bytes.length)
-      LxHandles.lx_push_lstring.invokeExact(L, state, seg, bytes.length.toLong): Unit
+      LxHandles.lx_push_lstring.invokeExact(state, seg, bytes.length.toLong): Unit
     }
 
   def pushString(state: MemorySegment, value: String): Unit =
@@ -129,10 +129,10 @@ final class PanamaState private (
     }
 
   def pushRef(state: MemorySegment, registry: RefKey): Unit =
-    LxHandles.lx_push_ref.invokeExact(L, state, registry.raw): Unit
+    LxHandles.lx_push_ref.invokeExact(state, registry.raw): Unit
 
   def typeAt(state: MemorySegment, idx: Int): LuaType =
-    val code: Int = LxHandles.lx_type.invokeExact(L, state, idx)
+    val code: Int = LxHandles.lx_type.invokeExact(state, idx)
     code match
       case LX_TNONE     => LuaType.None
       case LX_TNIL      => LuaType.Nil
@@ -148,17 +148,17 @@ final class PanamaState private (
   def toNumber(state: MemorySegment, idx: Int): Option[Double] =
     withArena { arena =>
       val flag = arena.allocate(ValueLayout.JAVA_INT)
-      val n: Double = LxHandles.lx_to_number.invokeExact(L, state, idx, flag)
+      val n: Double = LxHandles.lx_to_number.invokeExact(state, idx, flag)
       if flag.get(ValueLayout.JAVA_INT, 0L) != 0 then Some(n) else None
     }
 
   def toBoolean(state: MemorySegment, idx: Int): Boolean =
-    val result: Int = LxHandles.lx_to_boolean.invokeExact(L, state, idx)
+    val result: Int = LxHandles.lx_to_boolean.invokeExact(state, idx)
     result != 0
 
   def toBytes(state: MemorySegment, idx: Int): Option[IArray[Byte]] =
     withArena { arena =>
-      val rawLen: Long = LxHandles.lx_rawlen.invokeExact(L, state, idx)
+      val rawLen: Long = LxHandles.lx_rawlen.invokeExact(state, idx)
       if rawLen == 0L then
         val t = typeAt(state, idx)
         if t == LuaType.String then Some(IArray.empty[Byte])
@@ -168,7 +168,7 @@ final class PanamaState private (
         val buf = arena.allocate(bufSize, 1L)
         val lenPtr = arena.allocate(ValueLayout.JAVA_LONG)
         val ok: Int = LxHandles.lx_to_lstring.invokeExact(
-          L, state, idx, buf, bufSize, lenPtr,
+          state, idx, buf, bufSize, lenPtr,
         )
         if ok != 0 then
           val actualLen = lenPtr.get(ValueLayout.JAVA_LONG, 0L)
@@ -179,50 +179,50 @@ final class PanamaState private (
     }
 
   def stackTop(state: MemorySegment): Int =
-    LxHandles.lx_stack_top.invokeExact(L, state): Int
+    LxHandles.lx_stack_top.invokeExact(state): Int
 
   def setStackTop(state: MemorySegment, idx: Int): Unit =
     val top = stackTop(state)
     val newTop = if idx >= 0 then idx else top + idx + 1
     if newTop < top then
-      LxHandles.lx_pop.invokeExact(L, state, top - newTop): Unit
+      LxHandles.lx_pop.invokeExact(state, top - newTop): Unit
     else if newTop > top then
       var i = top
       while i < newTop do
-        LxHandles.lx_push_nil.invokeExact(L, state): Unit
+        LxHandles.lx_push_nil.invokeExact(state): Unit
         i += 1
 
   def newTable(state: MemorySegment): Unit =
-    LxHandles.lx_newtable.invokeExact(L, state, 0, 0): Unit
+    LxHandles.lx_newtable.invokeExact(state, 0, 0): Unit
 
   def rawGet(state: MemorySegment, tableIdx: Int): Unit =
-    LxHandles.lx_rawget.invokeExact(L, state, tableIdx): Unit
+    LxHandles.lx_rawget.invokeExact(state, tableIdx): Unit
 
   def rawSet(state: MemorySegment, tableIdx: Int): Unit =
-    LxHandles.lx_rawset.invokeExact(L, state, tableIdx): Unit
+    LxHandles.lx_rawset.invokeExact(state, tableIdx): Unit
 
   def setArray(state: MemorySegment, tableIdx: Int, n: Int): Unit =
-    LxHandles.lx_rawseti.invokeExact(L, state, tableIdx, n): Unit
+    LxHandles.lx_rawseti.invokeExact(state, tableIdx, n): Unit
 
   def getArray(state: MemorySegment, tableIdx: Int, n: Int): Unit =
-    LxHandles.lx_rawgeti.invokeExact(L, state, tableIdx, n): Unit
+    LxHandles.lx_rawgeti.invokeExact(state, tableIdx, n): Unit
 
   def rawLen(state: MemorySegment, idx: Int): Long =
-    LxHandles.lx_rawlen.invokeExact(L, state, idx): Long
+    LxHandles.lx_rawlen.invokeExact(state, idx): Long
 
   def tableNext(state: MemorySegment, tableIdx: Int): Boolean =
-    val rc: Int = LxHandles.lx_table_next.invokeExact(L, state, tableIdx)
+    val rc: Int = LxHandles.lx_table_next.invokeExact(state, tableIdx)
     rc != 0
 
   def ref(state: MemorySegment): Ref[MemorySegment] =
     checkOpen()
-    val rawKey: Int = LxHandles.lx_ref.invokeExact(L, state, -1)
+    val rawKey: Int = LxHandles.lx_ref.invokeExact(state, -1)
     val key = RefKey.fromRaw(rawKey)
     if key.isNoRef then
       throw new IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
     // lx_ref pins by index without popping (see lx.h); the Ref now owns the
     // value, so consume it off the stack — matches WasmBinding and luaL_ref.
-    LxHandles.lx_pop.invokeExact(L, state, 1): Unit
+    LxHandles.lx_pop.invokeExact(state, 1): Unit
     val origin = Ref.genOrigin()
     // The Ref must remember the state it was created against — pushRef/unref
     // route through it. Storing the binding's own L here breaks as soon as
@@ -254,7 +254,7 @@ final class PanamaState private (
     }
 
   def pushCopy(state: MemorySegment, idx: Int): Unit =
-    LxHandles.lx_push_copy.invokeExact(L, state, idx): Unit
+    LxHandles.lx_push_copy.invokeExact(state, idx): Unit
 
   def openLibs(state: MemorySegment, mask: Int): Unit =
     val _: Int = LxHandles.lx_openlibs.invokeExact(state, mask)
@@ -283,7 +283,7 @@ final class PanamaState private (
   private def readError(thread: MemorySegment): String =
     withArena { arena =>
       val buf = arena.allocate(4096L, 1L)
-      val n: Long = LxHandles.lx_copy_error.invokeExact(L, thread, buf, 4096L)
+      val n: Long = LxHandles.lx_copy_error.invokeExact(thread, buf, 4096L)
       Marshal.fromNativeString(buf, n)
     }
 
