@@ -41,8 +41,8 @@ object FakeBinding extends Binding[FakeState]:
   def pushFunction(state: FakeState, fnId: Int): Unit =
     state.stack.addOne(LuaValue.Nil)
 
-  def pushRef(state: FakeState, registry: Int): Unit =
-    val v = state.registry.getOrElse(registry, LuaValue.Nil)
+  def pushRef(state: FakeState, registry: RefKey): Unit =
+    val v = state.registry.getOrElse(registry.raw, LuaValue.Nil)
     state.stack.addOne(v)
 
   // ---- Read -----------------------------------------------------------
@@ -122,10 +122,10 @@ object FakeBinding extends Binding[FakeState]:
     val value = state.stack.removeLast()
     val key   = state.allocRegKey()
     state.registry(key) = value
-    new Ref[FakeState](state, key, this, "")
+    new Ref[FakeState](state, RefKey.fromRaw(key), this, "")
 
-  def unref(state: FakeState, key: Int): Unit =
-    if !state.isClosed then state.registry.remove(key)
+  def unref(state: FakeState, key: RefKey): Unit =
+    if !state.isClosed then state.registry.remove(key.raw)
 
   // ---- Native functions -----------------------------------------------
 

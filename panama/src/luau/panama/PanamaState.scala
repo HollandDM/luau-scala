@@ -123,8 +123,8 @@ final class PanamaState private (
       LxHandles.lx_register_native.invokeExact(state, fnId, name): Unit
     }
 
-  def pushRef(state: MemorySegment, registry: Int): Unit =
-    LxHandles.lx_push_ref.invokeExact(L, state, registry): Unit
+  def pushRef(state: MemorySegment, registry: RefKey): Unit =
+    LxHandles.lx_push_ref.invokeExact(L, state, registry.raw): Unit
 
   def typeAt(state: MemorySegment, idx: Int): LuaType =
     val code: Int = LxHandles.lx_type.invokeExact(L, state, idx)
@@ -207,8 +207,9 @@ final class PanamaState private (
 
   def ref(state: MemorySegment): Ref[MemorySegment] =
     checkOpen()
-    val key: Int = LxHandles.lx_ref.invokeExact(L, state, -1)
-    if key == -1 then
+    val rawKey: Int = LxHandles.lx_ref.invokeExact(L, state, -1)
+    val key = RefKey.fromRaw(rawKey)
+    if key.isNoRef then
       throw new IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
     // lx_ref pins by index without popping (see lx.h); the Ref now owns the
     // value, so consume it off the stack — matches WasmBinding and luaL_ref.
@@ -216,9 +217,9 @@ final class PanamaState private (
     val origin = Ref.genOrigin()
     Ref(L, key, this, origin)
 
-  def unref(state: MemorySegment, key: Int): Unit =
+  def unref(state: MemorySegment, key: RefKey): Unit =
     if !closed then
-      LxHandles.lx_unref.invokeExact(state, key): Unit
+      LxHandles.lx_unref.invokeExact(state, key.raw): Unit
 
   def registerNativeFn(state: MemorySegment, fn: NativeFn[MemorySegment]): Unit =
     checkOpen()
@@ -255,9 +256,9 @@ final class PanamaState private (
       LxHandles.lx_close.invokeExact(L): Unit
       stateArena.close()
 
-  def releaseRef(luaRef: Int): Unit =
+  def releaseRef(luaRef: RefKey): Unit =
     if !closed then
-      LxHandles.lx_unref.invokeExact(L, luaRef): Unit
+      LxHandles.lx_unref.invokeExact(L, luaRef.raw): Unit
 
   def scoped[A](block: Scope[MemorySegment] ?=> A): A =
     val scope = Scope[MemorySegment](this, L)

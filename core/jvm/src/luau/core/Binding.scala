@@ -40,7 +40,7 @@ trait Binding[H]:
 
   def pushFunction(state: H, fnId: Int): Unit
 
-  def pushRef(state: H, registry: Int): Unit
+  def pushRef(state: H, registry: RefKey): Unit
 
   // ---- Stack: read operations (non-raising) ---------------------------
 
@@ -78,7 +78,7 @@ trait Binding[H]:
 
   def ref(state: H): Ref[H]
 
-  def unref(state: H, key: Int): Unit
+  def unref(state: H, key: RefKey): Unit
 
   // ---- Native function registration -----------------------------------
 

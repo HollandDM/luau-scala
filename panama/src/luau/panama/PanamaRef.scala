@@ -2,8 +2,9 @@ package luau.panama
 
 import java.lang.foreign.MemorySegment
 import java.util.concurrent.atomic.AtomicBoolean
+import luau.core.RefKey
 
-final class PanamaRef(val luaRef: Int, state: PanamaState) extends AutoCloseable:
+final class PanamaRef(val luaRef: RefKey, state: PanamaState) extends AutoCloseable:
   private val released = new AtomicBoolean(false)
 
   private[panama] def isReleased: Boolean = released.get()
@@ -13,4 +14,4 @@ final class PanamaRef(val luaRef: Int, state: PanamaState) extends AutoCloseable
       state.releaseRef(luaRef)
 
   def push(thread: MemorySegment): Unit =
-    LxHandles.lx_push_ref.invokeExact(state.L, thread, luaRef): Unit
+    LxHandles.lx_push_ref.invokeExact(state.L, thread, luaRef.raw): Unit

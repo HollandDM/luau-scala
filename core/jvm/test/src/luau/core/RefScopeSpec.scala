@@ -10,10 +10,10 @@ class RefScopeSpec extends FunSuite:
     FakeBinding.pushNumber(state, 42.0)
     val r = FakeBinding.ref(state)
     assert(!r.isClosed)
-    assert(state.registry.contains(r.registry))
+    assert(state.registry.contains(r.registry.raw))
     r.close()
     assert(r.isClosed)
-    assert(!state.registry.contains(r.registry))
+    assert(!state.registry.contains(r.registry.raw))
   }
 
   test("Ref.close is idempotent") {

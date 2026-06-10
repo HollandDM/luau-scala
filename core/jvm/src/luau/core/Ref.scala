@@ -2,7 +2,7 @@ package luau.core
 
 final class Ref[H] private[core] (
   private[core] val state:    H,
-  private[core] val registry: Int,
+  private[core] val registry: RefKey,
   private[core] val binding:  Binding[H],
   private[core] val origin:   String,
 ) extends AutoCloseable:
@@ -21,12 +21,12 @@ final class Ref[H] private[core] (
   def isClosed: Boolean = closed
 
   /** The registry key for this Ref, used to push the value onto a stack. */
-  def registryKey: Int = registry
+  def registryKey: RefKey = registry
 
 object Ref:
   private[luau] def apply[H](
     state:    H,
-    registry: Int,
+    registry: RefKey,
     binding:  Binding[H],
     origin:   String,
   ): Ref[H] =

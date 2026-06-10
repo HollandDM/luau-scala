@@ -96,8 +96,8 @@ final class WasmBinding private () extends Binding[Int]:
   override def pushCopy(state: Int, idx: Int): Unit =
     module._lx_push_copy(state, state, idx)
 
-  override def pushRef(state: Int, registry: Int): Unit =
-    module._lx_push_ref(state, state, registry)
+  override def pushRef(state: Int, registry: RefKey): Unit =
+    module._lx_push_ref(state, state, registry.raw)
 
   // ── Stack: read operations (non-raising) ───────────────────────────────
 
@@ -190,16 +190,16 @@ final class WasmBinding private () extends Binding[Int]:
 
   override def ref(state: Int): Ref[Int] =
     val thread = mainThread(state)
-    val refId = module._lx_ref(state, thread, -1)
-    if refId == -1 then
+    val refId = RefKey.fromRaw(module._lx_ref(state, thread, -1))
+    if refId.isNoRef then
       throw IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
     // lx_ref pins by index without popping (see lx.h); the Ref now owns the
     // value, so consume it off the stack to match luaL_ref semantics.
     module._lx_pop(state, thread, 1)
     Ref[Int](state, refId, this, "wasm")
 
-  override def unref(state: Int, key: Int): Unit =
-    module._lx_unref(state, key)
+  override def unref(state: Int, key: RefKey): Unit =
+    module._lx_unref(state, key.raw)
 
   // ── Native function registration ──────────────────────────────────────
 
