@@ -175,7 +175,7 @@ object shim extends Module {
     val luauSrcs  = luauSources().map(_.toString)
 
     val exportedFunctions = Seq(
-      "_lx_newstate", "_lx_close", "_lx_main_thread", "_lx_new_thread",
+      "_lx_newstate", "_lx_close", "_lx_new_thread",
       "_lx_thread_status", "_lx_compile_and_load", "_lx_resume",
       "_lx_push_nil", "_lx_push_boolean", "_lx_push_number", "_lx_push_integer",
       "_lx_push_lstring", "_lx_push_ref", "_lx_push_copy", "_lx_pop", "_lx_stack_top",
@@ -184,7 +184,7 @@ object shim extends Module {
       "_lx_setarray", "_lx_table_next", "_lx_ref", "_lx_unref", "_lx_register_native",
       "_lx_set_suspend_token", "_lx_get_suspend_token",
       "_lx_set_global", "_lx_get_global",
-      "_lx_openlibs", "_lx_sandbox", "_lx_open_libs",
+      "_lx_openlibs", "_lx_sandbox",
       "_lx_gc_step", "_lx_gc_collect", "_lx_copy_error", "_lx_conformance_setup", "_lx_resume_error",
       "_malloc", "_free"
     ).mkString("[", ",", "]")

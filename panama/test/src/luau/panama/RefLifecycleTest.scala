@@ -26,17 +26,15 @@ class RefLifecycleTest extends munit.FunSuite:
     }
   }
 
-  test("scoped block releases Refs on exit") {
+  test("ref round-trip leaves the stack balanced") {
     PanamaState.use { ps =>
-      ps.scoped { scope ?=>
-        ps.newTable(ps.L)
-        // captureTop refs the value and consumes it off the stack.
-        val ref = scope.captureTop()
-        assertEquals(ps.stackTop(ps.L), 0)
-        ref.push()
-        assertEquals(ps.typeAt(ps.L, -1), LuaType.Table)
-        ps.pop(ps.L, 1)
-      }
+      ps.newTable(ps.L)
+      val ref = ps.ref(ps.L)
+      assertEquals(ps.stackTop(ps.L), 0)
+      ref.push()
+      assertEquals(ps.typeAt(ps.L, -1), LuaType.Table)
+      ps.pop(ps.L, 1)
+      ref.close()
       assertEquals(ps.stackTop(ps.L), 0)
     }
   }

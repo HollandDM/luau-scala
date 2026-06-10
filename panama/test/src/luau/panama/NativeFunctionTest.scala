@@ -27,7 +27,7 @@ class NativeFunctionTest extends munit.FunSuite:
       ps.openLibs(ps.L, LuauLib.Base) // the script needs pcall
       ps.registerNativeFn(ps.L, (thread, nargs) =>
         ps.pushString(thread, "boom")
-        NativeFnResult.Fail(LuaValue.Nil)
+        NativeFnResult.Fail
       )
       ps.setGlobal(ps.L, "throwErr")
       ps.compileAndLoad(

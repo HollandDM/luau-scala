@@ -73,9 +73,6 @@ class TestBinding extends Binding[FakeState]:
   def getGlobal(state: FakeState, name: String): Unit = FakeBinding.getGlobal(state, name)
   def setGlobal(state: FakeState, name: String): Unit = FakeBinding.setGlobal(state, name)
 
-  override def openScope(state: FakeState): Scope[FakeState] =
-    FakeBinding.openScope(state)
-
   def openLibs(state: FakeState, libs: Set[LuauLib]): Unit = FakeBinding.openLibs(state, libs)
   def sandbox(state: FakeState): Unit              = FakeBinding.sandbox(state)
 

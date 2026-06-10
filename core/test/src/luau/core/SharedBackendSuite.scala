@@ -85,7 +85,7 @@ abstract class SharedBackendSuite[H] extends FunSuite:
         b.openLibs(state, LuauLib.Base) // need pcall
         val fn: NativeFn[H] = (s, _) =>
           b.pushString(s, "deliberate error")
-          NativeFnResult.Fail(LuaValue.Nil)
+          NativeFnResult.Fail
         b.registerNativeFn(state, fn)
         b.setGlobal(state, "willFail")
         val src = IArray.unsafeFromArray(
@@ -118,24 +118,6 @@ abstract class SharedBackendSuite[H] extends FunSuite:
         assert(b.toBoolean(state, -1))
         b.pop(state, 2)
         ref.close()
-      finally b.closeState(state)
-    }
-
-  test("TC-SHARED-07 Scope closes all owned Refs on exit"):
-    withBinding { b =>
-      val state = b.newState()
-      try
-        b.openLibs(state, Set.empty)
-        val scope = b.openScope(state)
-        val src = IArray.unsafeFromArray("return {}".getBytes("UTF-8"))
-        b.compileAndLoad(state, src, "test07").fold(e => fail(e.message), identity)
-        b.resume(state, 0)
-        val ref = b.ref(state)
-        scope.own(ref)
-        ref.push()
-        assertEquals(b.typeAt(state, -1), LuaType.Table)
-        b.pop(state, 1)
-        scope.close()
       finally b.closeState(state)
     }
 

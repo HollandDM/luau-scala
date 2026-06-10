@@ -10,10 +10,9 @@ class NativeFnResultSpec extends FunSuite:
     assertEquals(r, NativeFnResult.Return(3))
   }
 
-  test("NativeFnResult.Fail holds value") {
-    val v = LuaValue.LuaString.fromUtf8("oops")
-    val f = NativeFnResult.Fail(v)
-    assertEquals(f, NativeFnResult.Fail(v))
+  test("NativeFnResult.Fail is a payload-less marker") {
+    val f: NativeFnResult = NativeFnResult.Fail
+    assertEquals(f, NativeFnResult.Fail)
   }
 
   test("NativeFnResult.Suspend register is called") {

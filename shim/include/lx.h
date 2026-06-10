@@ -66,9 +66,6 @@ lx_State lx_newstate(lx_HostFn upcall);
 /** Close a Luau state and free all memory. All Refs are invalidated. */
 void lx_close(lx_State state);
 
-/** Return the main thread for a state (the lx_Thread used for top-level resumes). */
-lx_Thread lx_main_thread(lx_State state);
-
 /**
  * Create a new coroutine thread within the state. Returns lx_Thread.
  * The new thread starts in SUSPENDED state with an empty stack.
@@ -375,12 +372,6 @@ int  lx_openlibs(lx_State state, uint32_t mask);
  * inherit the proxy. Call once, after lx_openlibs.
  */
 void lx_sandbox(lx_State state);
-
-/**
- * Open the safe Luau standard libraries (legacy, no mask).
- * Excludes: io, os.execute, os.exit, os.getenv, package, require.
- */
-void lx_open_libs(lx_State state);
 
 /* ------------------------------------------------------------------ */
 /* GC control                                                          */

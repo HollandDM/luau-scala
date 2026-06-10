@@ -102,11 +102,6 @@ void lx_close(lx_State state) {
     delete d;
 }
 
-lx_Thread lx_main_thread(lx_State state) {
-    lua_State* L = static_cast<lua_State*>(state);
-    return static_cast<lx_Thread>(lua_mainthread(L));
-}
-
 lx_Thread lx_new_thread(lx_State state) {
     lua_State* L  = static_cast<lua_State*>(state);
     lua_State* co = lua_newthread(L);
@@ -400,10 +395,6 @@ void lx_sandbox(lx_State state) {
     // "attempt to modify a readonly table". Threads created later inherit
     // the proxy.
     luaL_sandboxthread(L);
-}
-
-void lx_open_libs(lx_State state) {
-    lx_openlibs(state, LX_LIB_STANDARD);
 }
 
 // -----------------------------------------------------------------------

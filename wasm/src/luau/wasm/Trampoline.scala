@@ -76,7 +76,7 @@ object Trampoline:
           case NativeFnResult.Return(n) =>
             writeNResults(nResultsPtr, n)
             LxReturn.Return
-          case NativeFnResult.Fail(_) =>
+          case NativeFnResult.Fail =>
             LxReturn.Fail
           case NativeFnResult.Suspend(reg) =>
             pendingSuspend = Some(reg)

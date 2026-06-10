@@ -42,7 +42,7 @@ final class NativeFnDispatcher:
         catch case t: Throwable =>
           val msg = Option(t.getMessage).getOrElse(t.getClass.getSimpleName)
           pushErrorMessage(thread, msg)
-          NativeFnResult.Fail(LuaValue.Nil)
+          NativeFnResult.Fail
 
       result match
         case NativeFnResult.Return(n) =>
@@ -52,7 +52,7 @@ final class NativeFnDispatcher:
             .set(ValueLayout.JAVA_INT, 0L, n)
           LX_RETURN
 
-        case NativeFnResult.Fail(_) =>
+        case NativeFnResult.Fail =>
           LX_FAIL
 
         case s @ NativeFnResult.Suspend(_) =>

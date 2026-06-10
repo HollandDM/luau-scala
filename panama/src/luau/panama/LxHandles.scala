@@ -31,7 +31,6 @@ object LxHandles:
 
   val lx_newstate:    MethodHandle = handle("lx_newstate",    FunctionDescriptor.of(ADDRESS, ADDRESS))
   val lx_close:       MethodHandle = handle("lx_close",       FunctionDescriptor.ofVoid(ADDRESS))
-  val lx_main_thread: MethodHandle = handle("lx_main_thread", FunctionDescriptor.of(ADDRESS, ADDRESS))
   val lx_new_thread:  MethodHandle = handle("lx_new_thread",  FunctionDescriptor.of(ADDRESS, ADDRESS))
   val lx_thread_status: MethodHandle = handle("lx_thread_status",
     FunctionDescriptor.of(JAVA_INT, ADDRESS))
@@ -90,7 +89,6 @@ object LxHandles:
 
   val lx_openlibs:  MethodHandle = handle("lx_openlibs",  FunctionDescriptor.of(JAVA_INT, ADDRESS, JAVA_INT))
   val lx_sandbox:   MethodHandle = handle("lx_sandbox",   FunctionDescriptor.ofVoid(ADDRESS))
-  val lx_open_libs: MethodHandle = handle("lx_open_libs", FunctionDescriptor.ofVoid(ADDRESS))
   val lx_gc_step:    MethodHandle = handle("lx_gc_step",    FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))
   val lx_gc_collect: MethodHandle = handle("lx_gc_collect", FunctionDescriptor.ofVoid(ADDRESS))
 

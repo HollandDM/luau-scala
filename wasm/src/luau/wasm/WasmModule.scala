@@ -19,7 +19,6 @@ trait WasmModuleExports extends js.Object:
 
   def _lx_newstate(upcall: Int): Int = js.native
   def _lx_close(state: Int): Unit = js.native
-  def _lx_main_thread(state: Int): Int = js.native
   def _lx_new_thread(state: Int): Int = js.native
   def _lx_thread_status(thread: Int): Int = js.native
 
@@ -64,7 +63,6 @@ trait WasmModuleExports extends js.Object:
   def _lx_get_suspend_token(thread: Int): js.BigInt = js.native
 
   def _lx_openlibs(state: Int, mask: Int): Unit = js.native
-  def _lx_open_libs(state: Int): Unit = js.native
   def _lx_sandbox(state: Int): Unit = js.native
   def _lx_conformance_setup(state: Int, silencePrint: Int): Unit = js.native
 

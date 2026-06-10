@@ -41,7 +41,7 @@ object FakeBinding extends Binding[FakeState]:
   def pushFunction(state: FakeState, fnId: Int): Unit =
     state.stack.addOne(LuaValue.Nil)
 
-  def pushRef(state: FakeState, registry: RefKey): Unit =
+  private[luau] def pushRef(state: FakeState, registry: RefKey): Unit =
     val v = state.registry.getOrElse(registry.raw, LuaValue.Nil)
     state.stack.addOne(v)
 
@@ -139,13 +139,13 @@ object FakeBinding extends Binding[FakeState]:
 
   // ---- Registry -------------------------------------------------------
 
-  def ref(state: FakeState): Ref[FakeState] =
+  private[luau] def ref(state: FakeState): Ref[FakeState] =
     val value = state.stack.removeLast()
     val key   = state.allocRegKey()
     state.registry(key) = value
     new Ref[FakeState](state, RefKey.fromRaw(key), this, "")
 
-  def unref(state: FakeState, key: RefKey): Unit =
+  private[luau] def unref(state: FakeState, key: RefKey): Unit =
     if !state.isClosed then state.registry.remove(key.raw)
 
   // ---- Native functions -----------------------------------------------
@@ -162,11 +162,6 @@ object FakeBinding extends Binding[FakeState]:
 
   def setGlobal(state: FakeState, name: String): Unit =
     state.globals(name) = state.stack.removeLast()
-
-  // ---- Scope ----------------------------------------------------------
-
-  override def openScope(state: FakeState): Scope[FakeState] =
-    Scope(this, state)
 
   // ---- Library loading / sandbox (stub) -------------------------------
 

@@ -53,7 +53,8 @@ object TaskLibrary:
             handle.threadRef.push()
             Return(1)
           case _ =>
-            Fail(LuaValue.LuaString.fromUtf8("task.spawn: expected function as first argument"))
+            binding.pushString(s, "task.spawn: expected function as first argument")
+            Fail
     binding.registerNativeFn(state, fn)
 
   private def registerDeferFn[H](
@@ -74,7 +75,8 @@ object TaskLibrary:
             handle.threadRef.push()
             Return(1)
           case _ =>
-            Fail(LuaValue.LuaString.fromUtf8("task.defer: expected function as first argument"))
+            binding.pushString(s, "task.defer: expected function as first argument")
+            Fail
     binding.registerNativeFn(state, fn)
 
   private def registerDelayFn[H](
@@ -96,7 +98,8 @@ object TaskLibrary:
             handle.threadRef.push()
             Return(1)
           case _ =>
-            Fail(LuaValue.LuaString.fromUtf8("task.delay: expected function as second argument"))
+            binding.pushString(s, "task.delay: expected function as second argument")
+            Fail
     binding.registerNativeFn(state, fn)
 
   private def registerWaitFn[H](
@@ -107,10 +110,10 @@ object TaskLibrary:
 
       scheduler.currentTask match
         case None =>
-          Fail(LuaValue.LuaString.fromUtf8(
+          binding.pushString(s,
             "task.wait called from a coroutine not owned by the Scheduler; " +
-            "behavior is undefined (see ADR-0004)"
-          ))
+            "behavior is undefined (see ADR-0004)")
+          Fail
         case Some(currentTask) =>
           Suspend { resume =>
             val t0 = System.nanoTime()

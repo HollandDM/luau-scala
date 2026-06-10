@@ -36,18 +36,6 @@ class RefScopeSpec extends FunSuite:
     r.close()
   }
 
-  test("Scope closes all owned Refs in LIFO order") {
-    val state = FakeBinding.newState()
-    val scope = FakeBinding.openScope(state)
-    FakeBinding.pushNumber(state, 1.0)
-    val r1 = scope.captureTop()
-    FakeBinding.pushNumber(state, 2.0)
-    val r2 = scope.captureTop()
-    assert(!r1.isClosed && !r2.isClosed)
-    scope.close()
-    assert(r1.isClosed && r2.isClosed)
-  }
-
   test("Ref.close after state close is no-op") {
     val state = FakeBinding.newState()
     FakeBinding.pushNumber(state, 1.0)

@@ -51,7 +51,7 @@ trait Binding[H]:
 
   def pushFunction(state: H, fnId: Int): Unit
 
-  def pushRef(state: H, registry: RefKey): Unit
+  private[luau] def pushRef(state: H, registry: RefKey): Unit
 
   // ---- Stack: read operations (non-raising) ---------------------------
 
@@ -99,10 +99,12 @@ trait Binding[H]:
   def tableNext(state: H, tableIdx: Int): Boolean
 
   // ---- Registry (Ref management) --------------------------------------
+  // private[luau]: user code pins values only through luau.api's useRef
+  // scope, which guarantees release. These are the raw, unguarded ops.
 
-  def ref(state: H): Ref[H]
+  private[luau] def ref(state: H): Ref[H]
 
-  def unref(state: H, key: RefKey): Unit
+  private[luau] def unref(state: H, key: RefKey): Unit
 
   // ---- Native function registration -----------------------------------
 
@@ -113,10 +115,6 @@ trait Binding[H]:
   def getGlobal(state: H, name: String): Unit
 
   def setGlobal(state: H, name: String): Unit
-
-  // ---- Scope helpers --------------------------------------------------
-
-  def openScope(state: H): Scope[H] = Scope(this, state)
 
   // ---- Library loading / sandbox (P07) --------------------------------
 

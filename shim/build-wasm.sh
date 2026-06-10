@@ -64,7 +64,6 @@ WASM_LDFLAGS=(
   -lwasi-emulated-process-clocks
   -Wl,--export=lx_newstate
   -Wl,--export=lx_close
-  -Wl,--export=lx_main_thread
   -Wl,--export=lx_new_thread
   -Wl,--export=lx_thread_status
   -Wl,--export=lx_compile_and_load
@@ -98,7 +97,6 @@ WASM_LDFLAGS=(
   -Wl,--export=lx_get_global
   -Wl,--export=lx_openlibs
   -Wl,--export=lx_sandbox
-  -Wl,--export=lx_open_libs
   -Wl,--export=lx_gc_step
   -Wl,--export=lx_gc_collect
   -Wl,--export=lx_copy_error

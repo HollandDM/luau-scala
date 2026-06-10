@@ -95,7 +95,7 @@ final class WasmBinding private () extends Binding[Int]:
   override def pushCopy(state: Int, idx: Int): Unit =
     module._lx_push_copy(state, idx)
 
-  override def pushRef(state: Int, registry: RefKey): Unit =
+  private[luau] override def pushRef(state: Int, registry: RefKey): Unit =
     module._lx_push_ref(state, registry.raw)
 
   // ── Stack: read operations (non-raising) ───────────────────────────────
@@ -178,7 +178,7 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── Registry (Ref management) ─────────────────────────────────────────
 
-  override def ref(state: Int): Ref[Int] =
+  private[luau] override def ref(state: Int): Ref[Int] =
     val refId = RefKey.fromRaw(module._lx_ref(state, -1))
     if refId.isNoRef then
       throw IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
@@ -187,7 +187,7 @@ final class WasmBinding private () extends Binding[Int]:
     module._lx_pop(state, 1)
     Ref[Int](state, refId, this, "wasm")
 
-  override def unref(state: Int, key: RefKey): Unit =
+  private[luau] override def unref(state: Int, key: RefKey): Unit =
     module._lx_unref(state, key.raw)
 
   // ── Native function registration ──────────────────────────────────────
@@ -207,11 +207,6 @@ final class WasmBinding private () extends Binding[Int]:
     WasmMarshal.withString(name) { (namePtr, nameLen) =>
       module._lx_set_global(state, namePtr)
     }
-
-  // ── Scope ──────────────────────────────────────────────────────────────
-
-  override def openScope(state: Int): Scope[Int] =
-    new WasmScope(this, state)
 
   // ── Library loading / sandbox ──────────────────────────────────────────
 

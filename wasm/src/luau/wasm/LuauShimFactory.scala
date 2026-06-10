@@ -126,7 +126,7 @@ object LuauShimFactory:
     }: js.Function
 
     val names = js.Array(
-      "lx_newstate", "lx_close", "lx_main_thread", "lx_new_thread",
+      "lx_newstate", "lx_close", "lx_new_thread",
       "lx_thread_status", "lx_compile_and_load", "lx_resume", "lx_resume_error",
       "lx_push_nil", "lx_push_boolean", "lx_push_number", "lx_push_integer",
       "lx_push_lstring", "lx_push_ref", "lx_push_copy", "lx_pop", "lx_stack_top",
@@ -135,7 +135,7 @@ object LuauShimFactory:
       "lx_setarray", "lx_table_next", "lx_ref", "lx_unref", "lx_register_native",
       "lx_set_suspend_token", "lx_get_suspend_token",
       "lx_set_global", "lx_get_global",
-      "lx_openlibs", "lx_sandbox", "lx_open_libs", "lx_conformance_setup",
+      "lx_openlibs", "lx_sandbox", "lx_conformance_setup",
       "lx_gc_step", "lx_gc_collect", "lx_copy_error",
     )
 

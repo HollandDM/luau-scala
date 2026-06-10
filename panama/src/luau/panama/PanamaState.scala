@@ -128,7 +128,7 @@ final class PanamaState private (
       LxHandles.lx_register_native.invokeExact(state, fnId, name): Unit
     }
 
-  def pushRef(state: MemorySegment, registry: RefKey): Unit =
+  private[luau] def pushRef(state: MemorySegment, registry: RefKey): Unit =
     LxHandles.lx_push_ref.invokeExact(state, registry.raw): Unit
 
   def typeAt(state: MemorySegment, idx: Int): LuaType =
@@ -214,7 +214,7 @@ final class PanamaState private (
     val rc: Int = LxHandles.lx_table_next.invokeExact(state, tableIdx)
     rc != 0
 
-  def ref(state: MemorySegment): Ref[MemorySegment] =
+  private[luau] def ref(state: MemorySegment): Ref[MemorySegment] =
     checkOpen()
     val rawKey: Int = LxHandles.lx_ref.invokeExact(state, -1)
     val key = RefKey.fromRaw(rawKey)
@@ -229,7 +229,7 @@ final class PanamaState private (
     // newState() hands out a different VM.
     Ref(state, key, this, origin)
 
-  def unref(state: MemorySegment, key: RefKey): Unit =
+  private[luau] def unref(state: MemorySegment, key: RefKey): Unit =
     if !closed then
       LxHandles.lx_unref.invokeExact(state, key.raw): Unit
 
@@ -271,11 +271,6 @@ final class PanamaState private (
   def releaseRef(luaRef: RefKey): Unit =
     if !closed then
       LxHandles.lx_unref.invokeExact(L, luaRef.raw): Unit
-
-  def scoped[A](block: Scope[MemorySegment] ?=> A): A =
-    val scope = Scope[MemorySegment](this, L)
-    try block(using scope)
-    finally scope.close()
 
   private def checkOpen(): Unit =
     if closed then throw new IllegalStateException("PanamaState is closed")

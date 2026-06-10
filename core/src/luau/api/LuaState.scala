@@ -209,7 +209,7 @@ final class LuaState[H] private[api] (
           NativeFnResult.Return(1)
         case Left(e) =>
           binding.pushString(thread, e.message) // dispatchers raise the stack top as the error
-          NativeFnResult.Fail(LuaValue.Nil)
+          NativeFnResult.Fail
 
 object LuaState:
   /** Livelock guard for top-level chunks that yield to the host. */
