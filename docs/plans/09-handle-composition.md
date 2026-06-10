@@ -35,11 +35,17 @@ operation is written once over two abstract stack primitives:
 ```scala
 /** A keyed place holding Lua values. Concrete cases: globals (K = String),
   * table fields (K = String), array elements (K = Int). All typed access —
-  * copy-out, copy-in, handle minting — is implemented here once.
+  * copy-out, copy-in, handle minting — is implemented here once, against
+  * the backend handle H.
   */
 abstract class LuaAccess[H, K]:
-  /** Push the value at `key` onto the main stack, run `f` with it at -1,
-    * then restore the stack (the impl pops everything it pushed).
+  protected def binding: Binding[H]
+  protected def state:   H   // main thread: decode source, pin-rebind target
+
+  /** Push the value at `key` onto `state`'s stack and run `f` with it at -1.
+    * The impl snapshots stackTop on entry and restores it after `f` (via
+    * setStackTop, not a fixed pop count — `f` may legally consume the value,
+    * e.g. when pinning).
     */
   protected def withValueAt[A](key: K)(f: => A): A
 
@@ -48,11 +54,26 @@ abstract class LuaAccess[H, K]:
     */
   protected def storeAt(key: K)(push: => Unit): Unit
 
-  final def get[V: LuauDecoder](key: K): Try[V]
-  final def set[A: LuauEncoder](key: K, value: A): Unit
-  final def getFn(key: K)(using s: RefScope[H]^):  Try[LuaFn[H]^{s}]
-  final def getTbl(key: K)(using s: RefScope[H]^): Try[LuaTbl[H]^{s}]
+  final def get[V: LuauDecoder](key: K): Try[V] =
+    withValueAt(key):
+      binding.decodeAt[V](state, -1).fold(Failure(_), Success(_))
+
+  final def set[A: LuauEncoder](key: K, value: A): Unit =
+    storeAt(key) { binding.pushEncoded(state, value) }
+
+  final def getFn(key: K)(using s: RefScope[H]^): Try[LuaFn[H]^{s}] =
+    withValueAt(key):
+      pinTop(LuaType.Function)              // consumes the value at -1
+        .fold(Failure(_), r => Success(LuaFn(binding, state, r)))
+
+  final def getTbl(key: K)(using s: RefScope[H]^): Try[LuaTbl[H]^{s}] =
+    withValueAt(key):
+      pinTop(LuaType.Table)
+        .fold(Failure(_), r => Success(LuaTbl(binding, state, r)))
 ```
+
+(`pinTop` is the existing `private[api]` helper — type-check top, pin into
+the registry, rebind the Ref to the main-thread handle, own it in `s`.)
 
 Concrete cases:
 
@@ -62,8 +83,9 @@ Concrete cases:
   into the inherited `get` / `set` / `getFn` / `getTbl` (breaking rename,
   pre-1.0, tests migrate in the same change).
 - **`LuaTbl extends LuaAccess[H, String]`** — fields.
-  `withValueAt` = `ref.push; pushString; rawGet; f; pop(2)` — the impl owns
-  cleanup, so no `lua_remove` is needed in the shim ABI.
+  `withValueAt` = snapshot stackTop; `ref.push; pushString; rawGet; f`;
+  restore stackTop — the impl owns cleanup, so no `lua_remove` is needed in
+  the shim ABI.
 - **Array elements: `Int` overloads directly on `LuaTbl`**, via
   `rawGeti`/`rawSeti`. Inheriting `LuaAccess` twice with different `K` is
   illegal, so `LuaTbl` holds a private `LuaAccess[H, Int]` and exposes four
