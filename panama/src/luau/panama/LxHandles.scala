@@ -74,6 +74,8 @@ object LxHandles:
   val lx_rawseti: MethodHandle = handle("lx_rawseti", FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT))
   val lx_setarray: MethodHandle = handle("lx_setarray",
     FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, JAVA_INT, JAVA_INT, JAVA_INT))
+  val lx_table_next: MethodHandle = handle("lx_table_next",
+    FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT))
 
   val lx_ref:   MethodHandle = handle("lx_ref",   FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT))
   val lx_unref: MethodHandle = handle("lx_unref", FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT))

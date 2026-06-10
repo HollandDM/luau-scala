@@ -74,6 +74,12 @@ trait Binding[H]:
 
   def rawLen(state: H, idx: Int): Long
 
+  /** lua_next protocol: expects the previous key on top of the stack (nil to
+    * start). Pops it; on success pushes next key then value and returns true.
+    * Returns false (nothing pushed) when the table at tableIdx is exhausted.
+    */
+  def tableNext(state: H, tableIdx: Int): Boolean
+
   // ---- Registry (Ref management) --------------------------------------
 
   def ref(state: H): Ref[H]

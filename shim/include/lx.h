@@ -275,6 +275,16 @@ void lx_rawseti      (lx_State state, lx_Thread thread, int tidx, int n);
 void lx_setarray     (lx_State state, lx_Thread thread,
                        int tidx, int startIdx, int count);
 
+/**
+ * Table traversal, wraps lua_next.  Protocol: push a key onto the stack
+ * (nil to start), then call repeatedly.  Pops the key; if there is a next
+ * entry, pushes key then value and returns nonzero.  Returns 0 (pushing
+ * nothing) when the table is exhausted.  Needed by the host to copy out
+ * string-keyed tables — and to detect non-copyable members (functions,
+ * userdata, threads) while doing so.
+ */
+int  lx_table_next   (lx_State state, lx_Thread thread, int tidx);
+
 /* ------------------------------------------------------------------ */
 /* Registry Refs                                                        */
 /* ------------------------------------------------------------------ */

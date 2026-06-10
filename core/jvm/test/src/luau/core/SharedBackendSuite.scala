@@ -176,3 +176,52 @@ abstract class SharedBackendSuite[H] extends FunSuite:
         assert(result.isLeft, s"expected Left, got $result")
       finally b.closeState(state)
     }
+
+  test("TC-SHARED-11 tableNext walks a string-keyed table; Map decoder copies it"):
+    withBinding { b =>
+      val state = b.newState()
+      try
+        val src = IArray.unsafeFromArray(
+          "return { alpha = 1, beta = 2, gamma = 3 }".getBytes("UTF-8")
+        )
+        b.compileAndLoad(state, src, "test11").fold(e => fail(e.message), identity)
+        val r = b.resume(state, 0)
+        assertEquals(r, ResumeResult.Returned(1))
+        val decoded = luau.core.codec.LuauDecoder[Map[String, Double]].decode(b, state, -1)
+        assertEquals(decoded, Right(Map("alpha" -> 1.0, "beta" -> 2.0, "gamma" -> 3.0)))
+        b.pop(state, 1)
+        assertEquals(b.stackTop(state), 0)
+      finally b.closeState(state)
+    }
+
+  test("TC-SHARED-12 copying out ref data fails: function member rejected"):
+    withBinding { b =>
+      val state = b.newState()
+      try
+        val src = IArray.unsafeFromArray(
+          "return { f = function() return 1 end }".getBytes("UTF-8")
+        )
+        b.compileAndLoad(state, src, "test12").fold(e => fail(e.message), identity)
+        val r = b.resume(state, 0)
+        assertEquals(r, ResumeResult.Returned(1))
+        val decoded = luau.core.codec.LuauDecoder[Map[String, Double]].decode(b, state, -1)
+        assert(decoded.isLeft, s"expected Left for function member, got $decoded")
+        b.pop(state, 1)
+        assertEquals(b.stackTop(state), 0)
+      finally b.closeState(state)
+    }
+
+  test("TC-SHARED-13 scalar decode of ref data fails: function is not a number"):
+    withBinding { b =>
+      val state = b.newState()
+      try
+        val src = IArray.unsafeFromArray(
+          "return function() return 1 end".getBytes("UTF-8")
+        )
+        b.compileAndLoad(state, src, "test13").fold(e => fail(e.message), identity)
+        val r = b.resume(state, 0)
+        assertEquals(r, ResumeResult.Returned(1))
+        val decoded = luau.core.codec.LuauDecoder[Double].decode(b, state, -1)
+        assert(decoded.isLeft, s"expected Left for function value, got $decoded")
+      finally b.closeState(state)
+    }

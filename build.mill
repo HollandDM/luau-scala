@@ -176,7 +176,7 @@ object shim extends Module {
       "_lx_push_lstring", "_lx_push_ref", "_lx_push_copy", "_lx_pop", "_lx_stack_top",
       "_lx_type", "_lx_to_number", "_lx_to_integer", "_lx_to_boolean", "_lx_to_lstring",
       "_lx_rawlen", "_lx_newtable", "_lx_rawget", "_lx_rawset", "_lx_rawgeti", "_lx_rawseti",
-      "_lx_setarray", "_lx_ref", "_lx_unref", "_lx_register_native",
+      "_lx_setarray", "_lx_table_next", "_lx_ref", "_lx_unref", "_lx_register_native",
       "_lx_set_suspend_token", "_lx_get_suspend_token",
       "_lx_set_global", "_lx_get_global",
       "_lx_openlibs", "_lx_sandbox", "_lx_open_libs",

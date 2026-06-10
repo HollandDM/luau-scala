@@ -205,6 +205,10 @@ final class PanamaState private (
   def rawLen(state: MemorySegment, idx: Int): Long =
     LxHandles.lx_rawlen.invokeExact(L, state, idx): Long
 
+  def tableNext(state: MemorySegment, tableIdx: Int): Boolean =
+    val rc: Int = LxHandles.lx_table_next.invokeExact(L, state, tableIdx)
+    rc != 0
+
   def ref(state: MemorySegment): Ref[MemorySegment] =
     checkOpen()
     val rawKey: Int = LxHandles.lx_ref.invokeExact(L, state, -1)

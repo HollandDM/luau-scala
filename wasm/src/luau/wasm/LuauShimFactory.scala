@@ -132,7 +132,7 @@ object LuauShimFactory:
       "lx_push_lstring", "lx_push_ref", "lx_push_copy", "lx_pop", "lx_stack_top",
       "lx_type", "lx_to_number", "lx_to_integer", "lx_to_boolean", "lx_to_lstring",
       "lx_rawlen", "lx_newtable", "lx_rawget", "lx_rawset", "lx_rawgeti", "lx_rawseti",
-      "lx_setarray", "lx_ref", "lx_unref", "lx_register_native",
+      "lx_setarray", "lx_table_next", "lx_ref", "lx_unref", "lx_register_native",
       "lx_set_suspend_token", "lx_get_suspend_token",
       "lx_set_global", "lx_get_global",
       "lx_openlibs", "lx_sandbox", "lx_open_libs", "lx_conformance_setup",

@@ -116,6 +116,27 @@ object FakeBinding extends Binding[FakeState]:
       case LuaValue.LuaString(b) => b.length.toLong
       case _             => 0L
 
+  def tableNext(state: FakeState, tableIdx: Int): Boolean =
+    // Mirror lua_next: caller pushed the previous key (nil to start). The key
+    // is popped BEFORE resolving tableIdx, so callers must pass an absolute
+    // index — same constraint as the real C API.
+    val prevKey = state.stack.removeLast()
+    state.valueAt(tableIdx) match
+      case t: FakeTable =>
+        val entries = t.map.toSeq
+        val next = prevKey match
+          case LuaValue.Nil => entries.headOption
+          case k =>
+            val i = entries.indexWhere(_._1 == k)
+            if i >= 0 && i + 1 < entries.size then Some(entries(i + 1)) else None
+        next match
+          case Some((k, v)) =>
+            state.stack.addOne(k)
+            state.stack.addOne(v)
+            true
+          case None => false
+      case _ => false
+
   // ---- Registry -------------------------------------------------------
 
   def ref(state: FakeState): Ref[FakeState] =

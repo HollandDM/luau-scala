@@ -88,6 +88,7 @@ WASM_LDFLAGS=(
   -Wl,--export=lx_rawgeti
   -Wl,--export=lx_rawseti
   -Wl,--export=lx_setarray
+  -Wl,--export=lx_table_next
   -Wl,--export=lx_ref
   -Wl,--export=lx_unref
   -Wl,--export=lx_register_native

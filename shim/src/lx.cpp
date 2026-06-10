@@ -290,6 +290,10 @@ void lx_rawseti(lx_State s, lx_Thread t, int tidx, int n) {
     lua_rawseti(T(t), tidx, n);
 }
 
+int lx_table_next(lx_State s, lx_Thread t, int tidx) {
+    return lua_next(T(t), tidx);
+}
+
 void lx_setarray(lx_State s, lx_Thread t, int tidx, int startIdx, int count) {
     lua_State* L = T(t);
     int base = lua_gettop(L) - count + 1;

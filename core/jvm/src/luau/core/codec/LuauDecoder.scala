@@ -82,14 +82,34 @@ object LuauDecoder:
       Right(buf.toSeq)
 
   // ---- Map (string-keyed table -> Map[String, V]) --------------------
-  // Full implementation deferred: requires Binding.tableNext (P04/P05).
 
   given [V: LuauDecoder] => LuauDecoder[Map[String, V]]:
     def decode[H](b: Binding[H], s: H, idx: Int): Either[LuaError, Map[String, V]] =
       if b.typeAt(s, idx) != LuaType.Table then
-        return Left(LuaError.runtime(s"expected table at $idx"))
-      // TODO: implement via Binding.tableNext when added
-      Right(Map.empty)
+        return Left(LuaError.runtime(s"expected table at $idx, got ${b.typeAt(s, idx)}"))
+      // tableNext pops the key before resolving the table index, so a
+      // negative idx would shift under us — convert to absolute first.
+      val absIdx = if idx < 0 then b.stackTop(s) + idx + 1 else idx
+      val buf = scala.collection.mutable.Map.empty[String, V]
+      b.pushNil(s)
+      while b.tableNext(s, absIdx) do
+        // stack: ... key value
+        val keyType = b.typeAt(s, -2)
+        if keyType != LuaType.String then
+          b.pop(s, 2)
+          return Left(LuaError.runtime(
+            s"table at $absIdx has a $keyType key — not copyable as Map[String, _]"
+          ))
+        val key = b.toBytes(s, -2) match
+          case Some(bytes) =>
+            new String(IArray.genericWrapArray(bytes).toArray, java.nio.charset.StandardCharsets.UTF_8)
+          case None =>
+            b.pop(s, 2)
+            return Left(LuaError.runtime(s"unreadable string key in table at $absIdx"))
+        summon[LuauDecoder[V]].decode(b, s, -1) match
+          case Right(v) => buf(key) = v; b.pop(s, 1) // keep the key for the next step
+          case Left(e)  => b.pop(s, 2); return Left(e)
+      Right(buf.toMap)
 
   // ---- Case class derivation -----------------------------------------
 

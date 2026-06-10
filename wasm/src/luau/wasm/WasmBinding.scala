@@ -186,6 +186,10 @@ final class WasmBinding private () extends Binding[Int]:
     val thread = mainThread(state)
     module._lx_rawlen(state, thread, idx).toLong
 
+  override def tableNext(state: Int, tableIdx: Int): Boolean =
+    val thread = mainThread(state)
+    module._lx_table_next(state, thread, tableIdx) != 0
+
   // ── Registry (Ref management) ─────────────────────────────────────────
 
   override def ref(state: Int): Ref[Int] =

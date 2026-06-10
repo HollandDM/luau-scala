@@ -50,6 +50,7 @@ trait WasmModuleExports extends js.Object:
   def _lx_rawgeti(state: Int, thread: Int, tidx: Int, n: Int): Unit = js.native
   def _lx_rawseti(state: Int, thread: Int, tidx: Int, n: Int): Unit = js.native
   def _lx_setarray(state: Int, thread: Int, tidx: Int, startIdx: Int, count: Int): Unit = js.native
+  def _lx_table_next(state: Int, thread: Int, tidx: Int): Int = js.native
 
   def _lx_ref(state: Int, thread: Int, idx: Int): Int = js.native
   def _lx_unref(state: Int, ref: Int): Unit = js.native
