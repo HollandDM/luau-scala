@@ -95,9 +95,9 @@ members, same rule as the value plane.
 
 **Decided shape:**
 
-- **Public surface — count-suffixed variants, 1–6:**
-  `eval1[A]` … `eval6[A..F]` returning `Try[A]` / `Try[(A, .., F)]`, with
-  matching `call1`…`call6` and `resume1`…`resume6` on handles
+- **Public surface — count-suffixed variants, 1–4:**
+  `eval1[A]` … `eval4[A..D]` returning `Try[A]` / `Try[(A, .., D)]`, with
+  matching `call1`…`call4` and `resume1`…`resume4` on handles
   (`resumeK` yields `Try[CoroStep[(..)]]`). Plain `eval[V]` stays as the
   common-case spelling of `eval1[V]` (same semantics, same strictness).
 - **Strict on extras:** a chunk/function producing **more** results than the
@@ -115,8 +115,7 @@ members, same rule as the value plane.
   that cannot be presented as a clean typed public API, and exposing it
   would invite unchecked-arity misuse.
 
-`defineGlobal` argument arities extend from 0–4 to 0–6 in the same change
-for symmetry.
+`defineGlobal` argument arities stay 0–4 — same bound as the result side.
 
 ### 2.4 `LuaArg` ergonomics via `into`
 
@@ -148,7 +147,7 @@ Extends `ApiSuite` (runs on both backends): the LuaAccess contract exercised
 through all three concrete cases (global / field / array elem) — get/set
 round-trips, handle mint + call, type-mismatch failures; nested handle
 chains; `toSeq`/`toMap` snapshot + ref-data rejection; `eval2`/`call2`
-happy paths and an arity-6 case; extra-results strictness (`eval1` on a
+happy paths and an arity-4 case; extra-results strictness (`eval1` on a
 2-result chunk fails; nil-padding on fewer); `into` call-site ergonomics
 (compile-level). CC escape negatives for tbl-minted handles
 verified the established way (cc rejection recorded, blind spot pinned in
