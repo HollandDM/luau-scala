@@ -64,10 +64,12 @@ Concrete cases:
 - **`LuaTbl extends LuaAccess[H, String]`** — fields.
   `withValueAt` = `ref.push; pushString; rawGet; f; pop(2)` — the impl owns
   cleanup, so no `lua_remove` is needed in the shim ABI.
-- **`tbl.at: LuaAccess[H, Int]`** — array elements, via `rawGeti`/`rawSeti`.
-  An inner member rather than a second parent: inheriting the same trait
-  twice with different `K` is illegal. Usage: `tbl.at.get[Double](3)`,
-  `tbl.at.getFn(1)`.
+- **Array elements: `Int` overloads directly on `LuaTbl`**, via
+  `rawGeti`/`rawSeti`. Inheriting `LuaAccess` twice with different `K` is
+  illegal, so `LuaTbl` holds a private `LuaAccess[H, Int]` and exposes four
+  one-line overload delegates — callers see a uniform surface:
+  `tbl.get[Double]("x")`, `tbl.get[Double](3)`, `tbl.getFn(1)`. Overload
+  resolution is clean (`String` vs `Int` parameter).
 
 What does NOT generalize: `eval*` (compiles chunks — only a state does
 that), `evalFn`, `coro`, and the bulk/array extras below stay on their
@@ -155,13 +157,11 @@ CcCompileSpec).
 
 ## 5. Open questions (grill here)
 
-1. Naming for the array-element view: `tbl.at` (`tbl.at.get[Double](3)`) vs
-   `tbl.arr` vs index overloads directly on `LuaTbl`?
-2. The `LuaState` rename is breaking: `global`/`setGlobal`/`globalFn`/
+1. The `LuaState` rename is breaking: `global`/`setGlobal`/`globalFn`/
    `globalTbl` become inherited `get`/`set`/`getFn`/`getTbl`. OK to break
    now (pre-1.0), or keep deprecated aliases for one cycle?
-3. Should `set` accept a handle (`tbl.set("cb", fn)`) — writing ref data INTO
+2. Should `set` accept a handle (`tbl.set("cb", fn)`) — writing ref data INTO
    a table? Sound (push via pin, rawSet), but it lets a short-lived scope
    install a long-lived reference; the Lua side keeps it alive after the pin
    drops, which is fine GC-wise but may surprise. Include or defer?
-4. `LuaAccess` name — alternatives: `LuaSlots`, `LuaFields`, `KeyedAccess`.
+3. `LuaAccess` name — alternatives: `LuaSlots`, `LuaFields`, `KeyedAccess`.
