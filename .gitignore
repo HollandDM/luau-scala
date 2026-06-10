@@ -1,3 +1,8 @@
 *.wasm
 out-wasm/
 wasm/test/resources/luau-shim.*
+
+# build caches / IDE
+/out/
+/.metals/
+/mill/
