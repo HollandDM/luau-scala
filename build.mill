@@ -28,15 +28,20 @@ trait LuauCrossPlatformJSModule extends LuauCrossPlatformModule with ScalaJSModu
 }
 
 object core extends Module {
+  // jvm and js compile the same shared sources (core/src, tests in
+  // core/test/src); the two modules exist only to emit JVM and Scala.js
+  // artifacts. Platform-specific code, if ever needed, gets its own dir.
   object jvm extends LuauCrossPlatformModule {
-    override def moduleDeps = super.moduleDeps ++ Seq()
+    override def sources = Task.Sources(moduleDir / os.up / "src")
     object test extends ScalaTests with TestModule.Munit {
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
   object js extends LuauCrossPlatformJSModule {
-    override def moduleDeps = super.moduleDeps ++ Seq()
+    override def sources = Task.Sources(moduleDir / os.up / "src")
     object test extends ScalaJSTests with TestModule.Munit {
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
