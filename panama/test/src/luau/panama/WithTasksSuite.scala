@@ -53,3 +53,22 @@ class WithTasksSuite extends FunSuite:
       w.spawn("""coroutine.yield(); unreached = "x"""").get
     } { st => st.eval[Double]("""return unreached or 0""").get }
     assertEquals(r.await(10.seconds), Success(0.0))
+
+  test("WT-08 two sequential withTasks on one runtime"):
+    val r1 = PanamaLuau.withTasks() { w => w.set("x", 1.0) } { st => st.get[Double]("x").get }
+    assertEquals(r1.await(10.seconds), Success(1.0))
+    val r2 = PanamaLuau.withTasks() { w => w.set("x", 2.0) } { st => st.get[Double]("x").get }
+    assertEquals(r2.await(10.seconds), Success(2.0))
+
+  test("WT-09 deadline fires cancel hook"):
+    @volatile var cancelFired = false
+    val r = PanamaLuau.withTasks(deadline = Some(100.millis)) { w =>
+      w.defineAsync[Double]("never") { _ => _ =>
+        Cancel(() => cancelFired = true)
+      }
+      w.spawn("never(0)").get
+    } { _ => () }
+    assert(r.await(10.seconds).isFailure)
+    assert(cancelFired)
+
+
