@@ -49,7 +49,7 @@ object core extends Module {
 }
 
 object panama extends LuauCrossPlatformModule {
-  override def moduleDeps = super.moduleDeps ++ Seq(core.jvm)
+  override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, stdlib.jvm)
   object test extends ScalaTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     override def moduleDeps = super.moduleDeps ++ Seq(core.jvm.test)
@@ -112,7 +112,7 @@ object scheduler extends Module {
 }
 
 object wasm extends LuauCrossPlatformJSModule {
-  override def moduleDeps = super.moduleDeps ++ Seq(core.js)
+  override def moduleDeps = super.moduleDeps ++ Seq(core.js, stdlib.js)
   override def jsEnvConfig = Task {
     val wasmDir = shim.wasmBuildNative()
     val wasmPath = wasmDir.path / "luau-shim.wasm"

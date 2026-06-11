@@ -113,15 +113,15 @@ final class LuaState[H] private[api] (
     * strict. Overloads cover 0–4 arguments; annotate lambda parameter types.
     */
   def defineGlobal[R: LuauEncoder](name: String)(f: () => R): Unit =
-    install(name, hostFn(0)(_ => Right(f())))
+    installNative(name, hostFn(0)(_ => Right(f())))
 
   def defineGlobal[A: LuauDecoder, R: LuauEncoder](name: String)(f: A => R): Unit =
-    install(name, hostFn(1)(t => binding.decodeAt[A](t, 1).map(f)))
+    installNative(name, hostFn(1)(t => binding.decodeAt[A](t, 1).map(f)))
 
   def defineGlobal[A: LuauDecoder, B: LuauDecoder, R: LuauEncoder](
     name: String
   )(f: (A, B) => R): Unit =
-    install(name, hostFn(2) { t =>
+    installNative(name, hostFn(2) { t =>
       for
         a <- binding.decodeAt[A](t, 1)
         b <- binding.decodeAt[B](t, 2)
@@ -131,7 +131,7 @@ final class LuaState[H] private[api] (
   def defineGlobal[A: LuauDecoder, B: LuauDecoder, C: LuauDecoder, R: LuauEncoder](
     name: String
   )(f: (A, B, C) => R): Unit =
-    install(name, hostFn(3) { t =>
+    installNative(name, hostFn(3) { t =>
       for
         a <- binding.decodeAt[A](t, 1)
         b <- binding.decodeAt[B](t, 2)
@@ -142,7 +142,7 @@ final class LuaState[H] private[api] (
   def defineGlobal[A: LuauDecoder, B: LuauDecoder, C: LuauDecoder, D: LuauDecoder, R: LuauEncoder](
     name: String
   )(f: (A, B, C, D) => R): Unit =
-    install(name, hostFn(4) { t =>
+    installNative(name, hostFn(4) { t =>
       for
         a <- binding.decodeAt[A](t, 1)
         b <- binding.decodeAt[B](t, 2)
@@ -225,9 +225,9 @@ final class LuaState[H] private[api] (
           case ResumeResult.Yielded(_) =>
             Left(LuaError.runtime(s"$chunkname still yielding after $MaxResumes resumes"))
 
-  private def install(name: String, fn: NativeFn[H]): Unit =
-    binding.registerNativeFn(state, fn) // leaves the fn on the stack
-    binding.setGlobal(state, name)      // pops it
+  private[api] def installNative(name: String, fn: NativeFn[H]): Unit =
+    binding.registerNativeFn(state, fn)
+    binding.setGlobal(state, name)
 
   private def hostFn[R: LuauEncoder](arity: Int)(body: H => Either[LuaError, R]): NativeFn[H] =
     (thread, nargs) =>

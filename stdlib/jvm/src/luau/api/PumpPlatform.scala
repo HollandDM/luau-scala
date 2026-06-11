@@ -5,10 +5,16 @@ private[api] object PumpPlatform:
     private val lock = new Object
     private var signal = false
     @volatile private var alive = true
-    Thread.ofVirtual().name("luau-driver").start { () =>
-      while alive do
-        lock.synchronized { while !signal && alive do lock.wait(); signal = false }
-        if alive then drain()
-    }
+    val t = new Thread(() =>
+      try
+        while alive do
+          lock.synchronized { while !signal && alive do lock.wait(); signal = false }
+          if alive then drain()
+      catch case e: Throwable =>
+        Console.err.println(s"[luau-driver] pump thread crashed: $e")
+        e.printStackTrace()
+    , "luau-driver")
+    t.setDaemon(true)
+    t.start()
     def wake(): Unit = lock.synchronized { signal = true; lock.notifyAll() }
     def shutdown(): Unit = lock.synchronized { alive = false; lock.notifyAll() }
