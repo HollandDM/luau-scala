@@ -1,6 +1,6 @@
 package luau.scheduler
 
-import luau.core.{Ref, Cancel}
+import luau.core.{Ref, Cancel, LuaValue}
 
 /** A Luau thread the Scheduler owns, plus scheduling state.
   *
@@ -41,3 +41,11 @@ final class Task[H](
   @volatile private var _pendingCompletion = false
   def pendingCompletion: Boolean = _pendingCompletion
   private[scheduler] def setPendingCompletion(b: Boolean): Unit = _pendingCompletion = b
+
+  /** Return values captured when the task ran to completion; `None` for any
+    * non-Complete state. Written before the Complete state transition, so a
+    * reader that observes Complete observes the values.
+    */
+  @volatile private var _results: Option[Seq[LuaValue]] = None
+  def results: Option[Seq[LuaValue]] = _results
+  private[scheduler] def setResults(vs: Seq[LuaValue]): Unit = _results = Some(vs)

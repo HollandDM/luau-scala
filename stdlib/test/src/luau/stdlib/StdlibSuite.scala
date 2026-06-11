@@ -95,11 +95,11 @@ class StdlibSuite extends munit.FunSuite:
       sched.enqueueResume(task, Right(LuaValue.Number(42.0)))
     }
 
-  test("Scheduler.cancelThread cancels task by threadRef"):
+  test("Scheduler.cancelThreadHandle cancels task by thread handle"):
     withSched(TestBinding()) { (binding, state, sched) =>
       val handle = sched.scheduleDelayed(pinNil(binding, state), Nil, 10.0)
       assert(handle.task.state == TaskState.Parked)
-      sched.cancelThread(handle.threadRef)
+      sched.cancelThreadHandle(handle.task.thread)
       assertEquals(handle.task.state, TaskState.Cancelled)
     }
 

@@ -3,7 +3,7 @@
 --   - removed `--!nolint UnknownType` — not needed without roblox types
 --   - removed `local task = require("@lune/task")` — task is a global
 --   - dropped roblox section (lines 21-29 upstream) — requires @lune/roblox, no equivalent lib
---   - added `__result = "OK"` sentinel at end
+--   - added `return "OK"` completion marker at end
 
 -- dropped: local roblox = require("@lune/roblox") and all roblox.Instance/Vector3/Enum asserts — no roblox lib available
 
@@ -22,4 +22,4 @@ assert(typeof(thread2) == "thread", "Calling typeof() did not return 'thread' af
 assert(typeof(thread3) == "thread", "Calling typeof() did not return 'thread' after task.defer")
 assert(typeof(thread4) == "thread", "Calling typeof() did not return 'thread' after delay")
 
-__result = "OK"
+return "OK"

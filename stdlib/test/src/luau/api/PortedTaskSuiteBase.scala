@@ -3,6 +3,8 @@ package luau.api
 import munit.FunSuite
 import scala.concurrent.duration.*
 import scala.concurrent.{Future, Promise}
+import luau.core.{LuaError, LuaValue, NativeFnResult}
+import luau.scheduler.TaskHandle
 
 /** Runs task-scheduler test scripts ported from other Luau runtimes against
   * a real backend via the withTasks entry.
@@ -12,11 +14,11 @@ import scala.concurrent.{Future, Promise}
   *   - lune/  — lune-org/lune tests/task and tests/globals
   *   - zune/  — Scythe-Technology/Zune test/standard/task.test.luau
   *
-  * Protocol: the chunk's return values are not observable through spawn, so
-  * every ported file ends with `__result = "OK"` as its last executed
+  * Protocol: every ported file ends with `return "OK"` as its last executed
   * top-level statement. The world drains to quiescence (delayed/deferred
   * assertions included — a failure in any of them fails the world before
-  * finish runs), then finish reads the sentinel back.
+  * finish runs), then finish reads the chunk's return values off its
+  * [[TaskHandle.results]].
   *
   * Tests are async (Future-based): on JS the world completes through the
   * event loop and blocking is impossible. Platform subclasses supply file IO
@@ -34,17 +36,40 @@ abstract class PortedTaskSuiteBase[H] extends FunSuite:
 
   override def munitTimeout: Duration = 120.seconds
 
+  /** Upstream conformance fixture: `resumeerror(co, msg)` resumes `co` with
+    * `msg` raised as an error at its yield point (the pcall inside `co`
+    * catches it). Mirrors the C harness's lua_resumeerror test global.
+    */
+  private def installResumeError(w: TaskWorld[H]): Unit =
+    val binding = w.st.binding
+    w.st.installNative("resumeerror", (s, nargs) =>
+      binding.toThreadAt(s, 1) match
+        case Some(co) =>
+          val msg = binding.toStringAt(s, 2).getOrElse("")
+          binding.resumeError(co, LuaError.runtime(msg))
+          NativeFnResult.Return(0)
+        case None =>
+          binding.pushString(s, "resumeerror: expected thread as first argument")
+          NativeFnResult.Fail)
+
   for name <- PortedTaskSuiteBase.files do
     test(s"ported: $name"):
       val source = readPorted(name)
+      var handle: Option[TaskHandle[H]] = None
       val r = withTasks { w =>
-        w.spawn(source, "=" + name).get
-      } { st =>
-        st.get[String]("__result").get
+        installResumeError(w)
+        handle = Some(w.spawn(source, "=" + name).get)
+      } { _ =>
+        handle.get.results
       }
-      val p = Promise[String]()
+      val p = Promise[Option[Seq[LuaValue]]]()
       r.onComplete(p.complete)
-      p.future.map(v => assertEquals(v, "OK"))(using munitExecutionContext)
+      p.future.map {
+        case Some(Seq(LuaValue.LuaString(bytes))) =>
+          assertEquals(String(bytes.unsafeArray, "UTF-8"), "OK")
+        case other =>
+          fail(s"expected the chunk to return \"OK\", got $other")
+      }(using munitExecutionContext)
 
 object PortedTaskSuiteBase:
   val files: Seq[String] = Seq(
@@ -55,7 +80,9 @@ object PortedTaskSuiteBase:
     "lune/wait.luau",
     "lune/error.luau",
     "lune/type.luau",
+    "lune/warn.luau",
     "lune/typeof.luau",
     "lune/coroutine.luau",
     "zune/task.luau",
+    "conformance/pcall.luau",
   )

@@ -21,6 +21,8 @@ trait WasmModuleExports extends js.Object:
   def _lx_close(state: Int): Unit = js.native
   def _lx_new_thread(state: Int): Int = js.native
   def _lx_thread_status(thread: Int): Int = js.native
+  def _lx_to_thread(thread: Int, idx: Int): Int = js.native
+  def _lx_reset_thread(thread: Int): Unit = js.native
 
   def _lx_compile_and_load(state: Int, srcPtr: Int, srcLen: Int, chunknamePtr: Int, optLevel: Int, debugLevel: Int, errbufPtr: Int, errbufSz: Int): Int = js.native
 

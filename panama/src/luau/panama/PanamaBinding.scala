@@ -109,6 +109,19 @@ final class PanamaBinding private () extends Binding[MemorySegment]:
   def newThread(state: MemorySegment): MemorySegment =
     LxHandles.lx_new_thread.invokeExact(state): MemorySegment
 
+  def toThreadAt(state: MemorySegment, idx: Int): Option[MemorySegment] =
+    val t = LxHandles.lx_to_thread.invokeExact(state, idx): MemorySegment
+    if t.address == 0L then None else Some(t)
+
+  def resetThread(thread: MemorySegment): Unit =
+    LxHandles.lx_reset_thread.invokeExact(thread): Unit
+
+  /** Downcalls mint a fresh zero-length MemorySegment per return, so object
+    * equality is useless — the lua_State* address is the identity.
+    */
+  override def sameThread(a: MemorySegment, b: MemorySegment): Boolean =
+    a.address == b.address
+
   // ---- Stack: push operations -------------------------------------------
 
   def pushNil(state: MemorySegment): Unit =

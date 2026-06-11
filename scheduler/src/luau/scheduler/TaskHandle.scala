@@ -1,6 +1,6 @@
 package luau.scheduler
 
-import luau.core.Ref
+import luau.core.{LuaValue, Ref}
 
 final class TaskHandle[H] private[scheduler] (
   private[luau] val threadRef: Ref[H],
@@ -11,3 +11,8 @@ final class TaskHandle[H] private[scheduler] (
   def isDone: Boolean = task.state match
     case TaskState.Complete | TaskState.Cancelled | TaskState.Failed(_) => true
     case _ => false
+
+  /** The task's return values, once it ran to completion; `None` while it is
+    * pending/parked and for failed or cancelled tasks.
+    */
+  def results: Option[Seq[LuaValue]] = task.results

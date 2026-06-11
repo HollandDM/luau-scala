@@ -52,12 +52,15 @@ open class TestBinding extends Binding[FakeState]:
 
   def newThread(state: FakeState): FakeState =
     val thread = FakeBinding.newThread(state)
-    // Distinct stand-in for the thread object: Scheduler.cancelThread probes
-    // thread identity through table keys, so every fake thread needs a
-    // distinguishable value (Nil would alias them all).
+    // Distinct stand-in for the thread object the shim leaves on the parent
+    // stack (spawn paths ref() it off, so the slot must exist).
     threadSeq += 1
     state.stack.addOne(LuaValue.Number(threadSeq.toDouble))
     thread
+
+  def toThreadAt(state: FakeState, idx: Int): Option[FakeState] =
+    FakeBinding.toThreadAt(state, idx)
+  def resetThread(thread: FakeState): Unit = FakeBinding.resetThread(thread)
 
   def pushCopy(state: FakeState, idx: Int): Unit =
     FakeBinding.pushCopy(state, idx)

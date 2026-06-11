@@ -1,7 +1,7 @@
 -- ported from lune-org/lune tests/globals/type.luau (commit: 1f61836)
 -- edits:
 --   - removed `local task = require("@lune/task")` — task is a global
---   - added `__result = "OK"` sentinel at end
+--   - added `return "OK"` completion marker at end
 
 local function f() end
 
@@ -15,4 +15,4 @@ assert(type(thread2) == "thread", "Calling type() did not return 'thread' after 
 assert(type(thread3) == "thread", "Calling type() did not return 'thread' after task.defer")
 assert(type(thread4) == "thread", "Calling type() did not return 'thread' after delay")
 
-__result = "OK"
+return "OK"

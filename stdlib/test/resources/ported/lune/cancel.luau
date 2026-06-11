@@ -1,7 +1,7 @@
 -- ported from lune-org/lune tests/task/cancel.luau (commit: 1f61836)
 -- edits:
 --   - removed `local task = require("@lune/task")` — task is a global
---   - added `__result = "OK"` sentinel at end
+--   - added `return "OK"` completion marker at end
 
 -- Cancel should cancel any deferred or delayed threads
 
@@ -36,4 +36,4 @@ task.cancel(thread3)
 task.wait(0.2)
 assert(flag3 == 2, "Cancel should properly handle yielding threads")
 
-__result = "OK"
+return "OK"

@@ -1,6 +1,6 @@
 -- ported from lune-org/lune tests/globals/error.luau (commit: 1f61836)
 -- edits:
---   - added `__result = "OK"` sentinel at end (zero logic changes)
+--   - added `return "OK"` completion marker at end (zero logic changes)
 
 local errValue = newproxy(false)
 
@@ -18,4 +18,4 @@ assert(type(result) == "table", "Pcall error value should have been a table")
 assert(result.Inner ~= nil, "Pcall error table should contain inner value")
 assert(result.Inner == errValue, "Pcall error table should have correct inner value")
 
-__result = "OK"
+return "OK"

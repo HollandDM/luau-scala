@@ -77,6 +77,20 @@ lx_Thread lx_new_thread(lx_State state);
 /** Query thread status. Returns 0=ok/running, 1=suspended, 2=dead, 3=normal. */
 int lx_thread_status(lx_Thread thread);
 
+/**
+ * Extract the coroutine thread VALUE at idx on `thread`'s stack.
+ * Returns the extracted thread handle, or NULL if the value at idx is not
+ * a thread. Does not pop; non-raising.
+ */
+lx_Thread lx_to_thread(lx_Thread thread, int idx);
+
+/**
+ * Reset a coroutine thread (lua_resetthread): unwinds its frames and wipes
+ * its stack. An entered or suspended-with-frames coroutine reports "dead"
+ * afterwards. Must be called from the Driver, never on a running thread.
+ */
+void lx_reset_thread(lx_Thread thread);
+
 /* ------------------------------------------------------------------ */
 /* Compile and load                                                     */
 /* ------------------------------------------------------------------ */

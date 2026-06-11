@@ -78,7 +78,8 @@ object ConformanceManifest:
     "native.luau"             -> "hard assert(is_native()) — needs codegen",
     "native_types.luau"       -> "hard assert(is_native()) — needs codegen",
     "native_userdata.luau"    -> "needs vec2/vertex/mat3 C++ userdata ctors",
-    "pcall.luau"              -> "needs cxxthrow/resumeerror globals + OOM allocator",
+    "pcall.luau"              -> ("adapted copy runs as ported/conformance/pcall.luau " +
+                                 "(PortedTaskSuiteBase); raw upstream needs the OOM allocator hook"),
     "types.luau"              -> "needs RTTI global from Luau::Frontend analysis",
     "udata_direct.luau"       -> "needs userdata direct-access C++ hooks",
     "userdata.luau"           -> "needs int64 C++ userdata ctor with metamethods",

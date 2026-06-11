@@ -2,7 +2,7 @@
 -- edits:
 --   - removed `local task = require("@lune/task")` — task is a global
 --   - removed `local fcheck = require("./fcheck")` — inlined helper below
---   - added `__result = "OK"` sentinel at end
+--   - added `return "OK"` completion marker at end
 
 local function fcheck(index: number, t: string, value: any)
 	if typeof(value) ~= t then
@@ -78,4 +78,4 @@ task.delay(0, f, "", 1, f)
 task.delay(0, f, "inf", math.huge, f)
 task.delay(0, f, "NaN", 0 / 0, f)
 
-__result = "OK"
+return "OK"

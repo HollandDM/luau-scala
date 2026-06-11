@@ -102,6 +102,13 @@ final class WasmBinding private () extends Binding[Int]:
   def newThread(state: Int): Int =
     module._lx_new_thread(state)
 
+  def toThreadAt(state: Int, idx: Int): Option[Int] =
+    val t = module._lx_to_thread(state, idx)
+    if t == 0 then None else Some(t)
+
+  def resetThread(thread: Int): Unit =
+    module._lx_reset_thread(thread)
+
   // ── Stack: push operations ─────────────────────────────────────────────
 
   def pushNil(state: Int): Unit =

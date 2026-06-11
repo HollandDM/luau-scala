@@ -34,6 +34,10 @@ object LxHandles:
   val lx_new_thread:  MethodHandle = handle("lx_new_thread",  FunctionDescriptor.of(ADDRESS, ADDRESS))
   val lx_thread_status: MethodHandle = handle("lx_thread_status",
     FunctionDescriptor.of(JAVA_INT, ADDRESS))
+  val lx_to_thread: MethodHandle = handle("lx_to_thread",
+    FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT))
+  val lx_reset_thread: MethodHandle = handle("lx_reset_thread",
+    FunctionDescriptor.ofVoid(ADDRESS))
 
   val lx_compile_and_load: MethodHandle = handle("lx_compile_and_load",
     FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS,

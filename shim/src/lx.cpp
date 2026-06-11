@@ -109,6 +109,15 @@ lx_Thread lx_new_thread(lx_State state) {
     return static_cast<lx_Thread>(co);
 }
 
+lx_Thread lx_to_thread(lx_Thread thread, int idx) {
+    lua_State* s = static_cast<lua_State*>(thread);
+    return static_cast<lx_Thread>(lua_tothread(s, idx));
+}
+
+void lx_reset_thread(lx_Thread thread) {
+    lua_resetthread(static_cast<lua_State*>(thread));
+}
+
 int lx_thread_status(lx_Thread thread) {
     lua_State* co = static_cast<lua_State*>(thread);
     // lua_costatus needs a "current thread" perspective; the main thread of

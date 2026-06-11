@@ -9,8 +9,8 @@ Scala bindings for [Luau](https://luau.org/) — Roblox's gradually-typed, sandb
 
 ## Highlights
 
-- **Task-based execution (`withTasks`)** — the single entry point. Phase 1 sets up a live *task world* (spawn scripts, define host functions, wire async ops); the world runs to quiescence on a scheduler; phase 2 reads the results. Returns a `TaskResult[A]` (`poll`/`onComplete` everywhere, `await(timeout)` on the JVM).
-- **Roblox `task` library built in** — `task.spawn`, `task.defer`, `task.delay`, `task.wait`, `task.cancel` are auto-installed and behave per Roblox semantics (spawn runs immediately to first yield, defer runs next tick, wait returns actual elapsed time).
+- **Task-based execution (`withTasks`)** — the single entry point. Phase 1 sets up a live *task world* (spawn scripts, define host functions, wire async ops); the world runs to quiescence on a scheduler; phase 2 reads the results. Returns a `TaskResult[A]` (`poll`/`onComplete` everywhere, `await(timeout)` on the JVM). Spawning hands back a `TaskHandle` with `cancel()`, `isDone`, and `results` — the task's return values once it completes.
+- **Roblox `task` library built in** — `task.spawn`, `task.defer`, `task.delay`, `task.wait`, `task.cancel` are auto-installed and behave per Roblox semantics: spawn runs immediately to first yield, defer runs next tick, wait returns actual elapsed time. `spawn`/`defer`/`delay` take a function **or an existing coroutine thread** (the scheduler adopts it), and `task.cancel` resets the coroutine so `coroutine.status` reports `"dead"`. The Roblox/Lune `warn` global is installed alongside.
 - **Async host functions** — `defineAsync` exposes any callback-based host operation to scripts. The calling script suspends without blocking a thread, the native stack fully unwinds, and completion (from any thread) re-enqueues the task. Cancellation is first-class: pending ops are cancelled on deadline or teardown.
 - **Typed facade (`luau.api`)** — no raw stack indices in any public signature, the Lua stack is balanced after every call, and every operation that interprets a Lua value returns `Try` (failing on reference data where a copyable value is expected).
 - **Exact-match multi-results** — `eval0`…`eval4`, `call0`…`call4`, `resume0`…`resume4` fail unless the chunk/function/coroutine step produces exactly the requested arity. Lua's adjust semantics (drop extras, nil-pad missing) hide contract mismatches; the host boundary refuses both directions.
@@ -19,7 +19,7 @@ Scala bindings for [Luau](https://luau.org/) — Roblox's gradually-typed, sandb
 - **Always sandboxed** — stdlib globals are frozen (`luaL_sandbox` + `luaL_sandboxthread`); `io`/`package`/`require`/`dofile`/`loadfile` and `os.execute`/`os.exit`/`os.getenv` are removed unconditionally; host and script globals land in a writable proxy environment. Library selection via `Set[LuauLib]` (default: everything but `Debug`).
 - **Codec-based marshalling** — `LuauEncoder`/`LuauDecoder` typeclasses; data crosses the boundary only by copy, streamed (no intermediate tree). Primitives, `String`, byte arrays, `Option`, `Seq`/`List`/`Array`/`Vector`, `Map[String, V]`, and case-class derivation out of the box.
 - **Ergonomic call sites** — `LuaArg` carries the SIP-66 `into` modifier, so `fn.call[Double](21.0, "label")` works without wrapping or language imports.
-- **Tested against upstream** — the shared test suite (the portable subset of Luau's own conformance scripts, plus task-library tests ported from [Lune](https://github.com/lune-org/lune) and Zune) runs on both backends.
+- **Tested against upstream** — the shared test suite (the portable subset of Luau's own conformance scripts — including an adapted port of upstream `pcall.luau`'s pcall/xpcall/yield semantics — plus task-library tests ported from [Lune](https://github.com/lune-org/lune) and Zune) runs on both backends.
 
 ## Example
 

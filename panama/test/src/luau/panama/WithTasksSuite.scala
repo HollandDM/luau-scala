@@ -3,8 +3,10 @@ package luau.panama
 import munit.FunSuite
 import scala.concurrent.duration.*
 import scala.util.Success
+import java.lang.foreign.MemorySegment
 import luau.api.*
 import luau.core.{Cancel, LuaValue}
+import luau.scheduler.TaskHandle
 
 class WithTasksSuite extends FunSuite:
 
@@ -104,5 +106,27 @@ class WithTasksSuite extends FunSuite:
       w.spawn("task.delay(0.02, function(x) delayed = x + 1 end, 41)").get
     } { st => st.get[Double]("delayed").get }
     assertEquals(r.await(10.seconds), Success(42.0))
+
+  test("WT-14 chunk return values are observable via TaskHandle.results"):
+    @volatile var handle: Option[TaskHandle[MemorySegment]] = None
+    val r = PanamaLuau.withTasks() { w =>
+      handle = Some(w.spawn("""return "OK", 42""").get)
+    } { _ => handle.get.results }
+    val results = r.await(10.seconds).get
+    assert(results.isDefined, "results should be Some after the task completed")
+    results.get match
+      case Seq(s: LuaValue.LuaString, n: LuaValue.Number) =>
+        assertEquals(String(s.bytes.unsafeArray, "UTF-8"), "OK")
+        assertEquals(n.value, 42.0)
+      case other => fail(s"unexpected results shape: $other")
+
+  test("WT-15 results stays None while the task is parked"):
+    @volatile var parkedResults: Option[Option[Seq[LuaValue]]] = None
+    val r = PanamaLuau.withTasks() { w =>
+      val h = w.spawn("task.wait(0.05); checked = true").get
+      parkedResults = Some(h.results) // h has not completed (setup runs pre-pump)
+    } { st => st.get[Boolean]("checked").get }
+    assertEquals(r.await(10.seconds), Success(true))
+    assertEquals(parkedResults, Some(None))
 
 

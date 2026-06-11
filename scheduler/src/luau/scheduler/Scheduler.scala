@@ -57,16 +57,25 @@ final class Scheduler[H](
     liveTasks.put(task.id, task)
     task
 
-  /** Push fn + args onto the task thread, consuming the caller's refs.
-    * Returns nargs for lua_resume — args only; the function sits below them
-    * (Luau convention: firstArg = top - nargs, callee at firstArg - 1).
+  /** Push args onto the task thread, consuming the caller's refs. Returns
+    * nargs for lua_resume — args only; the callee sits below them (Luau
+    * convention: firstArg = top - nargs, callee at firstArg - 1). For an
+    * adopted coroutine the entry function is already on its stack
+    * (coroutine.create put it there).
     */
-  private def pushFnAndArgs(thread: H, fnRef: Ref[H], extraArgs: List[Ref[H]]): Int =
-    binding.pushRef(thread, fnRef.registryKey)
+  private def pushArgs(thread: H, extraArgs: List[Ref[H]]): Int =
     extraArgs.foreach { ref => binding.pushRef(thread, ref.registryKey) }
-    fnRef.close()
     extraArgs.foreach(_.close())
     extraArgs.size
+
+  /** Fresh task thread with `fnRef`'s function pushed as its entry point,
+    * consuming the caller's ref.
+    */
+  private def threadOverFn(fnRef: Ref[H]): (H, Ref[H]) =
+    val (thread, threadRef) = newTaskThread()
+    binding.pushRef(thread, fnRef.registryKey)
+    fnRef.close()
+    (thread, threadRef)
 
   // ── Spawn ─────────────────────────────────────────────────────────────
 
@@ -84,16 +93,23 @@ final class Scheduler[H](
     * object — the caller owns closing it (TaskLibrary closes after pushing).
     */
   def spawnImmediate(fnRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
-    val (rawThread, threadRef) = newTaskThread()
-    val task = allocTask(rawThread, threadRef, TaskState.Running)
-    val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
+    val (thread, threadRef) = threadOverFn(fnRef)
+    spawnImmediateAdopted(thread, threadRef, extraArgs)
+
+  /** spawnImmediate over an existing coroutine (task.spawn(thread, ...)):
+    * the scheduler adopts it as a Task and resumes it NOW. `threadRef` pins
+    * the coroutine object; the entry function is already on its stack.
+    */
+  def spawnImmediateAdopted(thread: H, threadRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
+    val task = allocTask(thread, threadRef, TaskState.Running)
+    val nargs = pushArgs(thread, extraArgs)
     // The immediate burst nests inside the caller's resume: the spawned task
     // is current for its own burst (task.wait inside it must see itself),
     // then the enclosing task is restored.
     val prev = _currentTask
     _currentTask = Some(task)
     val result =
-      try binding.resume(rawThread, nargs)
+      try binding.resume(thread, nargs)
       finally _currentTask = prev
     handleResumeResult(task, result, releaseOnTerminal = false)
     TaskHandle(threadRef, task, this)
@@ -101,9 +117,13 @@ final class Scheduler[H](
   // ── Defer task ────────────────────────────────────────────────────────
 
   def deferTask(fnRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
-    val (rawThread, threadRef) = newTaskThread()
-    val task = allocTask(rawThread, threadRef, TaskState.Queued)
-    val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
+    val (thread, threadRef) = threadOverFn(fnRef)
+    deferAdopted(thread, threadRef, extraArgs)
+
+  /** deferTask over an existing coroutine (task.defer(thread, ...)). */
+  def deferAdopted(thread: H, threadRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
+    val task = allocTask(thread, threadRef, TaskState.Queued)
+    val nargs = pushArgs(thread, extraArgs)
     post(ReadyTask[H](task, ResumeValues.Pushed(nargs)))
     TaskHandle(threadRef, task, this)
 
@@ -113,10 +133,14 @@ final class Scheduler[H](
     timer.schedule(seconds)(() => callback)
 
   def scheduleDelayed(fnRef: Ref[H], extraArgs: List[Ref[H]], seconds: Double): TaskHandle[H] =
-    val (rawThread, threadRef) = newTaskThread()
-    val task = allocTask(rawThread, threadRef, TaskState.Parked)
+    val (thread, threadRef) = threadOverFn(fnRef)
+    delayAdopted(thread, threadRef, extraArgs, seconds)
+
+  /** scheduleDelayed over an existing coroutine (task.delay(s, thread, ...)). */
+  def delayAdopted(thread: H, threadRef: Ref[H], extraArgs: List[Ref[H]], seconds: Double): TaskHandle[H] =
+    val task = allocTask(thread, threadRef, TaskState.Parked)
     task.setPendingCompletion(true)
-    val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
+    val nargs = pushArgs(thread, extraArgs)
 
     timer.schedule(seconds) { () =>
       transitionLock.synchronized {
@@ -137,33 +161,19 @@ final class Scheduler[H](
       task.setPendingCompletion(false)
       task.setState(TaskState.Cancelled)
       task.fireCancel()
+      // Roblox/Zune parity: a cancelled coroutine reads "dead". Reset also
+      // unwinds the parked stack now instead of pinning it until state close.
+      binding.resetThread(task.thread)
       liveTasks.remove(task.id)
       task.releaseThread()
 
-  /** Cancel the live task owning the thread VALUE behind `threadRef`.
-    * Registry keys are per-ref, not per-object: task.cancel pins a fresh ref
-    * to the stack value, so key equality never matches the task's own
-    * threadRef. Probe object identity through a Lua table instead — a table
-    * keyed by the target thread answers rawget hits only for the same object.
+  /** Cancel the live task owning the coroutine `thread` (a handle extracted
+    * via Binding.toThreadAt). Direct handle comparison — Binding.sameThread
+    * resolves wrapper-value identity per backend.
     */
-  def cancelThread(threadRef: Ref[H]): Unit =
-    val top = binding.stackTop(state)
-    try
-      binding.newTable(state)
-      binding.pushRef(state, threadRef.registryKey)
-      binding.pushBoolean(state, true)
-      binding.rawSet(state, -3)
-      val owner = liveTasks.values.find { t =>
-        !t.threadRef.isClosed && {
-          binding.pushRef(state, t.threadRef.registryKey)
-          binding.rawGet(state, -2)
-          val hit = binding.toBoolean(state, -1)
-          binding.setStackTop(state, top + 1)
-          hit
-        }
-      }
-      owner.foreach(cancelTask)
-    finally binding.setStackTop(state, top)
+  def cancelThreadHandle(thread: H): Unit =
+    liveTasks.values.find(t => binding.sameThread(t.thread, thread))
+      .foreach(cancelTask)
 
   // ── Enqueue resume (off-Driver) ───────────────────────────────────────
 
@@ -238,7 +248,8 @@ final class Scheduler[H](
     releaseOnTerminal: Boolean = true,
   ): Unit =
     result match
-      case ResumeResult.Returned(_) =>
+      case ResumeResult.Returned(n) =>
+        task.setResults(captureResults(task.thread, n))
         task.setState(TaskState.Complete)
         liveTasks.remove(task.id)
         if releaseOnTerminal then task.releaseThread()
@@ -300,6 +311,26 @@ final class Scheduler[H](
     liveTasks.clear()
 
   // ── Resume value marshaling ───────────────────────────────────────────
+
+  /** Snapshot the `n` return values off a completed task's stack, with
+    * non-raising reads only. Copyable values come out by value; reference
+    * data (tables, functions, threads) is pinned as a LuaRef, released at
+    * state teardown (ADR-0005's bounded leak).
+    */
+  private def captureResults(thread: H, n: Int): Seq[LuaValue] =
+    (0 until n).map { i =>
+      val idx = -n + i
+      binding.typeAt(thread, idx) match
+        case LuaType.Nil     => LuaValue.Nil
+        case LuaType.Boolean => LuaValue.Bool(binding.toBoolean(thread, idx))
+        case LuaType.Number  =>
+          LuaValue.Number(binding.toNumber(thread, idx).getOrElse(Double.NaN))
+        case LuaType.String  =>
+          LuaValue.LuaString(binding.toBytes(thread, idx).getOrElse(IArray.empty))
+        case _ =>
+          binding.pushCopy(thread, idx)
+          LuaValue.LuaRef(binding.ref(thread))
+    }
 
   private def pushValue(thread: H, value: LuaValue): Unit =
     value match

@@ -94,4 +94,4 @@ for _, bad in { 0 / 0, -1, -0.5, -math.huge } do
 	)
 end
 
-__result = "OK"
+return "OK"

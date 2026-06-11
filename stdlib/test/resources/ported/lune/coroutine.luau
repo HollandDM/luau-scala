@@ -3,7 +3,7 @@
 --   - removed `local task = require("@lune/task")` (lines 58, upstream) — task is a global
 --   - dropped section "Task library wait should work inside native lua coroutines" (upstream lines 58-76)
 --     ADR-0004: task.wait inside raw coroutine.create/coroutine.wrap threads raises runtime error
---   - added `__result = "OK"` sentinel at end
+--   - added `return "OK"` completion marker at end
 
 -- Coroutines should return true, ret values OR false, error
 
@@ -73,4 +73,4 @@ end)
 
 coroutine.resume(co, 1, "Hello, world!", true)
 
-__result = "OK"
+return "OK"

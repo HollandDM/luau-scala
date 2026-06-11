@@ -35,6 +35,23 @@ trait Binding[H]:
 
   def newThread(state: H): H
 
+  /** Extract the coroutine thread VALUE at `idx` on `state`'s stack, or
+    * `None` if the value there is not a thread. Does not pop; non-raising.
+    */
+  def toThreadAt(state: H, idx: Int): Option[H]
+
+  /** Reset a coroutine (lua_resetthread): unwind its frames and wipe its
+    * stack. An entered coroutine reports "dead" afterwards. Driver-only;
+    * never call it on the running thread.
+    */
+  def resetThread(thread: H): Unit
+
+  /** Whether two thread handles denote the same coroutine object. Handles
+    * may be distinct wrapper values for the same underlying thread (fresh
+    * MemorySegment per downcall on Panama), so backends override equality.
+    */
+  def sameThread(a: H, b: H): Boolean = a == b
+
   // ---- Stack: push operations -----------------------------------------
 
   def pushNil(state: H): Unit

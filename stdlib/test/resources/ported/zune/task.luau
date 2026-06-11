@@ -4,11 +4,11 @@
 --   - removed zune.testing/zune.task imports; task global used directly
 --   - describe/test blocks -> do...end blocks with comments
 --   - expect(...) matchers -> assert(...) calls
---   - dropped entire describe("thread", ...) block: task.spawn/defer/delay with thread first arg errors per contract
+--   - dropped thread/Sleep test: task.wait inside a raw script-resumed coroutine (ADR-0004 divergence)
 --   - dropped describe("Counting", ...) block: task.count is zune extension, no analog
 --   - dropped all task.count(...) assertions within kept blocks
 --   - widened upper bound on timing assert: 0.1 -> 0.35 (0.05 sleep + 0.25 tolerance)
---   - __result = "OK" sentinel at end
+--   - return "OK" completion marker at end
 
 do -- task
     do -- function
@@ -94,8 +94,7 @@ do -- task
                 -- dropped: expect(task.count("s")).toBe(1) -- task.count is zune extension
                 assert(coroutine.status(task_ret[1]) == "suspended", "cancel/Spawn: thread should still be suspended before cancel")
                 task.cancel(task_ret[1])
-                -- dropped: status == "dead" after cancel — luau-scala task.cancel deschedules but does not
-                -- reset the coroutine (no lua_resetthread in the shim); status stays "suspended"
+                assert(coroutine.status(task_ret[1]) == "dead", "cancel/Spawn: thread should be dead after cancel, got " .. coroutine.status(task_ret[1]))
                 task.wait(0.5)
                 -- dropped: expect(task.count("s")).toBe(0) -- task.count is zune extension
                 assert(success == 0, "cancel/Spawn: success should be 0 (callback never completed)")
@@ -120,7 +119,7 @@ do -- task
                 task.cancel(task_ret[1])
                 -- dropped: expect(task.count("d")).toBe(0) -- task.count is zune extension
                 -- dropped: expect(task.count("s")).toBe(0) -- task.count is zune extension
-                -- dropped: status == "dead" after cancel — see cancel/Spawn note (no coroutine reset)
+                assert(coroutine.status(task_ret[1]) == "dead", "cancel/Defer: thread should be dead after cancel, got " .. coroutine.status(task_ret[1]))
                 task.wait(0.5)
                 assert(success == 0, "cancel/Defer: success should be 0 (cancelled before completing)")
             end
@@ -141,14 +140,145 @@ do -- task
                 assert(coroutine.status(task_ret[1]) == "suspended", "cancel/Delay: thread should still be suspended before cancel")
                 task.cancel(task_ret[1])
                 -- dropped: expect(task.count("s")).toBe(0) -- task.count is zune extension
-                -- dropped: status == "dead" after cancel — see cancel/Spawn note (no coroutine reset)
+                assert(coroutine.status(task_ret[1]) == "dead", "cancel/Delay: thread should be dead after cancel, got " .. coroutine.status(task_ret[1]))
                 task.wait(0.5)
                 assert(success == 0, "cancel/Delay: success should be 0 (cancelled before completing)")
             end
         end
     end
 
-    -- dropped: describe("thread", ...) -- task.spawn/defer/delay with coroutine thread as first arg errors per luau-scala contract (function-only first arg required)
+    do -- thread
+        do -- regular
+            -- dropped: test("Sleep", ...) -- task.wait inside a raw coroutine resumed by the
+            -- script reschedules against the wrong resumer (ADR-0004 known divergence)
+
+            do -- Spawn
+                local success, err
+                local thread = coroutine.create(function(a, b, c)
+                    success, err = pcall(function()
+                        assert(a == 1, "thread/Spawn: a should be 1, got " .. tostring(a))
+                        assert(b == 4, "thread/Spawn: b should be 4, got " .. tostring(b))
+                        assert(c == 8, "thread/Spawn: c should be 8, got " .. tostring(c))
+                    end)
+                end)
+                local task_ret = {task.spawn(thread, 1, 4, 8)}
+                assert(success, err)
+                assert(#task_ret == 1, "thread/Spawn: task_ret should have length 1")
+                assert(typeof(task_ret[1]) == "thread", "thread/Spawn: task_ret[1] should be a thread, got " .. typeof(task_ret[1]))
+                assert(task_ret[1] == thread, "thread/Spawn: task.spawn should return the same thread")
+                assert(coroutine.status(task_ret[1]) == "dead", "thread/Spawn: thread should be dead after spawn, got " .. coroutine.status(task_ret[1]))
+                assert(success, "thread/Spawn: inner pcall should succeed")
+                assert(err == nil, "thread/Spawn: inner pcall err should be nil, got " .. tostring(err))
+            end
+
+            do -- Defer
+                local success, err
+                local thread = coroutine.create(function(a, b, c)
+                    success, err = pcall(function()
+                        assert(a == 1, "thread/Defer: a should be 1, got " .. tostring(a))
+                        assert(b == 4, "thread/Defer: b should be 4, got " .. tostring(b))
+                        assert(c == 8, "thread/Defer: c should be 8, got " .. tostring(c))
+                    end)
+                end)
+                local task_ret = {task.defer(thread, 1, 4, 8)}
+                assert(#task_ret == 1, "thread/Defer: task_ret should have length 1")
+                assert(typeof(task_ret[1]) == "thread", "thread/Defer: task_ret[1] should be a thread, got " .. typeof(task_ret[1]))
+                assert(task_ret[1] == thread, "thread/Defer: task.defer should return the same thread")
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread/Defer: thread should be suspended before defer runs, got " .. coroutine.status(task_ret[1]))
+                task.wait(0.5)
+                assert(coroutine.status(task_ret[1]) == "dead", "thread/Defer: thread should be dead after wait, got " .. coroutine.status(task_ret[1]))
+                assert(success, "thread/Defer: inner pcall should succeed")
+                assert(err == nil, "thread/Defer: inner pcall err should be nil, got " .. tostring(err))
+            end
+
+            do -- Delay
+                local success, err
+                local startTime = os.clock()
+                local thread = coroutine.create(function(a, b, c)
+                    local endTime = os.clock() - startTime
+                    success, err = pcall(function()
+                        assert(endTime >= 0.249, "thread/Delay: endTime should be >= 0.249, got " .. tostring(endTime))
+                        assert(endTime <= 0.75, "thread/Delay: endTime should be <= 0.75 (widened upper bound), got " .. tostring(endTime))
+                        assert(a == 1, "thread/Delay: a should be 1, got " .. tostring(a))
+                        assert(b == 4, "thread/Delay: b should be 4, got " .. tostring(b))
+                        assert(c == 8, "thread/Delay: c should be 8, got " .. tostring(c))
+                    end)
+                end)
+                local task_ret = {task.delay(0.25, thread, 1, 4, 8)}
+                assert(#task_ret == 1, "thread/Delay: task_ret should have length 1")
+                assert(typeof(task_ret[1]) == "thread", "thread/Delay: task_ret[1] should be a thread, got " .. typeof(task_ret[1]))
+                assert(task_ret[1] == thread, "thread/Delay: task.delay should return the same thread")
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread/Delay: thread should be suspended before delay fires, got " .. coroutine.status(task_ret[1]))
+                task.wait(0.5)
+                assert(coroutine.status(task_ret[1]) == "dead", "thread/Delay: thread should be dead after wait, got " .. coroutine.status(task_ret[1]))
+                assert(success, "thread/Delay: inner pcall should succeed")
+                assert(err == nil, "thread/Delay: inner pcall err should be nil, got " .. tostring(err))
+            end
+        end
+
+        do -- cancel
+            do -- Spawn
+                local success
+                local thread = coroutine.create(function()
+                    task.wait()
+                    success = 0
+                    task.wait(0.25)
+                    success = 1
+                end)
+                local task_ret = {task.spawn(thread)}
+                assert(#task_ret == 1, "thread-cancel/Spawn: task_ret should have length 1")
+                assert(typeof(task_ret[1]) == "thread", "thread-cancel/Spawn: task_ret[1] should be a thread")
+                assert(task_ret[1] == thread, "thread-cancel/Spawn: task.spawn should return the same thread")
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread-cancel/Spawn: thread should be suspended initially")
+                task.wait(0.05)
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread-cancel/Spawn: thread should still be suspended before cancel")
+                task.cancel(task_ret[1])
+                assert(coroutine.status(task_ret[1]) == "dead", "thread-cancel/Spawn: thread should be dead after cancel, got " .. coroutine.status(task_ret[1]))
+                task.wait(0.5)
+                assert(success == 0, "thread-cancel/Spawn: success should be 0 (callback never completed)")
+            end
+
+            do -- Defer
+                local success
+                local thread = coroutine.create(function()
+                    success = 0
+                    task.wait(0.25)
+                    success = 1
+                end)
+                local task_ret = {task.defer(thread)}
+                assert(#task_ret == 1, "thread-cancel/Defer: task_ret should have length 1")
+                assert(typeof(task_ret[1]) == "thread", "thread-cancel/Defer: task_ret[1] should be a thread")
+                assert(task_ret[1] == thread, "thread-cancel/Defer: task.defer should return the same thread")
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread-cancel/Defer: thread should be suspended initially")
+                task.wait(0.05)
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread-cancel/Defer: thread should still be suspended before cancel")
+                task.cancel(task_ret[1])
+                assert(coroutine.status(task_ret[1]) == "dead", "thread-cancel/Defer: thread should be dead after cancel, got " .. coroutine.status(task_ret[1]))
+                task.wait(0.5)
+                assert(success == 0, "thread-cancel/Defer: success should be 0 (cancelled before completing)")
+            end
+
+            do -- Delay
+                local success
+                local thread = coroutine.create(function()
+                    success = 0
+                    task.wait(0.25)
+                    success = 1
+                end)
+                local task_ret = {task.delay(0, thread)}
+                assert(#task_ret == 1, "thread-cancel/Delay: task_ret should have length 1")
+                assert(typeof(task_ret[1]) == "thread", "thread-cancel/Delay: task_ret[1] should be a thread")
+                assert(task_ret[1] == thread, "thread-cancel/Delay: task.delay should return the same thread")
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread-cancel/Delay: thread should be suspended initially")
+                task.wait(0.05)
+                assert(coroutine.status(task_ret[1]) == "suspended", "thread-cancel/Delay: thread should still be suspended before cancel")
+                task.cancel(task_ret[1])
+                assert(coroutine.status(task_ret[1]) == "dead", "thread-cancel/Delay: thread should be dead after cancel, got " .. coroutine.status(task_ret[1]))
+                task.wait(0.5)
+                assert(success == 0, "thread-cancel/Delay: success should be 0 (cancelled before completing)")
+            end
+        end
+    end
 
     do -- other
         -- dropped: test("Counting", ...) -- task.count is a zune extension with no analog in luau-scala runtime
@@ -239,4 +369,4 @@ do -- task
     end
 end
 
-__result = "OK"
+return "OK"

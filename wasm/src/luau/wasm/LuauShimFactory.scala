@@ -127,7 +127,8 @@ object LuauShimFactory:
 
     val names = js.Array(
       "lx_newstate", "lx_close", "lx_new_thread",
-      "lx_thread_status", "lx_compile_and_load", "lx_resume", "lx_resume_error",
+      "lx_thread_status", "lx_to_thread", "lx_reset_thread",
+      "lx_compile_and_load", "lx_resume", "lx_resume_error",
       "lx_push_nil", "lx_push_boolean", "lx_push_number", "lx_push_integer",
       "lx_push_lstring", "lx_push_ref", "lx_push_copy", "lx_pop", "lx_stack_top",
       "lx_type", "lx_to_number", "lx_to_integer", "lx_to_boolean", "lx_to_lstring",

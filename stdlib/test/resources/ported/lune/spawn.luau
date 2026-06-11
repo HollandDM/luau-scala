@@ -2,8 +2,7 @@
 -- edits:
 --   - removed `local task = require("@lune/task")` — task is a global
 --   - removed `local fcheck = require("./fcheck")` — inlined helper below
---   - dropped thread-arg variant of task.spawn (task.spawn(thread2)) — contract: first arg must be function
---   - added `__result = "OK"` sentinel at end
+--   - added `return "OK"` completion marker at end
 
 local function fcheck(index: number, t: string, value: any)
 	if typeof(value) ~= t then
@@ -35,7 +34,14 @@ assert(not flag2, "Spawn should work with yielding (1)")
 task.wait(0.1)
 assert(flag2, "Spawn should work with yielding (2)")
 
--- dropped: task.spawn(thread2) — contract requires first arg to be a function, not a coroutine thread
+-- Spawned functions should be able to run threads created with the coroutine global
+
+local flag3: boolean = false
+local thread2 = coroutine.create(function()
+	flag3 = true
+end)
+task.spawn(thread2)
+assert(flag3, "Spawn should run threads made from coroutine.create")
 
 -- Spawn should be able to be nested
 
@@ -77,4 +83,4 @@ task.spawn(f, "", 1, f)
 task.spawn(f, "inf", math.huge, f)
 task.spawn(f, "NaN", 0 / 0, f)
 
-__result = "OK"
+return "OK"

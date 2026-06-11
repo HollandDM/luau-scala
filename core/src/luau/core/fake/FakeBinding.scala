@@ -48,6 +48,11 @@ object FakeBinding extends Binding[FakeState]:
 
   def newThread(state: FakeState): FakeState = FakeState()
 
+  // The fake value model has no thread values on its stack, so extraction
+  // never matches and reset has nothing to unwind.
+  def toThreadAt(state: FakeState, idx: Int): Option[FakeState] = None
+  def resetThread(thread: FakeState): Unit = ()
+
   // ---- Push -----------------------------------------------------------
 
   def pushCopy(state: FakeState, idx: Int): Unit =

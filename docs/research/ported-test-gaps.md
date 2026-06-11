@@ -1,6 +1,7 @@
 # Ported-test gaps: what we could not port, why, and what to implement
 
-Status: research note (2026-06-11). Source: the Lune/Zune/Lute/upstream-conformance
+Status: research note (2026-06-11); **Tier 1 implemented 2026-06-12** — see
+the strikethrough notes per entry. Source: the Lune/Zune/Lute/upstream-conformance
 porting pass (`stdlib/test/resources/ported/`, `PortedTaskSuiteBase`,
 `ConformanceManifest`). Each entry names the capability gap, what it blocked,
 and what an implementation needs. Ranked by impact × feasibility.
@@ -12,7 +13,16 @@ therefore unblocked: add to `lx.h`/`lx.cpp`, the `shim.wasmExports` list in
 build.mill, and `LxHandles`/`WasmModule` — only the shim object and the link
 rerun.
 
-## Tier 1 — should implement
+## Tier 1 — should implement — **DONE (2026-06-12)**
+
+All five entries below are implemented and their dropped tests restored:
+`lx_to_thread`/`lx_reset_thread` shim exports + `Binding.toThreadAt`/
+`resetThread`/`sameThread`; adopted-thread spawn variants
+(`Scheduler.spawnImmediateAdopted`/`deferAdopted`/`delayAdopted`) +
+thread-arg `task.spawn`/`defer`/`delay`/`cancel`; `cancelTask` resets the
+coroutine to dead; `warn` registered by `StdlibOpener`; the adapted
+`pcall.luau` runs as `ported/conformance/pcall.luau`; `TaskHandle.results`
+replaced the `__result` sentinel protocol in all ported files.
 
 ### 1. Thread-handle extraction: `lx_to_thread(thread, idx) -> lx_Thread`
 - Blocked: zune `describe("thread")` block (6 sub-tests: task.spawn/defer/delay
