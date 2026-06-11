@@ -254,12 +254,45 @@ object shim extends Module {
     PathRef(dest / "luau-shim.wasm")
   }
 
+  def sysrootScript = Task.Sources(moduleDir / "build-eh-sysroot.sh")
+
+  /** WASI sysroot with C++ exceptions, built from wasi-sdk sources entirely
+    * inside the task sandbox (no $HOME/wasi-eh pollution). Scratch clone and
+    * ninja build live under dest/work; only dest/out (sysroot + merged clang
+    * resource dir) is returned. quick = true: content-hashing the llvm clone
+    * would stat-walk ~100k files on every evaluation.
+    */
+  def wasiSysroot: Task[PathRef] = Task {
+    val _    = sysrootScript()
+    val dest = Task.dest
+    val out  = dest / "out"
+    os.proc(
+      "/usr/bin/bash",
+      (moduleDir / "build-eh-sysroot.sh").toString,
+      (out / "install").toString
+    ).call(
+      cwd = dest,
+      env = Map(
+        "WASI_EH_WORK"      -> (dest / "work" / "wasi-sdk").toString,
+        "WASI_RESOURCE_DIR" -> (out / "resource-dir").toString
+      ),
+      stdout = os.Inherit,
+      stderr = os.Inherit
+    )
+    PathRef(out, quick = true)
+  }
+
   def wasmBuildNative = Task {
     val _ = luauSubmoduleHead()
     val _sources = shimSources()
+    val sysroot = wasiSysroot().path
     val script = moduleDir / "build-wasm.sh"
     os.proc("/usr/bin/bash", script.toString, Task.dest.toString).call(
       cwd = moduleDir / os.up,
+      env = Map(
+        "WASI_SYSROOT"      -> (sysroot / "install" / "share" / "wasi-sysroot").toString,
+        "WASI_RESOURCE_DIR" -> (sysroot / "resource-dir").toString
+      ),
       stdout = os.Inherit,
       stderr = os.Inherit
     )

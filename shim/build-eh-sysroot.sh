@@ -11,6 +11,11 @@
 # Requires: system clang/clang++ (LLVM >= 21 for new EH), cmake, ninja, git.
 # Output: $PREFIX/share/wasi-sysroot  and  $PREFIX/clang-resource-dir
 # build-wasm.sh consumes these via WASI_SYSROOT / WASI_RESOURCE_DIR.
+#
+# Preferred entry: `./mill shim.wasiSysroot` — runs this script inside the
+# Mill task sandbox (out/shim/wasiSysroot.dest), no $HOME/wasi-eh pollution;
+# shim.wasmBuildNative depends on it and wires the env automatically.
+# Standalone invocation with the $HOME defaults below still works.
 set -euo pipefail
 
 PREFIX="${1:-$HOME/wasi-eh/install}"
