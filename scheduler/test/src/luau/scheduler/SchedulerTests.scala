@@ -25,8 +25,8 @@ class SchedulerTests extends munit.FunSuite:
     val sched = makeSchedulerWithBinding(binding)
     val async = ControllableAsync()
 
-    sched.setPendingSuspend(async.suspend)
     val task = sched.spawn()
+    binding.setPendingSuspendForTest(task.thread, async.suspend)
     sched.runAllReady()
     assertEquals(task.state, TaskState.Parked)
     assert(async.resume != null, "register() was called")
@@ -45,8 +45,8 @@ class SchedulerTests extends munit.FunSuite:
     val sched = makeSchedulerWithBinding(binding)
     val async = ControllableAsync()
 
-    sched.setPendingSuspend(async.suspend)
-    sched.spawn()
+    val task = sched.spawn()
+    binding.setPendingSuspendForTest(task.thread, async.suspend)
     sched.runAllReady()
 
     val r = async.resume
@@ -83,8 +83,8 @@ class SchedulerTests extends munit.FunSuite:
     val sched = makeSchedulerWithBinding(binding)
     val async = ControllableAsync()
 
-    sched.setPendingSuspend(async.suspend)
     val task = sched.spawn()
+    binding.setPendingSuspendForTest(task.thread, async.suspend)
     sched.runAllReady()
     assertEquals(task.state, TaskState.Parked)
     assert(!async.cancelled)
@@ -131,8 +131,8 @@ class SchedulerTests extends munit.FunSuite:
     val sched = makeSchedulerWithBinding(binding)
     val async = ControllableAsync()
 
-    sched.setPendingSuspend(async.suspend)
     val task = sched.spawn()
+    binding.setPendingSuspendForTest(task.thread, async.suspend)
     sched.runAllReady()
     assertEquals(task.state, TaskState.Parked)
 
@@ -141,3 +141,74 @@ class SchedulerTests extends munit.FunSuite:
     task.setState(TaskState.Cancelled)
     sched.runAllReady()
     assertEquals(task.state, TaskState.Cancelled)
+
+  // ── TC-09: Suspend comes from Binding, not private slot ────────────────
+
+  test("TC-09 takePendingSuspend comes from the Binding, not a private slot"):
+    val b = new TestBinding
+    val state = b.newState()
+    val sched = Scheduler(b, state, wake = () => ())
+    b.programResumes(ResumeResult.Yielded(0))
+    val task = sched.spawn()
+    var registerRan = false
+    b.setPendingSuspendForTest(task.thread, NativeFnResult.Suspend { r =>
+      registerRan = true
+      r.succeed(LuaValue.Number(1.0))
+      Cancel.noop
+    })
+    sched.runAllReady()
+    assert(registerRan)
+    assertEquals(task.state, TaskState.Complete)
+    b.closeState(state)
+
+  // ── TC-10: Quiescence ──────────────────────────────────────────────────
+
+  test("TC-10 quiescence: empty queue + no pending completions"):
+    val b = new TestBinding
+    val state = b.newState()
+    val sched = Scheduler(b, state, wake = () => ())
+    assert(sched.isQuiescent)
+    b.programResumes(ResumeResult.Yielded(0))
+    val task = sched.spawn()
+    assert(!sched.isQuiescent)
+    b.setPendingSuspendForTest(task.thread, NativeFnResult.Suspend(_ => Cancel.noop))
+    sched.runAllReady()
+    assert(sched.isQuiescent == false)
+    b.closeState(state)
+
+  // ── TC-11: Bare yield cancel ──────────────────────────────────────────
+
+  test("TC-11 bare-yield park is abandoned: cancelAbandoned reaps it"):
+    val b = new TestBinding
+    val state = b.newState()
+    val sched = Scheduler(b, state, wake = () => ())
+    b.programResumes(ResumeResult.Yielded(0))
+    val task = sched.spawn()
+    sched.runAllReady()
+    assertEquals(task.state, TaskState.Parked)
+    assert(sched.isQuiescent)
+    assertEquals(sched.cancelAbandoned(), 1)
+    assertEquals(task.state, TaskState.Cancelled)
+    b.closeState(state)
+
+  // ── TC-12: close() does NOT close the state ──────────────────────────
+
+  test("TC-12 close() does NOT close the state (facade owns it)"):
+    val b = new TestBinding
+    val state = b.newState()
+    val sched = Scheduler(b, state, wake = () => ())
+    sched.close()
+    b.pushNumber(state, 1.0)
+    assertEquals(b.toNumber(state, -1), Some(1.0))
+    b.closeState(state)
+
+  // ── TC-13: enqueue calls wake ─────────────────────────────────────────
+
+  test("TC-13 enqueue calls wake"):
+    val b = new TestBinding
+    val state = b.newState()
+    var wakes = 0
+    val sched = Scheduler(b, state, wake = () => wakes += 1)
+    sched.spawn()
+    assert(wakes >= 1)
+    b.closeState(state)

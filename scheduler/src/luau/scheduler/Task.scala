@@ -39,3 +39,7 @@ final class Task[H](
 
   private[scheduler] def releaseThread(): Unit =
     threadRef.close()
+
+  @volatile private var _pendingCompletion = false
+  def pendingCompletion: Boolean = _pendingCompletion
+  private[scheduler] def setPendingCompletion(b: Boolean): Unit = _pendingCompletion = b

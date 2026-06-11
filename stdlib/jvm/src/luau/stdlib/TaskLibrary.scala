@@ -114,14 +114,13 @@ object TaskLibrary:
             "task.wait called from a coroutine not owned by the Scheduler; " +
             "behavior is undefined (see ADR-0004)")
           Fail
-        case Some(currentTask) =>
+        case Some(_) =>
           Suspend { resume =>
             val t0 = System.nanoTime()
-            val cancel: Cancel = scheduler.scheduleTimer(seconds) {
+            scheduler.scheduleTimer(seconds) {
               val elapsed = (System.nanoTime() - t0) / 1e9
-              scheduler.enqueueResume(currentTask, Right(LuaValue.Number(elapsed)))
+              resume.succeed(LuaValue.Number(elapsed))
             }
-            cancel
           }
     binding.registerNativeFn(state, fn)
 

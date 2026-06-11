@@ -9,12 +9,13 @@ final class Scheduler[H](
   val binding: Binding[H],
   val state: H,
   timer: TaskTimer = TaskTimer.create(),
+  wake: () => Unit = () => (),
   val errorPolicy: ErrorPolicy = ErrorPolicy.logAndDiscard,
 ):
 
   private val runQueue  = PlatformQueue[ReadyTask[H]]()
   private val idCounter = AtomicLong(0L)
-  private val liveTasks = mutable.HashMap[Long, Task[H]]()
+  val liveTasks = mutable.HashMap[Long, Task[H]]()
 
   // ── Current task ──────────────────────────────────────────────────────
 
@@ -25,17 +26,10 @@ final class Scheduler[H](
   private[scheduler] def setCurrentTask(task: Option[Task[H]]): Unit =
     _currentTask = task
 
-  // ── Pending Suspend slot ──────────────────────────────────────────────
+  // ── Post (enqueue + wake) ─────────────────────────────────────────────
 
-  private var pendingSuspend: Option[NativeFnResult.Suspend] = None
-
-  private[scheduler] def setPendingSuspend(s: NativeFnResult.Suspend): Unit =
-    pendingSuspend = Some(s)
-
-  private[scheduler] def takePendingSuspend(): Option[NativeFnResult.Suspend] =
-    val s = pendingSuspend
-    pendingSuspend = None
-    s
+  private def post(rt: ReadyTask[H]): Unit =
+    runQueue.enqueue(rt); wake()
 
   // ── Spawn ─────────────────────────────────────────────────────────────
 
@@ -46,7 +40,7 @@ final class Scheduler[H](
     val task = Task[H](threadRef, rawThread, parent, id)
     task.setState(TaskState.Queued)
     liveTasks.put(id, task)
-    runQueue.enqueue(ReadyTask[H](task, ResumeValues.None))
+    post(ReadyTask[H](task, ResumeValues.Pushed(0)))
     task
 
   // ── Spawn immediate ───────────────────────────────────────────────────
@@ -68,20 +62,8 @@ final class Scheduler[H](
     val nargs = 1 + extraArgs.size
     val result = binding.resume(rawThread, nargs)
 
-    result match
-      case ResumeResult.Returned(_) =>
-        task.setState(TaskState.Complete)
-        liveTasks.remove(task.id)
-        task.releaseThread()
-      case ResumeResult.Yielded(_) =>
-        task.setState(TaskState.Parked)
-      case ResumeResult.Error(err) =>
-        task.setState(TaskState.Failed(err.message))
-        liveTasks.remove(task.id)
-        task.releaseThread()
-        errorPolicy.onTaskError(task, err)
-
-    TaskHandle(threadRef, task)
+    handleResumeResult(task, result)
+    TaskHandle(threadRef, task, this)
 
   // ── Defer task ────────────────────────────────────────────────────────
 
@@ -99,8 +81,8 @@ final class Scheduler[H](
     fnRef.close()
     extraArgs.foreach(_.close())
 
-    runQueue.enqueue(ReadyTask[H](task, ResumeValues.None))
-    TaskHandle(threadRef, task)
+    post(ReadyTask[H](task, ResumeValues.Pushed(extraArgs.size + 1)))
+    TaskHandle(threadRef, task, this)
 
   // ── Schedule delayed ──────────────────────────────────────────────────
 
@@ -110,6 +92,7 @@ final class Scheduler[H](
     val id = idCounter.incrementAndGet()
     val task = Task[H](threadRef, rawThread, None, id)
     task.setState(TaskState.Parked)
+    task.setPendingCompletion(true)
     liveTasks.put(id, task)
 
     binding.pushRef(rawThread, fnRef.registryKey)
@@ -118,24 +101,21 @@ final class Scheduler[H](
     fnRef.close()
     extraArgs.foreach(_.close())
 
-    scheduleTimer(seconds) {
+    timer.schedule(seconds) { () =>
       if task.state == TaskState.Parked then
+        task.setPendingCompletion(false)
         task.setState(TaskState.Queued)
-        runQueue.enqueue(ReadyTask[H](task, ResumeValues.None))
+        post(ReadyTask[H](task, ResumeValues.Pushed(extraArgs.size + 1)))
     }
 
-    TaskHandle(threadRef, task)
-
-  // ── Timer ─────────────────────────────────────────────────────────────
-
-  def scheduleTimer(seconds: Double)(callback: => Unit): Cancel =
-    timer.schedule(seconds)(() => callback)
+    TaskHandle(threadRef, task, this)
 
   // ── Cancel task ───────────────────────────────────────────────────────
 
   def cancelTask(task: Task[H]): Unit =
     val prev = task.state
     if prev == TaskState.Parked || prev == TaskState.Queued then
+      task.setPendingCompletion(false)
       task.setState(TaskState.Cancelled)
       task.fireCancel()
       liveTasks.remove(task.id)
@@ -146,25 +126,52 @@ final class Scheduler[H](
       !t.threadRef.isClosed && t.threadRef.registryKey == threadRef.registryKey
     }.foreach(cancelTask)
 
-  // ── Enqueue resume ────────────────────────────────────────────────────
+  // ── Enqueue resume (off-Driver) ───────────────────────────────────────
 
   def enqueueResume(task: Task[H], result: Either[LuaError, LuaValue]): Unit =
+    task.setPendingCompletion(false)
     task.setState(TaskState.Queued)
     val rv = result match
       case Right(value) => ResumeValues.SuspendValue(value)
       case Left(err)    => ResumeValues.Failure(err)
-    runQueue.enqueue(ReadyTask[H](task, rv))
+    post(ReadyTask[H](task, rv))
+
+  // ── Facade spawn surface (consumed by Task 8's TaskWorld) ─────────────
+
+  def spawnChunk(source: String, chunkname: String): Either[LuaError, TaskHandle[H]] =
+    val thread = binding.newThread(state)
+    val threadRef = binding.ref(state)
+    binding.compileAndLoad(thread, source, chunkname) match
+      case Left(e) =>
+        threadRef.close()
+        Left(e)
+      case Right(()) =>
+        val id = idCounter.incrementAndGet()
+        val task = Task[H](threadRef, thread, None, id)
+        task.setState(TaskState.Queued)
+        liveTasks.put(id, task)
+        post(ReadyTask(task, ResumeValues.Pushed(0)))
+        Right(TaskHandle(threadRef, task, this))
+
+  def spawnReady(threadRef: Ref[H], thread: H, nargs: Int): TaskHandle[H] =
+    val id = idCounter.incrementAndGet()
+    val task = Task[H](threadRef, thread, None, id)
+    task.setState(TaskState.Queued)
+    liveTasks.put(id, task)
+    post(ReadyTask(task, ResumeValues.Pushed(nargs)))
+    TaskHandle(threadRef, task, this)
 
   // ── Driver loop ───────────────────────────────────────────────────────
 
+  def runOneReady(): Boolean =
+    runQueue.dequeueOption() match
+      case Some(rt) => resumeTask(rt); true
+      case None     => false
+
   def runAllReady(): Int =
-    var count = 0
-    while
-      runQueue.dequeueOption() match
-        case Some(rt) => resumeTask(rt); count += 1; true
-        case None     => false
-    do ()
-    count
+    var n = 0
+    while runOneReady() do n += 1
+    n
 
   // ── Internal resume ───────────────────────────────────────────────────
 
@@ -174,11 +181,21 @@ final class Scheduler[H](
 
     task.setState(TaskState.Running)
     _currentTask = Some(task)
-    pushResumeValues(task, rt.values)
-    val nargs = valueCount(rt.values)
-    val result = binding.resume(task.thread, nargs)
+    val result = doResume(task.thread, rt.values)
     _currentTask = None
 
+    handleResumeResult(task, result)
+
+  private def doResume(thread: H, values: ResumeValues): ResumeResult =
+    values match
+      case ResumeValues.Failure(err)    => binding.resumeError(thread, err)
+      case ResumeValues.None            => binding.resume(thread, 0)
+      case ResumeValues.Pushed(n)       => binding.resume(thread, n)
+      case ResumeValues.SuspendValue(v) =>
+        pushValue(thread, v)
+        binding.resume(thread, 1)
+
+  private def handleResumeResult(task: Task[H], result: ResumeResult): Unit =
     result match
       case ResumeResult.Returned(_) =>
         task.setState(TaskState.Complete)
@@ -186,7 +203,7 @@ final class Scheduler[H](
         task.releaseThread()
 
       case ResumeResult.Yielded(_) =>
-        takePendingSuspend() match
+        binding.takePendingSuspend(task.thread) match
           case Some(Suspend(register)) =>
             task.setState(TaskState.Parked)
             wireSuspend(task, register)
@@ -202,17 +219,12 @@ final class Scheduler[H](
   // ── Suspend wiring ────────────────────────────────────────────────────
 
   private def wireSuspend(task: Task[H], register: Resume => Cancel): Unit =
-    @volatile var fired = false
-
+    task.setPendingCompletion(true)
     val resume: Resume = Resume { (either: Either[LuaError, LuaValue]) =>
-      if !fired then
-        fired = true
+      if task.pendingCompletion then
         task.clearCancel()
-        task.setState(TaskState.Queued)
-        val rv = either match
-          case Right(value) => ResumeValues.SuspendValue(value)
-          case Left(err)    => ResumeValues.Failure(err)
-        runQueue.enqueue(ReadyTask[H](task, rv))
+        task.setPendingCompletion(false)
+        enqueueResume(task, either)
     }
 
     val cancel: Cancel = register(resume)
@@ -220,18 +232,29 @@ final class Scheduler[H](
     if task.state == TaskState.Queued then
       task.clearCancel()
 
-  // ── Resume value marshaling ───────────────────────────────────────────
+  // ── Quiescence + reaping ──────────────────────────────────────────────
 
-  private def pushResumeValues(task: Task[H], rv: ResumeValues): Unit =
-    rv match
-      case ResumeValues.None                  => ()
-      case ResumeValues.SuspendValue(result)  => pushValue(task.thread, result)
-      case ResumeValues.Success(result) =>
-        binding.pushBoolean(task.thread, true)
-        pushValue(task.thread, result)
-      case ResumeValues.Failure(err) =>
-        binding.pushBoolean(task.thread, false)
-        binding.pushString(task.thread, err.message)
+  def isQuiescent: Boolean =
+    runQueue.isEmpty && _currentTask.isEmpty &&
+      liveTasks.values.forall(t => !t.pendingCompletion)
+
+  def cancelAbandoned(): Int =
+    val abandoned = liveTasks.values
+      .filter(t => t.state == TaskState.Parked && !t.pendingCompletion).toList
+    abandoned.foreach(cancelTask)
+    abandoned.size
+
+  def cancelAll(): Unit =
+    while runQueue.dequeueOption().isDefined do ()
+    liveTasks.values.toList.foreach { t =>
+      t.setState(TaskState.Cancelled)
+      t.fireCancel()
+      t.setPendingCompletion(false)
+      t.releaseThread()
+    }
+    liveTasks.clear()
+
+  // ── Resume value marshaling ───────────────────────────────────────────
 
   private def pushValue(thread: H, value: LuaValue): Unit =
     value match
@@ -240,21 +263,8 @@ final class Scheduler[H](
       case LuaValue.False            => binding.pushBoolean(thread, false)
       case LuaValue.Number(n)        => binding.pushNumber(thread, n)
       case LuaValue.LuaString(b)     => binding.pushBytes(thread, b)
-      case _: LuaValue.LuaRef        => binding.pushNil(thread)
-
-  private def valueCount(rv: ResumeValues): Int = rv match
-    case ResumeValues.None                  => 0
-    case ResumeValues.SuspendValue(_)       => 1
-    case ResumeValues.Success(_)            => 2
-    case ResumeValues.Failure(_)            => 2
+      case r: LuaValue.LuaRef        => binding.pushRef(thread, r.ref.registryKey)
 
   // ── Teardown ──────────────────────────────────────────────────────────
 
-  def close(): Unit =
-    while runQueue.dequeueOption().isDefined do ()
-    liveTasks.values.foreach { task =>
-      task.setState(TaskState.Cancelled)
-      task.fireCancel()
-      task.releaseThread()
-    }
-    liveTasks.clear()
+  def close(): Unit = cancelAll()
