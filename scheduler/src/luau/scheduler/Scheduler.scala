@@ -17,6 +17,17 @@ final class Scheduler[H](
   private val idCounter = AtomicLong(0L)
   val liveTasks = mutable.HashMap[Long, Task[H]]()
 
+  /** Guards the pending→queued handoff against isQuiescent. Off-Driver
+    * threads (timer callbacks, user Resume completions) clear
+    * pendingCompletion and enqueue in two steps; the Driver's quiescence
+    * check reads both. Without mutual exclusion the Driver can sample the
+    * window between the clear and the enqueue, see an empty queue with no
+    * pending completions, and finish a live world — reaping a parked chunk
+    * whose resume is in flight. (JVM only in practice; on JS everything runs
+    * on one thread and the monitor is free.)
+    */
+  private val transitionLock = new Object
+
   // ── Current task ──────────────────────────────────────────────────────
 
   private var _currentTask: Option[Task[H]] = None
@@ -108,10 +119,12 @@ final class Scheduler[H](
     val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
 
     timer.schedule(seconds) { () =>
-      if task.state == TaskState.Parked then
-        task.setPendingCompletion(false)
-        task.setState(TaskState.Queued)
-        post(ReadyTask[H](task, ResumeValues.Pushed(nargs)))
+      transitionLock.synchronized {
+        if task.state == TaskState.Parked then
+          task.setPendingCompletion(false)
+          task.setState(TaskState.Queued)
+          post(ReadyTask[H](task, ResumeValues.Pushed(nargs)))
+      }
     }
 
     TaskHandle(threadRef, task, this)
@@ -127,20 +140,42 @@ final class Scheduler[H](
       liveTasks.remove(task.id)
       task.releaseThread()
 
+  /** Cancel the live task owning the thread VALUE behind `threadRef`.
+    * Registry keys are per-ref, not per-object: task.cancel pins a fresh ref
+    * to the stack value, so key equality never matches the task's own
+    * threadRef. Probe object identity through a Lua table instead — a table
+    * keyed by the target thread answers rawget hits only for the same object.
+    */
   def cancelThread(threadRef: Ref[H]): Unit =
-    liveTasks.values.find { t =>
-      !t.threadRef.isClosed && t.threadRef.registryKey == threadRef.registryKey
-    }.foreach(cancelTask)
+    val top = binding.stackTop(state)
+    try
+      binding.newTable(state)
+      binding.pushRef(state, threadRef.registryKey)
+      binding.pushBoolean(state, true)
+      binding.rawSet(state, -3)
+      val owner = liveTasks.values.find { t =>
+        !t.threadRef.isClosed && {
+          binding.pushRef(state, t.threadRef.registryKey)
+          binding.rawGet(state, -2)
+          val hit = binding.toBoolean(state, -1)
+          binding.setStackTop(state, top + 1)
+          hit
+        }
+      }
+      owner.foreach(cancelTask)
+    finally binding.setStackTop(state, top)
 
   // ── Enqueue resume (off-Driver) ───────────────────────────────────────
 
   def enqueueResume(task: Task[H], result: Either[LuaError, LuaValue]): Unit =
-    task.setPendingCompletion(false)
-    task.setState(TaskState.Queued)
-    val rv = result match
-      case Right(value) => ResumeValues.SuspendValue(value)
-      case Left(err)    => ResumeValues.Failure(err)
-    post(ReadyTask[H](task, rv))
+    transitionLock.synchronized {
+      task.setPendingCompletion(false)
+      task.setState(TaskState.Queued)
+      val rv = result match
+        case Right(value) => ResumeValues.SuspendValue(value)
+        case Left(err)    => ResumeValues.Failure(err)
+      post(ReadyTask[H](task, rv))
+    }
 
   // ── Facade spawn surface (consumed by Task 8's TaskWorld) ─────────────
 
@@ -227,10 +262,12 @@ final class Scheduler[H](
   private def wireSuspend(task: Task[H], register: Resume => Cancel): Unit =
     task.setPendingCompletion(true)
     val resume: Resume = Resume { (either: Either[LuaError, LuaValue]) =>
-      if task.pendingCompletion then
-        task.clearCancel()
-        task.setPendingCompletion(false)
-        enqueueResume(task, either)
+      transitionLock.synchronized {
+        if task.pendingCompletion then
+          task.clearCancel()
+          task.setPendingCompletion(false)
+          enqueueResume(task, either) // reentrant on transitionLock
+      }
     }
 
     val cancel: Cancel = register(resume)
@@ -241,8 +278,10 @@ final class Scheduler[H](
   // ── Quiescence + reaping ──────────────────────────────────────────────
 
   def isQuiescent: Boolean =
-    runQueue.isEmpty && _currentTask.isEmpty &&
-      liveTasks.values.forall(t => !t.pendingCompletion)
+    transitionLock.synchronized {
+      runQueue.isEmpty && _currentTask.isEmpty &&
+        liveTasks.values.forall(t => !t.pendingCompletion)
+    }
 
   def cancelAbandoned(): Int =
     val abandoned = liveTasks.values

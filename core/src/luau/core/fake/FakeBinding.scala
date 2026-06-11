@@ -107,17 +107,20 @@ object FakeBinding extends Binding[FakeState]:
     state.stack.addOne(FakeTable.empty)
 
   def rawGet(state: FakeState, tableIdx: Int): Unit =
-    val key   = state.stack.removeLast()
+    // C API semantics: the index resolves at call time, while the key still
+    // sits on the stack — rawGet(-2) with [T, K] must find T.
     val table = state.valueAt(tableIdx)
+    val key   = state.stack.removeLast()
     val result = table match
       case t: FakeTable => t.rawGet(key)
       case _            => LuaValue.Nil
     state.stack.addOne(result)
 
   def rawSet(state: FakeState, tableIdx: Int): Unit =
+    // C API semantics: rawSet(-3) with [T, K, V] must find T (see rawGet).
+    val table = state.valueAt(tableIdx)
     val value = state.stack.removeLast()
     val key   = state.stack.removeLast()
-    val table = state.valueAt(tableIdx)
     table match
       case t: FakeTable => t.rawSet(key, value)
       case _            => ()

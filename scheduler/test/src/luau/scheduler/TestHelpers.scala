@@ -48,9 +48,15 @@ open class TestBinding extends Binding[FakeState]:
       case h :: t => resumeResults = t; h
       case Nil    => ResumeResult.Returned(0)
 
+  private var threadSeq = 0
+
   def newThread(state: FakeState): FakeState =
     val thread = FakeBinding.newThread(state)
-    state.stack.addOne(LuaValue.Nil)
+    // Distinct stand-in for the thread object: Scheduler.cancelThread probes
+    // thread identity through table keys, so every fake thread needs a
+    // distinguishable value (Nil would alias them all).
+    threadSeq += 1
+    state.stack.addOne(LuaValue.Number(threadSeq.toDouble))
     thread
 
   def pushCopy(state: FakeState, idx: Int): Unit =
