@@ -73,6 +73,25 @@ object panama extends LuauCrossPlatformModule {
   }
 }
 
+object stdlib extends Module {
+  object jvm extends LuauCrossPlatformModule {
+    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, scheduler.jvm)
+    override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / "src")
+    object test extends ScalaTests with TestModule.Munit {
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
+    }
+  }
+  object js extends LuauCrossPlatformJSModule {
+    override def moduleDeps = super.moduleDeps ++ Seq(core.js, scheduler.js)
+    override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / "src")
+    object test extends ScalaJSTests with TestModule.Munit {
+      override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
+      def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
+    }
+  }
+}
+
 object scheduler extends Module {
   object jvm extends LuauCrossPlatformModule {
     override def moduleDeps = super.moduleDeps ++ Seq(core.jvm)

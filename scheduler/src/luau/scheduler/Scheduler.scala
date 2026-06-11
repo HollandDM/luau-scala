@@ -86,6 +86,9 @@ final class Scheduler[H](
 
   // ── Schedule delayed ──────────────────────────────────────────────────
 
+  def scheduleTimer(seconds: Double)(callback: => Unit): Cancel =
+    timer.schedule(seconds)(() => callback)
+
   def scheduleDelayed(fnRef: Ref[H], extraArgs: List[Ref[H]], seconds: Double): TaskHandle[H] =
     val rawThread = binding.newThread(state)
     val threadRef = binding.ref(state)
