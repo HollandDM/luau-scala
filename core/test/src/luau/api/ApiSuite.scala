@@ -4,40 +4,9 @@ import munit.FunSuite
 import luau.core.*
 import scala.util.{Failure, Success}
 
-/** Facade conformance: runs against both real backends (Panama, wasm) via
-  * platform subclasses, mirroring SharedBackendSuite.
-  *
-  * This file is NOT capture-checked: an abstract suite with an impure
-  * `withBinding` member gets self type `ApiSuite^`, which munit's
-  * BaseFunSuite self type rejects. Enforcement lives in the luau.api
-  * sources; escape cases (returning a LuaFn^{s} out of useRef, a LuaState^
-  * out of withState) are cc compile errors — verified manually, since the cc
-  * phase runs after typer and munit's compileErrors cannot observe it (see
-  * CcCompileSpec: typer-level negatives are asserted there, and the cc
-  * blind spot is pinned). Recorded rejections (Scala 3.8.3):
-  *
-  *   Luau.withState(b)(st => st)
-  *     Capability `st` outlives its scope: it leaks into outer capture set
-  *
-  *   st.useRef { leaked = Some(st.evalFn("...").get) }   // leaked: outer var
-  *     Found: Some[LuaFn[H]^{s}]  Required: Option[LuaFn[H]]
-  *     capability `s` cannot flow into capture set {}
-  *
-  *   st.useRef { leaked = Some(st.getTbl("t").get.getFn("f").get) }
-  *     Found: Some[LuaFn[H^'s1]^{s}]  Required: Option[LuaFn[H]]
-  *     capability `s` cannot flow into capture set {}
-  *
-  * Note the second fires through Try[...].get + Some(...): enforcement
-  * survives wrapping handles in stdlib containers. The third covers
-  * tbl-minted handles (plan 09): the LuaAccess chain pins in whichever
-  * scope is in context at the mint site, and that scope still cannot leak.
-  */
 abstract class ApiSuite[H] extends FunSuite:
 
-  def withBinding[A](f: Binding[H] => A): A
-
-  private def withLuau[A](libs: Set[LuauLib] = LuauLib.Standard)(f: LuaState[H] => A): A =
-    withBinding(b => Luau.withState(b, libs)(f))
+  protected def withLuau[A](libs: Set[LuauLib] = LuauLib.Standard)(f: LuaState[H] => A): A
 
   // ---- Value plane -------------------------------------------------------
 
@@ -344,4 +313,11 @@ abstract class ApiSuite[H] extends FunSuite:
         assert(fn.call0(LuaArg(1.0)).isFailure)
       }
       assertEquals(st.binding.stackTop(st.state), 0)
+    }
+
+  test("TC-API-37 eval on a parking chunk fails with the spawn hint"):
+    withLuau() { st =>
+      val r = st.eval[Double]("""coroutine.yield(); return 1""")
+      assert(r.isFailure)
+      assert(r.failed.get.getMessage.contains("spawn it as a task"))
     }

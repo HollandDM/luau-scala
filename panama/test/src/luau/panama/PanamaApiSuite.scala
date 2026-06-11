@@ -1,10 +1,11 @@
 package luau.panama
 
 import java.lang.foreign.MemorySegment
-import luau.api.ApiSuite
-import luau.core.Binding
+import scala.concurrent.duration.*
+import luau.api.*
+import luau.core.LuauLib
 
 class PanamaApiSuite extends ApiSuite[MemorySegment]:
 
-  override def withBinding[A](f: Binding[MemorySegment] => A): A =
-    f(PanamaBinding.instance)
+  override protected def withLuau[A](libs: Set[LuauLib])(f: LuaState[MemorySegment] => A): A =
+    Tasks.withTasks(PanamaBinding.instance, libs)(_ => ())(f).await(30.seconds).get

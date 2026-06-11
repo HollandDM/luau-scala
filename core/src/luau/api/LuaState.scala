@@ -36,8 +36,6 @@ final class LuaState[H] private[api] (
   private[api] val binding: Binding[H],
   private[api] val state:   H,
 ) extends LuaAccess[H, String]:
-  import LuaState.MaxResumes
-
   // ---- Value plane ------------------------------------------------------
 
   /** Compile and run a chunk to completion, decoding its single result.
@@ -207,23 +205,19 @@ final class LuaState[H] private[api] (
         case Right(n) => decode(thread, n).fold(Failure(_), Success(_))
     }
 
-  /** Compile onto `thread`, then resume until the chunk completes. Returns
-    * the number of results left on the thread's stack.
+  /** Compile onto `thread`, resume ONCE. A chunk that parks (yields to the
+    * host) is an error here — spawn it as a task (plan 10 §2.3 item 5).
     */
   private def runChunk(thread: H, source: String, chunkname: String): Either[LuaError, Int] =
     binding.compileAndLoad(thread, source, chunkname) match
       case Left(e) => Left(e)
       case Right(()) =>
-        var result  = binding.resume(thread, 0)
-        var resumes = 0
-        while result.isInstanceOf[ResumeResult.Yielded] && resumes < MaxResumes do
-          result = binding.resume(thread, 0)
-          resumes += 1
-        result match
+        binding.resume(thread, 0) match
           case ResumeResult.Returned(n) => Right(n)
           case ResumeResult.Error(e)    => Left(e)
           case ResumeResult.Yielded(_) =>
-            Left(LuaError.runtime(s"$chunkname still yielding after $MaxResumes resumes"))
+            binding.takePendingSuspend(thread)
+            Left(LuaError.runtime(s"$chunkname suspended — spawn it as a task"))
 
   private[api] def installNative(name: String, fn: NativeFn[H]): Unit =
     binding.registerNativeFn(state, fn)
@@ -242,6 +236,5 @@ final class LuaState[H] private[api] (
           binding.pushString(thread, e.message) // dispatchers raise the stack top as the error
           NativeFnResult.Fail
 
-object LuaState:
-  /** Livelock guard for top-level chunks that yield to the host. */
-  private val MaxResumes = 10_000
+object LuaState
+
