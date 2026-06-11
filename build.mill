@@ -140,12 +140,11 @@ object shim extends Module {
   // source directory (<repo>/shim).
   def shimSrcDir    = Task { moduleDir }
   def shimIncDir    = Task { moduleDir / "include" }
-  // Content-tracked shim sources: editing lx.cpp/lx.h/build-wasm.sh must
-  // invalidate nativeBuild and wasmBuildNative.
+  // Content-tracked shim sources: editing lx.cpp/lx.h must invalidate
+  // nativeBuild, wasmShimObject, and wasmExceptionTag.
   def shimSources   = Task.Sources(
     moduleDir / "src",
-    moduleDir / "include",
-    moduleDir / "build-wasm.sh"
+    moduleDir / "include"
   )
   def luauIncVm     = Task { moduleDir / "luau" / "VM" / "include" }
   def luauIncCommon = Task { moduleDir / "luau" / "Common" / "include" }
@@ -158,7 +157,7 @@ object shim extends Module {
   def luauBytecodeDir = Task { moduleDir / "luau" / "Bytecode" }
   def luauCommonDir = Task { moduleDir / "luau" / "Common" }
 
-  def luauSubmoduleHead: Task[String] = Task.Input {
+  def luauSubmoduleHead = Task.Input {
     val headFile = moduleDir / "luau" / ".git" / "HEAD"
     if (os.exists(headFile)) os.read(headFile).trim
     else "absent"
@@ -166,7 +165,7 @@ object shim extends Module {
 
   // Task.Input: listing the vendored submodule is an untracked read in Mill's
   // execution checker; Input tasks may read freely and re-evaluate per run.
-  def luauSources: Task[Seq[os.Path]] = Task.Input {
+  def luauSources = Task.Input {
     val dirs = Seq(
       moduleDir / "luau" / "VM",
       moduleDir / "luau" / "Compiler",
@@ -181,21 +180,21 @@ object shim extends Module {
     }
   }
 
-  def allIncludeDirs: Task[Seq[String]] = Task {
+  def allIncludeDirs = Task {
     Seq(
       shimIncDir().toString, luauIncVm().toString, luauIncCommon().toString,
       luauIncCompiler().toString, luauIncAst().toString, luauIncBytecode().toString
     )
   }
 
-  def nativePlatform: Task[(String, Seq[String])] = Task {
+  def nativePlatform = Task {
     val _     = luauSubmoduleHead()
     val osStr = System.getProperty("os.name", "").toLowerCase
     if (osStr.contains("mac")) ("dylib", Seq("-dynamiclib"))
     else                        ("so",    Seq("-shared", "-fPIC"))
   }
 
-  def nativeBuild: Task[PathRef] = Task {
+  def nativeBuild = Task {
     val _           = shimSources()
     val dest        = Task.dest
     val (ext, lflags) = nativePlatform()
@@ -212,93 +211,172 @@ object shim extends Module {
     PathRef(outLib)
   }
 
-  def wasmBuild: Task[PathRef] = Task {
-    val _       = luauSubmoduleHead()
-    val dest    = Task.dest
-    val outJs   = dest / "luau-shim.js"
-    val srcFile   = shimSrcDir() / "src" / "lx.cpp"
-    val includeArgs = allIncludeDirs().flatMap(d => Seq("-I", d))
-    val luauSrcs  = luauSources().map(_.toString)
-
-    val exportedFunctions = Seq(
-      "_lx_newstate", "_lx_close", "_lx_new_thread",
-      "_lx_thread_status", "_lx_compile_and_load", "_lx_resume",
-      "_lx_push_nil", "_lx_push_boolean", "_lx_push_number", "_lx_push_integer",
-      "_lx_push_lstring", "_lx_push_ref", "_lx_push_copy", "_lx_pop", "_lx_stack_top",
-      "_lx_type", "_lx_to_number", "_lx_to_integer", "_lx_to_boolean", "_lx_to_lstring",
-      "_lx_rawlen", "_lx_newtable", "_lx_rawget", "_lx_rawset", "_lx_rawgeti", "_lx_rawseti",
-      "_lx_setarray", "_lx_table_next", "_lx_ref", "_lx_unref", "_lx_register_native",
-      "_lx_set_suspend_token", "_lx_get_suspend_token",
-      "_lx_set_global", "_lx_get_global",
-      "_lx_openlibs", "_lx_sandbox",
-      "_lx_gc_step", "_lx_gc_collect", "_lx_copy_error", "_lx_conformance_setup", "_lx_resume_error",
-      "_malloc", "_free"
-    ).mkString("[", ",", "]")
-    val exportedRuntimeMethods = Seq(
-      "addFunction", "removeFunction", "dynCall_iii", "dynCall_iiiiii",
-      "ccall", "cwrap", "getValue", "setValue", "UTF8ToString", "stringToUTF8"
-    ).mkString("[\"", "\",\"", "\"]")
-
-    os.proc(Seq("emcc") ++
-      Seq("-std=c++17", "-O2") ++ includeArgs ++
-      Seq("-s", "WASM=1",
-        "-s", s"EXPORTED_FUNCTIONS=$exportedFunctions",
-        "-s", s"EXPORTED_RUNTIME_METHODS=$exportedRuntimeMethods",
-        "-s", "MODULARIZE=1", "-s", "EXPORT_NAME='LuauShim'",
-        "-s", "ALLOW_MEMORY_GROWTH=1", "-s", "ALLOW_TABLE_GROWTH=1",
-        "-s", "STACK_SIZE=1048576", "-s", "ENVIRONMENT='node,web,worker'",
-        "--no-entry", "-o", outJs.toString, srcFile.toString
-      ) ++ luauSrcs
-    ).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
-
-    PathRef(dest / "luau-shim.wasm")
-  }
-
-  def sysrootScript = Task.Sources(moduleDir / "build-eh-sysroot.sh")
-
-  /** WASI sysroot with C++ exceptions, built from wasi-sdk sources entirely
-    * inside the task sandbox (no $HOME/wasi-eh pollution). Scratch clone and
-    * ninja build live under dest/work; only dest/out (sysroot + merged clang
-    * resource dir) is returned. quick = true: content-hashing the llvm clone
-    * would stat-walk ~100k files on every evaluation.
+  /** WASI sysroot WITH C++ exceptions (libc++/libc++abi/libunwind), built
+    * from wasi-sdk sources entirely inside the task sandbox.
+    *
+    * Why this exists: released wasi-sdk artifacts ship a -fno-exceptions
+    * sysroot (no __cxa_throw / no libunwind), so Luau's exception-based error
+    * model aborts. We rebuild only the sysroot — not LLVM, the system clang
+    * is reused — against the wasi-sdk-31 sources (LLVM 22; keep the tag
+    * matched to the system clang major), with -DWASI_SDK_EXCEPTIONS=ON.
+    *
+    * Requires: system clang/clang++ (LLVM >= 21 for new EH), cmake, ninja,
+    * git. Scratch clone and ninja build live under dest/work; only dest/out
+    * (sysroot + merged clang resource dir) is returned. quick = true:
+    * content-hashing the llvm clone would stat-walk ~100k files on every
+    * evaluation. The wasm compile/link tasks below consume the two output
+    * dirs — they must take wasiSysroot()'s PathRef directly so a sysroot
+    * content change invalidates them.
     */
-  def wasiSysroot: Task[PathRef] = Task {
-    val _    = sysrootScript()
-    val dest = Task.dest
-    val out  = dest / "out"
+  def wasiSysroot = Task {
+    val dest   = Task.dest
+    val out    = dest / "out"
+    val work   = dest / "work" / "wasi-sdk"
+    val prefix = out / "install"
+    val rd     = out / "resource-dir"
+    val tag    = "wasi-sdk-31"
+    val clang  = "/usr/bin/clang"
+
     os.proc(
-      "/usr/bin/bash",
-      (moduleDir / "build-eh-sysroot.sh").toString,
-      (out / "install").toString
-    ).call(
-      cwd = dest,
-      env = Map(
-        "WASI_EH_WORK"      -> (dest / "work" / "wasi-sdk").toString,
-        "WASI_RESOURCE_DIR" -> (out / "resource-dir").toString
-      ),
-      stdout = os.Inherit,
-      stderr = os.Inherit
-    )
+      "git", "clone", "--depth", "1", "-b", tag,
+      "https://github.com/WebAssembly/wasi-sdk.git", work.toString
+    ).call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
+    os.proc(
+      "git", "submodule", "update", "--init", "--depth", "1",
+      "src/wasi-libc", "src/config", "src/llvm-project"
+    ).call(cwd = work, stdout = os.Inherit, stderr = os.Inherit)
+
+    os.proc(
+      "cmake", "-G", "Ninja", "-B", "build/sysroot", "-S", ".",
+      s"-DCMAKE_TOOLCHAIN_FILE=${work / "wasi-sdk-p1.cmake"}",
+      "-DWASI_SDK_PREFIX=/usr",
+      "-DWASI_SDK_TARGETS=wasm32-wasi",
+      // The wasm32-wasi compiler can't link host test binaries during cmake's
+      // probe; the sysroot sources are trusted to compile.
+      "-DCMAKE_C_COMPILER_WORKS=ON", "-DCMAKE_CXX_COMPILER_WORKS=ON",
+      "-DWASI_SDK_EXCEPTIONS=ON",
+      "-DWASI_SDK_INCLUDE_TESTS=OFF",
+      s"-DCMAKE_INSTALL_PREFIX=$prefix"
+    ).call(cwd = work, stdout = os.Inherit, stderr = os.Inherit)
+    os.proc("ninja", "-C", "build/sysroot", "install")
+      .call(cwd = work, stdout = os.Inherit, stderr = os.Inherit)
+
+    // Merge clang resource dir: system clang headers + the wasm compiler-rt
+    // builtins the sysroot build produced.
+    val systemRd = os.Path(os.proc(clang, "-print-resource-dir").call().out.trim())
+    os.makeDir.all(rd)
+    os.symlink(rd / "include", systemRd / "include")
+    os.symlink(rd / "lib", prefix / "clang-resource-dir" / "lib")
+
     PathRef(out, quick = true)
   }
 
+  // ---- WASM build (system clang + wasiSysroot, no emscripten) ------------
+
+  val wasmClang = "/usr/bin/clang++"
+
+  /** Flags shared by every wasm compile AND the link: -fwasm-exceptions with
+    * new EH (-wasm-use-legacy-eh=false) must be uniform across all objects —
+    * mixing EH encodings breaks linking/unwinding, so do NOT special-case
+    * any module. -mnontrapping-fptoint: out-of-range float->int casts must
+    * wrap/saturate like native C, not trap (bit32 and number coercions rely
+    * on it; i32.trunc_f64 traps on overflow).
+    */
+  def wasmCommonFlags(sysroot: os.Path): Seq[String] = Seq(
+    "--target=wasm32-wasi",
+    s"--sysroot=${sysroot / "install" / "share" / "wasi-sysroot"}",
+    "-resource-dir", (sysroot / "resource-dir").toString,
+    "-std=c++17",
+    "-O2",
+    "-fwasm-exceptions",
+    "-mllvm", "-wasm-use-legacy-eh=false",
+    "-mnontrapping-fptoint",
+    "-fno-rtti"
+  )
+
+  private def compileWasmObject(dest: os.Path, flags: Seq[String], src: os.Path): os.Path = {
+    val obj = dest / s"${src.last}.o"
+    os.proc(Seq(wasmClang) ++ flags ++ Seq("-c", "-o", obj.toString, src.toString))
+      .call(cwd = dest, stdout = os.Inherit, stderr = os.Inherit)
+    obj
+  }
+
+  private def wasmCompileFlags(sysroot: os.Path, includes: Seq[String]): Seq[String] =
+    wasmCommonFlags(sysroot) ++ Seq(
+      "-D_LUAU_HAS_VECTOR_SIZE=0",
+      "-D_WASI_EMULATED_PROCESS_CLOCKS"
+    ) ++ includes.flatMap(d => Seq("-I", d))
+
+  /** Luau library translation units -> wasm objects. Rarely invalidated
+    * (vendored submodule + sysroot), so shim edits never recompile these.
+    */
+  def wasmLuauObjects = Task {
+    val _     = luauSubmoduleHead()
+    val flags = wasmCompileFlags(wasiSysroot().path, allIncludeDirs())
+    luauSources().map(src => PathRef(compileWasmObject(Task.dest, flags, src)))
+  }
+
+  def wasmShimObject = Task {
+    val _     = shimSources()
+    val flags = wasmCompileFlags(wasiSysroot().path, allIncludeDirs())
+    PathRef(compileWasmObject(Task.dest, flags, shimSrcDir() / "src" / "lx.cpp"))
+  }
+
+  /** Canonical __cpp_exception tag definition (plain asm — no sysroot or
+    * C++ flags, just the wasm target + builtins).
+    */
+  def wasmExceptionTag = Task {
+    val _   = shimSources()
+    val rd  = wasiSysroot().path / "resource-dir"
+    val obj = Task.dest / "cpp_exception_tag.o"
+    os.proc(
+      wasmClang, "--target=wasm32-wasi", "-resource-dir", rd.toString,
+      "-c", "-o", obj.toString,
+      (shimSrcDir() / "src" / "cpp_exception_tag.s").toString
+    ).call(cwd = Task.dest, stdout = os.Inherit, stderr = os.Inherit)
+    PathRef(obj)
+  }
+
+  /** The exported lx_* surface. Adding a shim export = add the symbol here
+    * and in lx.h/lx.cpp; only wasmShimObject + the link rerun, the Luau
+    * objects stay cached.
+    */
+  def wasmExports: Seq[String] = Seq(
+    "lx_newstate", "lx_close", "lx_new_thread",
+    "lx_thread_status", "lx_compile_and_load", "lx_resume",
+    "lx_push_nil", "lx_push_boolean", "lx_push_number", "lx_push_integer",
+    "lx_push_lstring", "lx_push_ref", "lx_push_copy", "lx_pop", "lx_stack_top",
+    "lx_type", "lx_to_number", "lx_to_integer", "lx_to_boolean", "lx_to_lstring",
+    "lx_rawlen", "lx_newtable", "lx_rawget", "lx_rawset", "lx_rawgeti", "lx_rawseti",
+    "lx_setarray", "lx_table_next", "lx_ref", "lx_unref", "lx_register_native",
+    "lx_set_suspend_token", "lx_get_suspend_token",
+    "lx_set_global", "lx_get_global",
+    "lx_openlibs", "lx_sandbox",
+    "lx_gc_step", "lx_gc_collect", "lx_copy_error", "lx_conformance_setup",
+    "lx_resume_error",
+    "malloc", "free"
+  )
+
   def wasmBuildNative = Task {
-    val _ = luauSubmoduleHead()
-    val _sources = shimSources()
     val sysroot = wasiSysroot().path
-    val script = moduleDir / "build-wasm.sh"
-    os.proc("/usr/bin/bash", script.toString, Task.dest.toString).call(
-      cwd = moduleDir / os.up,
-      env = Map(
-        "WASI_SYSROOT"      -> (sysroot / "install" / "share" / "wasi-sysroot").toString,
-        "WASI_RESOURCE_DIR" -> (sysroot / "resource-dir").toString
-      ),
-      stdout = os.Inherit,
-      stderr = os.Inherit
+    val out     = Task.dest / "luau-shim.wasm"
+    val ldflags = wasmCommonFlags(sysroot) ++ Seq(
+      "-mexec-model=reactor",
+      "-lc++abi",
+      "-lunwind",
+      "-lwasi-emulated-process-clocks"
+    ) ++ wasmExports.map(e => s"-Wl,--export=$e") ++ Seq(
+      "-Wl,--export-table",
+      "-Wl,--growable-table",
+      "-Wl,-z,stack-size=1048576",
+      // buffers.luau allocates a full 1GiB buffer (bitops stress); growth is
+      // on-demand, so the cap only needs to be high enough. wasm32 max: 4GiB.
+      "-Wl,--max-memory=4294967296"
     )
-    val wasmFile = Task.dest / "luau-shim.wasm"
-    if !os.exists(wasmFile) then
-      sys.error("WASM not produced at $wasmFile")
+    val objs = (wasmLuauObjects() :+ wasmShimObject() :+ wasmExceptionTag())
+      .map(_.path.toString)
+    os.proc(Seq(wasmClang) ++ ldflags ++ Seq("-o", out.toString) ++ objs)
+      .call(cwd = Task.dest, stdout = os.Inherit, stderr = os.Inherit)
     PathRef(Task.dest)
   }
 }

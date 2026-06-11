@@ -189,71 +189,46 @@ Compiles `shim/src/lx.cpp` plus all Luau C++ source files into a single shared l
 
 No `-fPIC` is added separately for macOS — `-dynamiclib` implies it.
 
-#### `shim.wasmBuild` — Emscripten build (vestigial)
+#### `shim.wasmBuild` — Emscripten build (REMOVED)
 
-```scala
-def wasmBuild: Task[PathRef] = Task {
-  ...
-  os.proc(Seq("emcc") ++ Seq("-std=c++17", "-O2") ++ includeArgs ++
-    Seq("-s", "WASM=1",
-        "-s", s"EXPORTED_FUNCTIONS=$exportedFunctions",
-        "-s", s"EXPORTED_RUNTIME_METHODS=$exportedRuntimeMethods",
-        "-s", "MODULARIZE=1", "-s", "EXPORT_NAME='LuauShim'",
-        "-s", "ALLOW_MEMORY_GROWTH=1", "-s", "ALLOW_TABLE_GROWTH=1",
-        "-s", "STACK_SIZE=1048576", "-s", "ENVIRONMENT='node,web,worker'",
-        "--no-entry", "-o", outJs.toString, srcFile.toString
-    ) ++ luauSrcs
-  ).call(...)
-  PathRef(dest / "luau-shim.wasm")
-}
-```
+The vestigial Emscripten task was deleted: `LuauShimFactory` instantiates raw
+`WebAssembly.Module`/`Instance` and could never consume its `MODULARIZE=1`
+artifact. The clang/WASI tasks below are the only WASM build path.
 
-(`build.mill:126-166`)
+#### WASM tasks — native clang/WASI (the only path)
 
-This task compiles the Shim using Emscripten (`emcc`) and produces a WASM file alongside a JavaScript wrapper. It uses `MODULARIZE=1` and `EXPORT_NAME='LuauShim'`, which generates an Emscripten module factory pattern.
+The WASM build is pure Mill — no shell scripts. Granular cached tasks
+(`build.mill`, `shim` module):
 
-**This task is vestigial and produces an incompatible artifact.** `LuauShimFactory` (the WASM backend's loader) instantiates raw `WebAssembly.Module` + `WebAssembly.Instance` directly, without Emscripten's module wrapper. The Emscripten-produced `.js` file is not read or imported by any active code path. The task remains in `build.mill` only for historical reference; CI calls it, but the artifact it produces cannot be consumed by `wasm.test`.
+| Task | Inputs | Output |
+|---|---|---|
+| `shim.wasiSysroot` | task code (tag `wasi-sdk-31`) | EH-enabled sysroot + merged clang resource dir, in-sandbox |
+| `shim.wasmLuauObjects` | `luauSubmoduleHead`, `wasiSysroot` | all Luau `*.cpp` → `*.o` |
+| `shim.wasmShimObject` | `shimSources`, `wasiSysroot` | `lx.cpp` → `lx.cpp.o` |
+| `shim.wasmExceptionTag` | `shimSources`, `wasiSysroot` | `cpp_exception_tag.s` → `.o` |
+| `shim.wasmBuildNative` | the three object tasks + `wasiSysroot` + `wasmExports` | linked `luau-shim.wasm` |
 
-Additionally, `wasmBuild` lists `dynCall_iii` in `EXPORTED_RUNTIME_METHODS` (`build.mill:149`) while `WasmModuleExports` only declares `dynCall_iiiiii` — the two paths have diverged in expected runtime method signatures.
-
-#### `shim.wasmBuildNative` — native clang/WASI build (the active path)
-
-```scala
-def wasmBuildNative = Task {
-  val projectRoot = os.Path(sys.env("PWD"))
-  val script = projectRoot / "shim" / "build-wasm.sh"
-  os.proc("/usr/bin/bash", script.toString, Task.dest.toString).call(
-    cwd = projectRoot,
-    stdout = os.Inherit,
-    stderr = os.Inherit
-  )
-  val wasmFile = Task.dest / "luau-shim.wasm"
-  if !os.exists(wasmFile) then sys.error("WASM not produced at $wasmFile")
-  PathRef(Task.dest)
-}
-```
-
-(`build.mill:168-180`)
-
-This task delegates to `shim/build-wasm.sh`, passing `Task.dest` as the output directory. It returns a `PathRef` to the dest directory (not the file itself), which `wasm.jsEnvConfig` reads to locate `luau-shim.wasm` at `wasmDir.path / "luau-shim.wasm"` (`build.mill:57`).
-
-**Known fragility:** `sys.env("PWD")` (`build.mill:169`) resolves the project root from the shell environment variable `PWD`, not from Mill's computed `os.pwd`. These differ when Mill is invoked from a subdirectory, when `PWD` is a symlink that resolves differently from the real path, or in certain CI environments. The safer alternative would be `os.pwd.toString`.
+The split keeps the expensive parts cached: an `lx.cpp` edit recompiles one
+object and relinks; adding a `-Wl,--export` (the `wasmExports` list in
+`build.mill`) only relinks. `wasm.jsEnvConfig` reads `wasmBuildNative()`'s
+`PathRef` to locate `luau-shim.wasm` — running `./mill wasm.test` cold builds
+the entire chain.
 
 ---
 
 ## 5. WASM build pipeline in detail
 
-### 5.1 EH sysroot setup (`shim/build-eh-sysroot.sh`)
+### 5.1 EH sysroot setup (`shim.wasiSysroot` Mill task)
 
-The released wasi-sdk ships a `-fno-exceptions` sysroot: `__cxa_throw`, `libunwind`, and `libc++abi` are absent. Luau uses C++ exceptions internally for its error model (errors in the VM are `throw`-based), so native C++ exception support is required in the WASM binary. `build-eh-sysroot.sh` rebuilds the sysroot from source with exceptions enabled.
+The released wasi-sdk ships a `-fno-exceptions` sysroot: `__cxa_throw`, `libunwind`, and `libc++abi` are absent. Luau uses C++ exceptions internally for its error model (errors in the VM are `throw`-based), so native C++ exception support is required in the WASM binary. The `shim.wasiSysroot` task (build.mill) rebuilds the sysroot from source with exceptions enabled, entirely inside the task sandbox (`out/shim/wasiSysroot.dest/`).
 
 **What it does:**
 
-1. Clones `wasi-sdk-31` (LLVM 22.1.0 sources) shallowly from `https://github.com/WebAssembly/wasi-sdk.git` using git tag `wasi-sdk-31` (`build-eh-sysroot.sh:18,24`).
-2. Updates submodules `src/wasi-libc`, `src/config`, `src/llvm-project` with depth 1 (`build-eh-sysroot.sh:27`).
-3. Runs CMake with `-DWASI_SDK_EXCEPTIONS=ON` and `-DWASI_SDK_TARGETS=wasm32-wasi` using the **system** clang (not re-building LLVM itself) (`build-eh-sysroot.sh:30-36`).
-4. Installs sysroot to `$PREFIX` (default `~/wasi-eh/install`).
-5. Merges the system clang resource directory headers (`$SYS_RD/include`) with the new wasm builtins (`$PREFIX/clang-resource-dir/lib`) into `$HOME/wasi-eh/resource-dir` via symlinks (`build-eh-sysroot.sh:42-46`).
+1. Clones `wasi-sdk-31` (LLVM 22.1.0 sources) shallowly from `https://github.com/WebAssembly/wasi-sdk.git` using git tag `wasi-sdk-31` into `dest/work/wasi-sdk`.
+2. Updates submodules `src/wasi-libc`, `src/config`, `src/llvm-project` with depth 1.
+3. Runs CMake with `-DWASI_SDK_EXCEPTIONS=ON` and `-DWASI_SDK_TARGETS=wasm32-wasi` using the **system** clang (not re-building LLVM itself).
+4. Installs sysroot to `dest/out/install`.
+5. Merges the system clang resource directory headers with the new wasm builtins (`install/clang-resource-dir/lib`) into `dest/out/resource-dir` via symlinks.
 
 **Prerequisites:** system clang/clang++ (LLVM ≥ 21 for new-EH proposal support), cmake, ninja, git.
 
@@ -263,72 +238,54 @@ The released wasi-sdk ships a `-fno-exceptions` sysroot: `__cxa_throw`, `libunwi
 
 This is a **one-time setup** step that takes several minutes. It does not need to be repeated unless the LLVM major version of the system toolchain changes.
 
-### 5.2 `shim/build-wasm.sh` — WASM compilation and linking
+### 5.2 WASM compilation and linking (Mill tasks)
 
-This script compiles `luau-shim.wasm` using system clang targeting `wasm32-wasi` with native C++ exception handling (the WebAssembly EH proposal, new encoding).
+`luau-shim.wasm` compiles with system clang targeting `wasm32-wasi` with
+native C++ exception handling (the WebAssembly EH proposal, new encoding).
+All flags live in `build.mill` (`wasmCommonFlags` / `wasmCompileFlags`).
 
-**Environment variables:**
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `WASI_CLANG` | `/usr/bin/clang++` | C++ compiler |
-| `WASI_SYSROOT` | `$HOME/wasi-eh/install/share/wasi-sysroot` | EH-enabled WASI sysroot |
-| `WASI_RESOURCE_DIR` | `$HOME/wasi-eh/resource-dir` | Merged clang resource dir |
-| `DEST` (positional arg `$1`) | `$(pwd)/out-wasm` | Output directory for object files and `.wasm` |
-
-(`build-wasm.sh:8-11`)
-
-**Compilation flags (`CFLAGS`):**
+**Shared compile+link flags (`wasmCommonFlags`):**
 
 ```
 --target=wasm32-wasi
---sysroot=$SYSROOT
--resource-dir $RESOURCE_DIR
+--sysroot=<wasiSysroot()/install/share/wasi-sysroot>
+-resource-dir <wasiSysroot()/resource-dir>
 -std=c++17
 -O2
 -fwasm-exceptions
 -mllvm -wasm-use-legacy-eh=false
+-mnontrapping-fptoint
 -fno-rtti
--D_LUAU_HAS_VECTOR_SIZE=0
--D_WASI_EMULATED_PROCESS_CLOCKS
--I <six include dirs>
--c
 ```
 
-(`build-wasm.sh:33-46`)
+Compile-only additions (`wasmCompileFlags`): `-D_LUAU_HAS_VECTOR_SIZE=0`,
+`-D_WASI_EMULATED_PROCESS_CLOCKS`, one `-I` per include dir.
 
-The pair `-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false` selects the new WebAssembly EH proposal encoding (not legacy SjLj). Every translation unit — all Luau directories (VM, Compiler, Ast, Bytecode, Common) and `lx.cpp` — is compiled with these identical flags. Mixing legacy-SjLj and new-EH objects in the same link is undefined behavior for unwinding (`build-wasm.sh:112-114`).
+The pair `-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false` selects the new
+WebAssembly EH proposal encoding (not legacy SjLj). Every translation unit —
+all Luau directories (VM, Compiler, Ast, Bytecode, Common) and `lx.cpp` — is
+compiled with these identical flags; mixing legacy-SjLj and new-EH objects in
+the same link is undefined behavior for unwinding. `-mnontrapping-fptoint`:
+out-of-range float→int casts must wrap/saturate like native C, not trap
+(bit32 and number coercions rely on it).
 
-**Build steps:**
+**Build steps (one Mill task each — see 4.6):** Luau objects, `lx.cpp`
+object, `cpp_exception_tag.s` object, then the link.
 
-1. Compile all Luau `*.cpp` files from five source directories into `$DEST/*.cpp.o` object files.
-2. Compile `shim/src/lx.cpp` into `$DEST/lx.cpp.o`.
-3. Assemble `shim/src/cpp_exception_tag.s` into `$DEST/cpp_exception_tag.o` — this provides the canonical `__cpp_exception` WASM tag definition.
-4. Link all objects into `$DEST/luau-shim.wasm`.
-5. Copy `luau-shim.wasm` to `shim/luau-shim.wasm` (committed location for manual distribution).
-
-**Link flags (`WASM_LDFLAGS`):**
+**Link flags (`wasmBuildNative`):**
 
 ```
---target=wasm32-wasi
---sysroot / -resource-dir / -std=c++17 / -O2 (same as CFLAGS)
--fwasm-exceptions -mllvm -wasm-use-legacy-eh=false -fno-rtti
+<wasmCommonFlags>
 -mexec-model=reactor
 -lc++abi
 -lunwind
 -lwasi-emulated-process-clocks
--Wl,--export=<each lx_* symbol>   (34 symbols, build-wasm.sh:61-101)
--Wl,--export=lx_push_integer      (also exported, build-wasm.sh:100)
--Wl,--export=lx_to_integer        (also exported, build-wasm.sh:101)
--Wl,--export=malloc
--Wl,--export=free
+-Wl,--export=<each symbol in shim.wasmExports>
 -Wl,--export-table
 -Wl,--growable-table
 -Wl,-z,stack-size=1048576
--Wl,--max-memory=33554432         (32 MiB)
+-Wl,--max-memory=4294967296       (4 GiB cap; buffers.luau allocates 1 GiB)
 ```
-
-(`build-wasm.sh:48-108`)
 
 **Key linker decisions:**
 
@@ -338,7 +295,7 @@ The pair `-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false` selects the new We
 
 - **`-Wl,-z,stack-size=1048576`**: sets the WASM shadow stack to 1 MiB, required for Luau's recursive VM operations.
 
-- **`-Wl,--max-memory=33554432`**: caps WASM linear memory at 32 MiB. Memory growth is allowed up to this ceiling.
+- **`-Wl,--max-memory=4294967296`**: caps WASM linear memory at 4 GiB (the wasm32 maximum). Growth is on-demand; the cap only needs to be high enough for the conformance buffer stress test.
 
 ### 5.3 The `__cpp_exception` tag (`shim/src/cpp_exception_tag.s`)
 
@@ -352,22 +309,10 @@ __cpp_exception:
 
 LLVM 22 / wasm-ld does not synthesize the C++ exception tag that `-fwasm-exceptions`, `libc++abi`, and `libunwind` all reference. This assembly file provides the single canonical definition. Without it the link either fails (undefined symbol) or C++ exceptions silently abort. The `.tagtype` directive is a wasm-ld extension specific to LLVM; if the toolchain changes to a non-LLVM linker or a different LLVM major version, this file must be reviewed.
 
-### 5.4 Duplication between `shim.wasmBuild` and `shim/build-wasm.sh`
+### 5.4 Former duplication (resolved)
 
-The two WASM build paths share the same source files but differ in every meaningful detail:
-
-| Dimension | `shim.wasmBuild` (Mill task) | `shim/build-wasm.sh` (native) |
-|---|---|---|
-| Compiler | `emcc` (Emscripten) | `clang++` (system LLVM) |
-| Target | Emscripten-wasm | `wasm32-wasi` |
-| Exception model | None / SjLj (Emscripten default) | New-EH (`-fwasm-exceptions`) |
-| Output format | WASM + JS module wrapper (`MODULARIZE=1`) | Bare WASM (reactor) |
-| Consumption | Nothing — incompatible with `LuauShimFactory` | `wasm.jsEnvConfig` → tests |
-| `cpp_exception_tag.s` | Not included | Compiled and linked |
-| `_initialize()` export | No | Yes (reactor model) |
-| Symbol naming | Emscripten-prefixed (`_lx_*` via EXPORTED_FUNCTIONS) | Direct (`lx_*`) |
-
-`shim.wasmBuild` cannot produce artifacts that the current WASM backend can load. It exists in `build.mill` and is called in CI (`.github/workflows/ci.yml:44`), but its output is discarded. `shim/build-wasm.sh` is the authoritative WASM build.
+The Emscripten task (`shim.wasmBuild`) and the `build-wasm.sh` shell script
+are both gone. The Mill task chain in 4.6/5.2 is the single WASM build path.
 
 ---
 
@@ -424,34 +369,31 @@ The Mill version downloaded in CI (`0.12.3`) **differs from the version pinned i
 
 ```yaml
 - name: Compile all Scala modules
-  run: ./mill __.compile
+  run: ./mill-launcher.sh __.compile
 
-- name: Build native shim
-  run: ./mill shim.nativeBuild
+- name: Run Panama tests
+  run: ./mill-launcher.sh panama.test     # builds shim.nativeBuild via forkArgs
 
-- name: Build WASM shim
-  run: source /tmp/emsdk/emsdk_env.sh && ./mill shim.wasmBuild
+- name: Run Scala.js WASM tests
+  run: ./mill-launcher.sh wasm.test       # builds wasiSysroot -> wasm objects -> link
 
-- name: Copy WASM to test resources
-  run: ./mill shim.copyWasmToResources       # ← DOES NOT EXIST
-
-- name: Run Panama smoke tests
-  run: ./mill panama.test
-
-- name: Run Scala.js tests
-  run: ./mill wasm.test
-
-- name: Run all other tests
-  run: ./mill __.test
+- name: Run all tests
+  run: ./mill-launcher.sh __.test
 ```
 
-(`ci.yml:39-52`)
-
-**`shim.copyWasmToResources` is a CI-breaking bug.** This Mill task does not exist in `build.mill`. The shell script `shim/copy-wasm-test-resources.sh` performs the equivalent operation (scatter `luau-shim.wasm` into all `fastLinkJSTest.dest/` directories Mill creates), but it is not wrapped as a Mill task. CI will fail at this step every run. The fix is either to add a `copyWasmToResources` task to `build.mill` that calls the shell script, or to replace the Mill invocation in CI with a direct shell call.
+The wasm chain needs no dedicated steps: `wasm.jsEnvConfig` depends on
+`shim.wasmBuildNative`, which depends on `shim.wasiSysroot`, so `wasm.test`
+builds everything on a cold runner. `out/shim/wasiSysroot.dest` (plus its
+task journal) is cached across runs keyed on `build.mill` — the ~10-minute
+sysroot build happens only when the task code changes.
 
 ### 8.3 CI tool-setup notes
 
-Clang-17 is installed via apt and registered as `/usr/bin/clang++` via `update-alternatives`. Emscripten 3.1.50 is installed from its own GitHub repo and activated via `emsdk_env.sh` for the `shim.wasmBuild` step only. The native WASM build (`shim/build-wasm.sh`) is **not** called in CI at all — only the vestigial Emscripten build is. This means the Scala.js WASM tests (`wasm.test`) in CI cannot succeed as described, because `wasm.jsEnvConfig` calls `shim.wasmBuildNative()` which runs `build-wasm.sh`, which requires the EH sysroot that CI never sets up.
+LLVM 22 (apt.llvm.org), cmake, and ninja are installed and clang/clang++
+registered at `/usr/bin/` via `update-alternatives` — the build tasks invoke
+`/usr/bin/clang++` and the sysroot tag (`wasi-sdk-31`) is matched to the
+clang major. Mill runs through the repo's `mill-launcher.sh` (version pinned
+by `.mill-version`). No Emscripten.
 
 ---
 
@@ -468,34 +410,18 @@ wasm/test/resources/luau-shim.*
 
 It does **not** include `out/`. Mill's build cache — dozens of `.json`, `.class`, `.tasty`, `.zinc`, and binary files — is tracked in git. Every `./mill` invocation modifies files under `out/`, resulting in a permanently dirty working tree. The git status shown at the top of this session lists over 50 modified `out/` paths. Adding `out/` to `.gitignore` would eliminate this noise.
 
-### 9.2 `sys.env("PWD")` in `wasmBuildNative`
+### 9.2–9.5 Resolved fragilities
 
-`build.mill:169` resolves the project root as:
-```scala
-val projectRoot = os.Path(sys.env("PWD"))
-```
+Fixed by the script-to-Mill migration and the CI rewrite:
 
-`sys.env("PWD")` is the shell's working directory at the moment Mill is invoked, not Mill's own computed `os.pwd`. In environments where `PWD` is a symlink path that differs from the canonical path, or when Mill is launched from a subdirectory, this will produce a wrong project root and the script call will fail with a "file not found" error. The correct expression is `os.pwd`.
-
-### 9.3 Mill version mismatch between local and CI
-
-Local development uses Mill 1.1.6 (`.mill-version`). CI downloads Mill 0.12.3 (`ci.yml:38`). Mill 0.12.x may fail to parse `build.mill` constructs introduced in 1.x (e.g., `mvn"..."` dependency syntax, `Task.Input`, or module scoping differences). The CI should be updated to download the version specified in `.mill-version`, e.g.:
-
-```yaml
-- name: Download Mill
-  run: |
-    MILL_VERSION=$(cat .mill-version)
-    curl -L "https://repo1.maven.org/maven2/com/lihaoyi/mill-dist/${MILL_VERSION}/mill-dist-${MILL_VERSION}.exe" \
-      -o ./mill && chmod +x ./mill
-```
-
-### 9.4 `shim.copyWasmToResources` does not exist
-
-Described above in §8.2. CI fails at this step unconditionally.
-
-### 9.5 `shim.wasmBuild` produces incompatible artifacts
-
-Described above in §5.4. CI calls `shim.wasmBuild` but nothing consumes its output. The active test pipeline uses `shim.wasmBuildNative` exclusively.
+- `sys.env("PWD")` in `wasmBuildNative` — gone with the shell-script wrapper;
+  all wasm tasks use sandboxed `Task.dest` paths.
+- Mill version mismatch — CI runs `./mill-launcher.sh`, pinned by
+  `.mill-version`.
+- `shim.copyWasmToResources` — the step (and the script behind it) is gone;
+  `wasm.jsEnvConfig` wires `LUAU_WASM_PATH` from the task result instead.
+- `shim.wasmBuild` (Emscripten) — task deleted; the clang/WASI task chain is
+  the only build path.
 
 ### 9.6 `mill-launcher.sh` `DEFAULT_MILL_VERSION` is a dev snapshot
 
@@ -519,12 +445,12 @@ Described above in §5.4. CI calls `shim.wasmBuild` but nothing consumes its out
 ### One-time WASM EH sysroot setup
 
 ```bash
-# Clone + build the EH-enabled WASI sysroot (takes ~10 minutes)
-./shim/build-eh-sysroot.sh
-# Outputs: ~/wasi-eh/install/share/wasi-sysroot  and  ~/wasi-eh/resource-dir
+# Clone + build the EH-enabled WASI sysroot (takes ~10 minutes; cached by Mill)
+./mill shim.wasiSysroot
+# Outputs: out/shim/wasiSysroot.dest/out/{install/share/wasi-sysroot, resource-dir}
 ```
 
-This only needs to be done once per machine (or when your system clang major version changes).
+Cached by Mill; `shim.wasmBuildNative` depends on it, so a bare `./mill wasm.test` builds the whole chain. Re-runs only when the task code changes (or after `./mill clean shim.wasiSysroot`, e.g. when the system clang major version changes).
 
 ### Compile all Scala modules
 

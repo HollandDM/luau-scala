@@ -702,12 +702,12 @@ Luau's error model uses C++ exceptions internally (`throw` in its C++ source). T
 
 ### 7.2 EH Sysroot
 
-`shim/build-eh-sysroot.sh` is a one-time setup script that rebuilds the WASI sysroot with C++ exception support:
+The `shim.wasiSysroot` Mill task (build.mill) rebuilds the WASI sysroot with C++ exception support, sandboxed under `out/shim/wasiSysroot.dest/`:
 
 - Clones `wasi-sdk-31` (LLVM 22.1.0 sources) from GitHub.
 - Builds `libc++`, `libc++abi`, and `libunwind` via CMake with `-DWASI_SDK_EXCEPTIONS=ON`, using the system clang/clang++ (LLVM >= 21 required for new-EH).
-- Installs to `$HOME/wasi-eh/install/share/wasi-sysroot`.
-- Merges the system clang resource-dir headers with the new wasm compiler-rt builtins into `$HOME/wasi-eh/resource-dir`, so `build-wasm.sh` can reference a single `-resource-dir`.
+- Installs to `out/shim/wasiSysroot.dest/out/install/share/wasi-sysroot`.
+- Merges the system clang resource-dir headers with the new wasm compiler-rt builtins into `out/shim/wasiSysroot.dest/out/resource-dir`, so `build-wasm.sh` can reference a single `-resource-dir` (wired by `shim.wasmBuildNative`).
 
 ### 7.3 Compilation Flags
 

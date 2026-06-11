@@ -101,7 +101,7 @@ in the module's `__indirect_function_table`.
 
 The pre-`0720429` implementation overwrote slots starting at index 0, clobbering Luau's own
 in-use `call_indirect` targets and causing trap failures. The fix links with
-`-Wl,--growable-table` (`shim/build-wasm.sh:105`) and grows the table by exactly one slot
+`-Wl,--growable-table` (`wasmBuildNative` link flags, build.mill) and grows the table by exactly one slot
 per registration:
 
 ```scala
@@ -478,9 +478,10 @@ Luau's C++ runtime. The released `wasi-sdk` artifacts ship a `-fno-exceptions` s
 
 ### 8.2 The Fix: EH Sysroot
 
-`shim/build-eh-sysroot.sh` builds a replacement WASI sysroot from `wasi-sdk-31` sources
-with `-DWASI_SDK_EXCEPTIONS=ON`, reusing the system clang (LLVM 22) rather than rebuilding
-LLVM:
+The `shim.wasiSysroot` Mill task (build.mill) builds a replacement WASI sysroot from
+`wasi-sdk-31` sources with `-DWASI_SDK_EXCEPTIONS=ON`, reusing the system clang (LLVM 22)
+rather than rebuilding LLVM. Everything lands in the task sandbox
+(`out/shim/wasiSysroot.dest/`):
 
 ```bash
 cmake ... -DWASI_SDK_EXCEPTIONS=ON -DWASI_SDK_TARGETS=wasm32-wasi ...
@@ -495,7 +496,7 @@ compiler-rt builtins.
 ### 8.3 Uniform EH Encoding Flags
 
 **Every** translation unit — all Luau VM/Compiler/Ast/Bytecode/Common sources plus `lx.cpp`
-— is compiled with the same flags (`shim/build-wasm.sh:39-41`):
+— is compiled with the same flags (`wasmCommonFlags`, build.mill):
 
 ```
 -fwasm-exceptions
@@ -503,7 +504,7 @@ compiler-rt builtins.
 ```
 
 Mixing legacy SjLj-encoded EH objects with new-EH objects in the same link corrupts
-unwinding. The `build-wasm.sh` script comments on this explicitly at line 114. There is no
+unwinding. `wasmCommonFlags` in build.mill documents this explicitly. There is no
 special-casing of the Luau Compiler module.
 
 ### 8.4 The `__cpp_exception` Tag (`cpp_exception_tag.s`)
@@ -522,8 +523,8 @@ exceptions abort.
 __cpp_exception:
 ```
 
-This assembly file is compiled separately and linked into every WASM binary
-(`shim/build-wasm.sh:131-133`). The `.tagtype` directive is a wasm-ld extension specific
+This assembly file is compiled separately (`shim.wasmExceptionTag`, build.mill) and
+linked into every WASM binary. The `.tagtype` directive is a wasm-ld extension specific
 to LLVM's assembler; it is **not portable** to other linkers.
 
 ### 8.5 Link Parameters Summary
@@ -629,7 +630,7 @@ Critically, **the Wasm backend currently never calls either function**. The susp
 the Wasm side uses `Trampoline.pendingSuspend` — a Scala `Option[Resume => Cancel]` slot set
 inside `Trampoline.dispatch` (`Trampoline.scala:78`) — rather than a numeric token. The
 `_lx_set_suspend_token` and `_lx_get_suspend_token` exports are wired up in
-`build-wasm.sh:90-91` and declared in `WasmModule.scala:61-62` but are dead code from the
+`shim.wasmExports` (build.mill) and declared in `WasmModule.scala:61-62` but are dead code from the
 Scala side.
 
 If these functions were ever called, the failure modes differ by direction:
@@ -741,7 +742,7 @@ sequence:
 **Symptom:** Load succeeded but the first `_lx_*` call crashed. Luau's runtime-internal
 global state was corrupted.
 
-**Root cause:** `build-wasm.sh` produced a *command* binary. Every exported function was
+**Root cause:** the wasm link produced a *command* binary. Every exported function was
 wrapped with `__wasm_call_ctors` on entry and `__wasm_call_dtors` on exit. The dtors tore
 down C++ global state (including Luau's heap) after each call. The first call to
 `_lx_newstate` successfully set up global state; the wrapper's dtor destroyed it; subsequent
@@ -815,7 +816,7 @@ instance with a clean heap.
 error — including the `lua_error` call in `lx_trampoline`'s `LX_FAIL` path and the
 `lua_yield` call in the `LX_SUSPEND` path — aborted instead of unwinding.
 
-**Fix:** Build a custom EH-enabled WASI sysroot via `build-eh-sysroot.sh` and link with
+**Fix:** Build a custom EH-enabled WASI sysroot via the `shim.wasiSysroot` Mill task and link with
 `-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false`. Provide the canonical
 `__cpp_exception` tag definition in `cpp_exception_tag.s`.
 

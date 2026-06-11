@@ -5,11 +5,12 @@ porting pass (`stdlib/test/resources/ported/`, `PortedTaskSuiteBase`,
 `ConformanceManifest`). Each entry names the capability gap, what it blocked,
 and what an implementation needs. Ranked by impact × feasibility.
 
-The wasm shim rebuilds from source on this machine (system clang 22 +
-`shim/build-eh-sysroot.sh` → `shim/build-wasm.sh`, wasi-sdk-31 sysroot with
-wasm exceptions — NOT emcc; the `shim.wasmBuild` emcc task is legacy). New
-`lx_*` exports are therefore unblocked: add to `lx.h`/`lx.cpp`, the
-`-Wl,--export=` list in build-wasm.sh, and `LxHandles`/`WasmModule`.
+The wasm shim rebuilds from source via cached Mill tasks (`shim.wasiSysroot`
+→ wasm object tasks → `shim.wasmBuildNative`, build.mill — wasi-sdk-31
+sysroot with wasm exceptions, system clang, no emcc). New `lx_*` exports are
+therefore unblocked: add to `lx.h`/`lx.cpp`, the `shim.wasmExports` list in
+build.mill, and `LxHandles`/`WasmModule` — only the shim object and the link
+rerun.
 
 ## Tier 1 — should implement
 
@@ -111,8 +112,8 @@ wasm exceptions — NOT emcc; the `shim.wasmBuild` emcc task is legacy). New
 
 ## Suggested order
 
-1. Rebuild sysroot + wasm (done if this note is committed — see
-   `shim/build-eh-sysroot.sh`).
+1. Rebuild sysroot + wasm (done if this note is committed — see the
+   `shim.wasiSysroot` Mill task in build.mill).
 2. Shim batch: `lx_to_thread` + `lx_reset_thread` (+ `lx_set_fflag` if cheap
    in the same pass) → #1, #2, then #4.
 3. Pure-Scala pair anytime: #3 (`warn`), #5 (TaskHandle results — then strip

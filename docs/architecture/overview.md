@@ -259,14 +259,10 @@ Panama loads the result via `System.getProperty("luau.shim.lib")` or `System.loa
 
 ### WASM binary
 
-Two build paths exist:
-
-| Path | Mill task | Status |
-|------|-----------|--------|
-| Emscripten (`emcc`) | `shim.wasmBuild` (`build.mill:126`) | Vestigial. Produces `MODULARIZE=1` JS wrapper incompatible with `LuauShimFactory`, which uses raw `WebAssembly.Instance`. |
-| Native clang/WASI | `shim.wasmBuildNative` (`build.mill:168`) | Active. Delegates to `shim/build-wasm.sh`. |
-
-`shim/build-wasm.sh` compiles and links with:
+One build path: native clang/WASI Mill tasks (`shim.wasiSysroot` →
+`shim.wasmLuauObjects`/`wasmShimObject`/`wasmExceptionTag` →
+`shim.wasmBuildNative`); the former Emscripten task and the `build-wasm.sh`
+shell script are deleted. The chain compiles and links with:
 - `--target=wasm32-wasi`
 - `-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false` — native C++ exceptions via new EH proposal.
 - `-mexec-model=reactor` — no `_start`; C++ static constructors run via `_initialize()`.
@@ -322,17 +318,11 @@ The Scheduler depends on `java.util.concurrent.atomic.AtomicLong`, `java.util.Ti
 
 ## 12. CI and Known Issues
 
-The CI workflow (`.github/workflows/ci.yml`) runs on `ubuntu-22.04` and installs Java 21 (Temurin), Node 20, clang-17, and emsdk 3.1.50. It downloads Mill **0.12.3**, which is a different major version from the local `.mill-version` pin of **1.1.6** — a known discrepancy with potential build-semantics differences.
-
-The most critical CI defect is at step "Copy WASM to test resources" (`ci.yml:46`):
-
-```yaml
-run: ./mill shim.copyWasmToResources
-```
-
-This Mill task **does not exist** in `build.mill`. The shell script `shim/copy-wasm-test-resources.sh` exists on disk but is not exposed as a Mill task. This step will always fail, blocking downstream Panama and WASM test runs in CI.
-
-The `shim.wasmBuild` (Emscripten) task produces a `MODULARIZE=1` JS artifact that `LuauShimFactory` cannot consume — `LuauShimFactory` instantiates raw `WebAssembly.Instance` without Emscripten's module wrapper. The Emscripten path is vestigial dead code; the active WASM build is `shim.wasmBuildNative` (delegating to `shim/build-wasm.sh`).
+The CI workflow (`.github/workflows/ci.yml`) installs Java 21 (Temurin),
+Node 20, LLVM 22 (apt.llvm.org) with cmake/ninja, and runs everything through
+`./mill-launcher.sh` (version pinned by `.mill-version`). No Emscripten: the
+wasm chain (`shim.wasiSysroot` → objects → `shim.wasmBuildNative`) builds on
+demand when `wasm.test` runs, with the sysroot output cached across runs.
 
 The `out/` build cache directory is **not** in `.gitignore`, causing dozens of modified tracked files after every Mill build. This is a quality-of-life issue: `git status` is permanently noisy.
 
