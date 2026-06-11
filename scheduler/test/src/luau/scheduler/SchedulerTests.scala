@@ -4,6 +4,9 @@ import luau.core.*
 
 class SchedulerTests extends munit.FunSuite:
 
+  override def beforeEach(context: BeforeEach): Unit =
+    luau.core.fake.FakeBinding.releaseStateSlot()
+
   // ── TC-01: Spawn and immediate complete ───────────────────────────────
 
   test("TC-01 spawned Task transitions Queued → Running → Complete"):
@@ -56,7 +59,7 @@ class SchedulerTests extends munit.FunSuite:
   // ── TC-04: Error status → Failed state → error policy ─────────────────
 
   test("TC-04 lx_resume error transitions Task to Failed and invokes error policy"):
-    var capturedError: Option[String] = None
+    var capturedError: Option[LuaError] = None
     val policy: ErrorPolicy = (_, err) => capturedError = Some(err)
     val binding = TestBinding()
     binding.programResumes(ResumeResult.Error(LuaError.runtime("script error")))
@@ -70,7 +73,7 @@ class SchedulerTests extends munit.FunSuite:
         assertEquals(msg, "script error")
       case other =>
         fail(s"Expected Failed, got $other")
-    assertEquals(capturedError, Some("script error"))
+    assertEquals(capturedError.map(_.message), Some("script error"))
 
   // ── TC-05: Close cancels parked Tasks ─────────────────────────────────
 

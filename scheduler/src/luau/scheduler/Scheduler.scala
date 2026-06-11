@@ -4,24 +4,11 @@ import luau.core.*
 import luau.core.NativeFnResult.Suspend
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
-import java.util.Timer
-import java.util.TimerTask
 
-/** Single-threaded Scheduler for one Luau state.
-  *
-  * Thread-safety contract:
-  *   - runAllReady() and spawn() called on Driver thread only.
-  *   - The Resume callback (from Suspend wiring) may be called from any thread;
-  *     it only enqueues and returns immediately.
-  *   - close() called on Driver thread after all async ops complete.
-  *
-  * @param binding     Platform binding for this state.
-  * @param state       The Luau state handle.
-  * @param errorPolicy Called when a Task fails.
-  */
 final class Scheduler[H](
   val binding: Binding[H],
   val state: H,
+  timer: TaskTimer = TaskTimer.create(),
   val errorPolicy: ErrorPolicy = ErrorPolicy.logAndDiscard,
 ):
 
@@ -92,7 +79,7 @@ final class Scheduler[H](
         task.setState(TaskState.Failed(err.message))
         liveTasks.remove(task.id)
         task.releaseThread()
-        errorPolicy.onTaskError(task, err.message)
+        errorPolicy.onTaskError(task, err)
 
     TaskHandle(threadRef, task)
 
@@ -141,14 +128,8 @@ final class Scheduler[H](
 
   // ── Timer ─────────────────────────────────────────────────────────────
 
-  private val timer = new Timer("luau-scheduler-timer", true)
-
   def scheduleTimer(seconds: Double)(callback: => Unit): Cancel =
-    val ms = (seconds * 1000).toLong
-    val timerTask = new TimerTask:
-      def run(): Unit = callback
-    timer.schedule(timerTask, ms)
-    Cancel { () => timerTask.cancel(); () }
+    timer.schedule(seconds)(() => callback)
 
   // ── Cancel task ───────────────────────────────────────────────────────
 
@@ -216,7 +197,7 @@ final class Scheduler[H](
         task.setState(TaskState.Failed(err.message))
         liveTasks.remove(task.id)
         task.releaseThread()
-        errorPolicy.onTaskError(task, err.message)
+        errorPolicy.onTaskError(task, err)
 
   // ── Suspend wiring ────────────────────────────────────────────────────
 
@@ -277,5 +258,3 @@ final class Scheduler[H](
       task.releaseThread()
     }
     liveTasks.clear()
-    timer.cancel()
-    binding.closeState(state)

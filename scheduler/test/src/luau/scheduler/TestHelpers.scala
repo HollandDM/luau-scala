@@ -107,11 +107,11 @@ def makeScheduler(
 ): Scheduler[FakeState] =
   val binding = TestBinding()
   val state   = binding.newState()
-  Scheduler(binding, state, errorPolicy)
+  Scheduler(binding, state, errorPolicy = errorPolicy)
 
 def makeSchedulerWithBinding(
   binding: TestBinding,
   errorPolicy: ErrorPolicy = ErrorPolicy.logAndDiscard,
 ): Scheduler[FakeState] =
   val state = binding.newState()
-  Scheduler(binding, state, errorPolicy)
+  Scheduler(binding, state, errorPolicy = errorPolicy)
