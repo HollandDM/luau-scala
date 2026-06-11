@@ -30,10 +30,7 @@ class WasmConformanceSuite extends ConformanceSuiteBase[Int]:
       i += 1
     IArray.unsafeFromArray(arr)
 
-  // Fresh wasm instance per test, same rationale as WasmBackendSuite: a torn
-  // down state leaves the shared instance heap dirty for the next test.
   override def withBinding[A](f: Binding[Int] => A): A =
-    WasmBackend.load()
     f(WasmBackend.createBinding())
 
   override def conformanceSetup(b: Binding[Int], state: Int): Unit =

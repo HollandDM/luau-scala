@@ -3,27 +3,23 @@ package luau.wasm
 import luau.core.*
 import scala.scalajs.js
 
-/** Binding over the wasm shim. `H = Int` is a pointer to a `lua_State` in
-  * linear memory — a THREAD handle. Stack ops act on the handle's own stack
-  * (same semantics as the Panama backend); no main-thread redirection.
-  */
 final class WasmBinding private () extends Binding[Int]:
 
   private val module = WasmModule.module
 
-  // ── Live-state slot (§2.3 item 2) ──────────────────────────────────────
+  // ── Live-state slot ────────────────────────────────────────────────────
 
-  override def reserveStateSlot(): Unit = WasmBinding.reserveSlot()
-  override def releaseStateSlot(): Unit = WasmBinding.releaseSlot()
+  def reserveStateSlot(): Unit = WasmBinding.reserveSlot()
+  def releaseStateSlot(): Unit = WasmBinding.releaseSlot()
 
-  override def takePendingSuspend(thread: Int): Option[NativeFnResult.Suspend] =
+  def takePendingSuspend(thread: Int): Option[NativeFnResult.Suspend] =
     val tok = module._lx_get_suspend_token(thread).toString.toLong
     if tok == 0L then None
     else
       module._lx_set_suspend_token(thread, js.BigInt(0))
       Trampoline.suspendRegistry.consume(tok)
 
-  override def resumeError(thread: Int, error: LuaError): ResumeResult =
+  def resumeError(thread: Int, error: LuaError): ResumeResult =
     pushString(thread, error.message)
     val (nresultsPtr, readNResults) = WasmMarshal.allocOutInt()
     try
@@ -38,18 +34,19 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── State lifecycle ────────────────────────────────────────────────────
 
-  override def newState(): Int =
+  def newState(): Int =
     WasmBinding.markLive()
     module._lx_newstate(Trampoline.install())
 
-  override def closeState(state: Int): Unit =
+  def closeState(state: Int): Unit =
+    Trampoline.unregisterAllFor(state)
     Trampoline.suspendRegistry.clear()
     module._lx_close(state)
     WasmBinding.releaseSlot()
 
   // ── Script loading ─────────────────────────────────────────────────────
 
-  override def compileAndLoad(
+  def compileAndLoad(
     state:     Int,
     source:    IArray[Byte],
     chunkname: String,
@@ -74,7 +71,7 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── Resume boundary ────────────────────────────────────────────────────
 
-  override def resume(thread: Int, nargs: Int): ResumeResult =
+  def resume(thread: Int, nargs: Int): ResumeResult =
     val (nresultsPtr, readNResults) = WasmMarshal.allocOutInt()
     try
       val status = module._lx_resume(thread, nargs, nresultsPtr)
@@ -93,45 +90,45 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── Coroutine / thread lifecycle ───────────────────────────────────────
 
-  override def newThread(state: Int): Int =
+  def newThread(state: Int): Int =
     module._lx_new_thread(state)
 
   // ── Stack: push operations ─────────────────────────────────────────────
 
-  override def pushNil(state: Int): Unit =
+  def pushNil(state: Int): Unit =
     module._lx_push_nil(state)
 
-  override def pushBoolean(state: Int, value: Boolean): Unit =
+  def pushBoolean(state: Int, value: Boolean): Unit =
     module._lx_push_boolean(state, if value then 1 else 0)
 
-  override def pushNumber(state: Int, value: Double): Unit =
+  def pushNumber(state: Int, value: Double): Unit =
     module._lx_push_number(state, value)
 
-  override def pushBytes(state: Int, bytes: IArray[Byte]): Unit =
+  def pushBytes(state: Int, bytes: IArray[Byte]): Unit =
     WasmMarshal.withIArrayBytes(bytes) { (ptr, len) =>
       module._lx_push_lstring(state, ptr, len)
     }
 
-  override def pushString(state: Int, value: String): Unit =
+  def pushString(state: Int, value: String): Unit =
     WasmMarshal.withString(value) { (ptr, len) =>
       module._lx_push_lstring(state, ptr, len)
     }
 
-  override def pushFunction(state: Int, fnId: Int): Unit =
+  def pushFunction(state: Int, fnId: Int): Unit =
     module._lx_register_native(state, fnId, 0)
 
-  override def pushCopy(state: Int, idx: Int): Unit =
+  def pushCopy(state: Int, idx: Int): Unit =
     module._lx_push_copy(state, idx)
 
-  private[luau] override def pushRef(state: Int, registry: RefKey): Unit =
+  private[luau] def pushRef(state: Int, registry: RefKey): Unit =
     module._lx_push_ref(state, registry.raw)
 
-  // ── Stack: read operations (non-raising) ───────────────────────────────
+  // ── Stack: read operations ─────────────────────────────────────────────
 
-  override def typeAt(state: Int, idx: Int): LuaType =
+  def typeAt(state: Int, idx: Int): LuaType =
     LuaType.fromCode(module._lx_type(state, idx))
 
-  override def toNumber(state: Int, idx: Int): Option[Double] =
+  def toNumber(state: Int, idx: Int): Option[Double] =
     val (okPtr, readOk) = WasmMarshal.allocOutInt()
     try
       val result = module._lx_to_number(state, idx, okPtr)
@@ -139,10 +136,10 @@ final class WasmBinding private () extends Binding[Int]:
     finally
       module._free(okPtr)
 
-  override def toBoolean(state: Int, idx: Int): Boolean =
+  def toBoolean(state: Int, idx: Int): Boolean =
     module._lx_to_boolean(state, idx) != 0
 
-  override def toBytes(state: Int, idx: Int): Option[IArray[Byte]] =
+  def toBytes(state: Int, idx: Int): Option[IArray[Byte]] =
     val rawLen = module._lx_rawlen(state, idx)
     if rawLen <= 0 then
       if module._lx_type(state, idx) == LuaType.String.luaCode then
@@ -167,10 +164,10 @@ final class WasmBinding private () extends Binding[Int]:
         module._free(lenPtr)
         module._free(bufPtr)
 
-  override def stackTop(state: Int): Int =
+  def stackTop(state: Int): Int =
     module._lx_stack_top(state)
 
-  override def setStackTop(state: Int, idx: Int): Unit =
+  def setStackTop(state: Int, idx: Int): Unit =
     val top = module._lx_stack_top(state)
     val newTop = if idx >= 0 then idx else top + idx + 1
     if newTop > top then
@@ -183,63 +180,63 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── Table operations ───────────────────────────────────────────────────
 
-  override def newTable(state: Int): Unit =
+  def newTable(state: Int): Unit =
     module._lx_newtable(state, 0, 0)
 
-  override def rawGet(state: Int, tableIdx: Int): Unit =
+  def rawGet(state: Int, tableIdx: Int): Unit =
     module._lx_rawget(state, tableIdx)
 
-  override def rawSet(state: Int, tableIdx: Int): Unit =
+  def rawSet(state: Int, tableIdx: Int): Unit =
     module._lx_rawset(state, tableIdx)
 
-  override def setArray(state: Int, tableIdx: Int, n: Int): Unit =
+  def setArray(state: Int, tableIdx: Int, n: Int): Unit =
     module._lx_rawseti(state, tableIdx, n)
 
-  override def getArray(state: Int, tableIdx: Int, n: Int): Unit =
+  def getArray(state: Int, tableIdx: Int, n: Int): Unit =
     module._lx_rawgeti(state, tableIdx, n)
 
-  override def rawLen(state: Int, idx: Int): Long =
+  def rawLen(state: Int, idx: Int): Long =
     module._lx_rawlen(state, idx).toLong
 
-  override def tableNext(state: Int, tableIdx: Int): Boolean =
+  def tableNext(state: Int, tableIdx: Int): Boolean =
     module._lx_table_next(state, tableIdx) != 0
 
-  // ── Registry (Ref management) ─────────────────────────────────────────
+  // ── Registry ───────────────────────────────────────────────────────────
 
-  private[luau] override def ref(state: Int): Ref[Int] =
+  private[luau] def ref(state: Int): Ref[Int] =
     val refId = RefKey.fromRaw(module._lx_ref(state, -1))
     if refId.isNoRef then
       throw IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
     module._lx_pop(state, 1)
     Ref[Int](state, refId, this, "wasm")
 
-  private[luau] override def unref(state: Int, key: RefKey): Unit =
+  private[luau] def unref(state: Int, key: RefKey): Unit =
     module._lx_unref(state, key.raw)
 
   // ── Native function registration ──────────────────────────────────────
 
-  override def registerNativeFn(state: Int, fn: NativeFn[Int]): Unit =
-    val fnId = Trampoline.register(fn)
+  def registerNativeFn(state: Int, fn: NativeFn[Int]): Unit =
+    val fnId = Trampoline.register(state, fn)
     module._lx_register_native(state, fnId, 0)
 
   // ── Global access ──────────────────────────────────────────────────────
 
-  override def getGlobal(state: Int, name: String): Unit =
+  def getGlobal(state: Int, name: String): Unit =
     WasmMarshal.withString(name) { (namePtr, nameLen) =>
       module._lx_get_global(state, namePtr)
     }
 
-  override def setGlobal(state: Int, name: String): Unit =
+  def setGlobal(state: Int, name: String): Unit =
     WasmMarshal.withString(name) { (namePtr, nameLen) =>
       module._lx_set_global(state, namePtr)
     }
 
   // ── Library loading / sandbox ──────────────────────────────────────────
 
-  override def openLibs(state: Int, libs: Set[LuauLib]): Unit =
+  def openLibs(state: Int, libs: Set[LuauLib]): Unit =
     module._lx_openlibs(state, LuauLib.mask(libs))
 
-  override def sandbox(state: Int): Unit =
+  def sandbox(state: Int): Unit =
     module._lx_sandbox(state)
 
   // ── Internal helpers ───────────────────────────────────────────────────

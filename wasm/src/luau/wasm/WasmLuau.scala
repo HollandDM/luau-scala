@@ -11,5 +11,4 @@ object WasmLuau:
   def withState[A](
     libs: Set[LuauLib] = LuauLib.Standard
   )(f: LuaState[Int]^ => A): A =
-    WasmBackend.load()
     Luau.withState(WasmBackend.createBinding(), libs)(f)

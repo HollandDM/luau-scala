@@ -5,7 +5,7 @@ import munit.FunSuite
 class WasmSpecificSuite extends FunSuite:
 
   override def beforeAll(): Unit =
-    WasmBackend.load()
+    WasmBackend.ensureLoaded()
 
   test("TC-WASM-01 WasmBackend.load() resolves"):
     assert(WasmModule.module != null)

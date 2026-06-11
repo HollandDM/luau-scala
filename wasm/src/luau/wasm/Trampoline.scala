@@ -19,6 +19,7 @@ object Trampoline:
 
   private var nextId: Int = 1
   private val table = scala.collection.mutable.HashMap.empty[Int, NativeFn]
+  private val owner = scala.collection.mutable.HashMap.empty[Int, Int]
 
   private var fnPtr: Int = -1
 
@@ -37,23 +38,25 @@ object Trampoline:
       WasmModule.module.removeFunction(fnPtr)
       fnPtr = -1
 
-  /** Drop all per-instance state. Call before re-installing onto a fresh wasm
-   *  instance: a new instance has its own function table and linear memory, so
-   *  a stale fnPtr / fnId registry from the previous instance is meaningless. */
   def reset(): Unit =
     fnPtr = -1
     table.clear()
+    owner.clear()
     suspendRegistry.clear()
     nextId = 1
 
-  def register(fn: NativeFn): Int =
+  def register(state: Int, fn: NativeFn): Int =
     val id = nextId
     nextId += 1
     table(id) = fn
+    owner(id) = state
     id
 
-  def unregister(fnId: Int): Unit =
-    table.remove(fnId)
+  def unregisterAllFor(state: Int): Unit =
+    val dead = owner.collect { case (id, s) if s == state => id }.toList
+    dead.foreach { id => table.remove(id); owner.remove(id) }
+
+  def registeredCount: Int = table.size
 
   private def dispatch(state: Int, thread: Int, fnId: Int, nArgs: Int, nResultsPtr: Int): Int =
     table.get(fnId) match
