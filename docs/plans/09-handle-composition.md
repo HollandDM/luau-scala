@@ -1,9 +1,10 @@
 # Plan 09 — Handle Composition (facade gap-fill)
 
 **Status:** Implemented (2026-06-11) — `LuaAccess[H, K]`, `LuaTbl` Int
-overloads + extras, strict `eval1`–`4`/`call1`–`4`/`resume1`–`4`, and the
-`into LuaArg` conversion all landed; TC-API-26…35 cover them on both
-backends. Resolutions to the open questions are recorded in §5.
+overloads + extras, exact-match `eval0`–`4`/`call0`–`4`/`resume0`–`4`, and
+the `into LuaArg` conversion all landed; TC-API-26…36 cover them on both
+backends. Resolutions to the open questions are recorded in §5; §2.3 was
+amended post-implementation (nil-padding dropped for exact-match).
 **Depends on:** the shipped `luau.api` facade (value plane + `useRef` handle plane).
 
 ## 1. Problem
@@ -122,17 +123,20 @@ members, same rule as the value plane.
 
 **Decided shape:**
 
-- **Public surface — count-suffixed variants, 1–4:**
-  `eval1[A]` … `eval4[A..D]` returning `Try[A]` / `Try[(A, .., D)]`, with
-  matching `call1`…`call4` and `resume1`…`resume4` on handles
-  (`resumeK` yields `Try[CoroStep[(..)]]`). Plain `eval[V]` stays as the
-  common-case spelling of `eval1[V]` (same semantics, same strictness).
-- **Strict on extras:** a chunk/function producing **more** results than the
-  requested arity is a `Failure` ("returned n results, evalK consumes K") —
-  silently ignoring results is the bug this kills. Producing **fewer** is
-  nil-padded, mirroring Lua's multiple-assignment semantics: the missing
-  positions decode as nil, so `Option[A]`/`Unit` accept them and `Double`
-  fails with the decoder's own clear error.
+- **Public surface — count-suffixed variants, 0–4:**
+  `eval0` / `eval1[A]` … `eval4[A..D]` returning `Try[Unit]` / `Try[A]` /
+  `Try[(A, .., D)]`, with matching `call0`…`call4` and `resume0`…`resume4`
+  on handles (`resumeK` yields `Try[CoroStep[(..)]]`). Plain `eval[V]` stays
+  as the common-case spelling of `eval1[V]` (same semantics, same
+  strictness).
+- **Exact-match strict** *(amended 2026-06-11 — the original draft
+  nil-padded missing results; decided post-implementation that Lua's adjust
+  semantics are wrong for the host boundary in both directions)*: a
+  chunk/function producing more **or fewer** results than the requested
+  arity is a `Failure`. Drop-extras hides ignored data; nil-padding hides a
+  script that stopped returning what the host expects. Value-less
+  returns/yields use the arity-0 spelling; `run` stays as the explicit
+  discard-everything escape hatch.
 - **Private kernel:** one central decoder
   `private[api] decodeResultsT[T <: Tuple](thread, n, arity): Either[LuaError, T]`
   built from `summonAll[Tuple.Map[T, LuauDecoder]]` — decodes the window at

@@ -224,12 +224,12 @@ abstract class ApiSuite[H] extends FunSuite:
       }
     }
 
-  test("TC-API-25 coro with no yield value decodes Unit"):
+  test("TC-API-25 coro with no yield value steps at arity 0"):
     withLuau() { st =>
       st.useRef {
         val fn = st.evalFn("return function() coroutine.yield() return 1 end").get
         val co = st.coro(fn)
-        assertEquals(co.resume[Unit](), Success(CoroStep.Yielded(())))
+        assertEquals(co.resume0(), Success(CoroStep.Yielded(())))
         assertEquals(co.resume[Double](), Success(CoroStep.Done(1.0)))
       }
     }
@@ -296,10 +296,11 @@ abstract class ApiSuite[H] extends FunSuite:
       assertEquals(st.binding.stackTop(st.state), 0)
     }
 
-  test("TC-API-32 fewer results nil-pad the missing positions"):
+  test("TC-API-32 fewer results than the arity are a Failure too"):
     withLuau() { st =>
-      assertEquals(st.eval2[Double, Option[Double]]("return 1"), Success((1.0, None)))
-      assert(st.eval2[Double, Double]("return 1").isFailure) // nil is not a number
+      assert(st.eval2[Double, Option[Double]]("return 1").isFailure)
+      assert(st.eval1[Option[Double]]("return").isFailure)
+      assertEquals(st.binding.stackTop(st.state), 0)
     }
 
   test("TC-API-33 call2 decodes a pair; call1 on a 2-result fn fails"):
@@ -331,4 +332,16 @@ abstract class ApiSuite[H] extends FunSuite:
         val co = st.coro(st.evalFn("return function(a) coroutine.yield(a + 1) end").get)
         assertEquals(co.resume[Double](1.0), Success(CoroStep.Yielded(2.0)))
       }
+    }
+
+  test("TC-API-36 arity 0: eval0/call0 assert no results"):
+    withLuau() { st =>
+      assertEquals(st.eval0("local x = 1"), Success(()))
+      assert(st.eval0("return 1").isFailure)
+      st.useRef {
+        val fn = st.evalFn("return function(n) if n > 0 then return n end end").get
+        assertEquals(fn.call0(LuaArg(0.0)), Success(()))
+        assert(fn.call0(LuaArg(1.0)).isFailure)
+      }
+      assertEquals(st.binding.stackTop(st.state), 0)
     }

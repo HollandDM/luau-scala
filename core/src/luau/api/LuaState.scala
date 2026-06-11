@@ -22,10 +22,12 @@ import scala.util.{Failure, Success, Try}
   * (`get` / `set` / `getFn` / `getTbl`) — the same accessors work on table
   * fields and array elements via [[LuaTbl]].
   *
-  * Multi-result chunks are strict: `eval`/`eval1` … `eval4` consume exactly
-  * as many results as their arity and fail if the chunk produces more;
-  * producing fewer nil-pads the missing positions (Lua multiple-assignment
-  * semantics). No raw stack index appears in any public signature; the stack
+  * Result counts are exact-match: `eval0` … `eval4` (and `call*`/`resume*`
+  * on handles) fail unless the chunk produces exactly the requested arity —
+  * Lua's own adjust semantics (drop extras, nil-pad missing) hide contract
+  * mismatches at the host boundary, so both directions fail instead. `run`
+  * is the explicit discard-everything spelling.
+  * No raw stack index appears in any public signature; the stack
   * is balanced after every call, on success and failure alike. Every chunk
   * executes on a fresh thread (see withFreshThread), so a failing script
   * cannot corrupt the VM for later calls.
@@ -54,7 +56,16 @@ final class LuaState[H] private[api] (
         case Right(n) => binding.pop(thread, n); Success(())
     }
 
-  // ---- Multi-result eval (strict, count-suffixed) ------------------------
+  // ---- Multi-result eval (exact-match, count-suffixed) -------------------
+
+  /** Run a chunk that must produce no results. Unlike [[run]], which
+    * discards whatever the chunk returns, eval0 fails if it returns
+    * anything.
+    */
+  def eval0(source: String, chunkname: String = "=eval0"): Try[Unit] =
+    evalWith(source, chunkname) { (thread, n) =>
+      StackResults.decodeResultsT[H, EmptyTuple](binding, thread, n).map(_ => ())
+    }
 
   def eval1[A: LuauDecoder](source: String, chunkname: String = "=eval1"): Try[A] =
     evalWith(source, chunkname) { (thread, n) =>

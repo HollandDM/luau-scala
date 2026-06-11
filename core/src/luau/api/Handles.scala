@@ -22,10 +22,9 @@ object LuaArg:
 private[api] object StackResults:
   /** Decode exactly `Tuple.Size[T]` results as `T` from the `n` results on
     * top of `thread`'s stack, leaving the stack balanced on every path.
-    * Strict on extras: `n` greater than the arity is an error — silently
-    * dropping results is the bug this kills. Fewer results are nil-padded
-    * (Lua multiple-assignment semantics), so `Option`/`Unit` accept the
-    * missing positions and strict decoders fail with their own message.
+    * Exact-match strict: `n` must equal the arity. Lua's own adjust
+    * semantics (drop extras, nil-pad missing) hide a contract mismatch
+    * between script and host — both directions fail here instead.
     *
     * Stays `private[api]`: the signature is inline/summonAll machinery; the
     * public surface is the count-suffixed arity methods instantiating it.
@@ -39,16 +38,12 @@ private[api] object StackResults:
   private def decodeWindow[H](
     b: Binding[H], thread: H, n: Int, arity: Int, decoders: List[LuauDecoder[Any]]
   ): Either[LuaError, Tuple] =
-    if n > arity then
+    if n != arity then
       b.pop(thread, n)
       Left(LuaError.runtime(
-        s"returned $n results but only $arity consumed — use the arity-$n accessor, results must not be dropped"
+        s"returned $n results, expected exactly $arity — use the arity-$n accessor"
       ))
     else
-      var pad = n
-      while pad < arity do
-        b.pushNil(thread)
-        pad += 1
       val values = new Array[Any](arity)
       var err: LuaError = null
       var i = 0
@@ -65,9 +60,9 @@ private[api] object StackResults:
 /** A pinned Lua function. Minted inside `useRef`; carries the scope in its
   * type, so it cannot outlive the pin.
   *
-  * Multi-result calls are strict: `call`/`call1` … `call4` consume exactly
-  * as many results as their arity and fail on extras; fewer results are
-  * nil-padded.
+  * Result counts are exact-match: `call0` … `call4` fail unless the
+  * function produces exactly that many results — no silent drops, no
+  * nil-padding (`call` is the arity-1 spelling).
   */
 final class LuaFn[H] private[api] (
   private[api] val binding: Binding[H],
@@ -82,6 +77,12 @@ final class LuaFn[H] private[api] (
   def call[V: LuauDecoder](args: LuaArg*): Try[V] =
     callWith(args) { (thread, n) =>
       StackResults.decodeResultsT[H, V *: EmptyTuple](binding, thread, n).map(_.head)
+    }
+
+  /** Call a function that must produce no results. */
+  def call0(args: LuaArg*): Try[Unit] =
+    callWith(args) { (thread, n) =>
+      StackResults.decodeResultsT[H, EmptyTuple](binding, thread, n).map(_ => ())
     }
 
   def call1[A: LuauDecoder](args: LuaArg*): Try[A] =
@@ -217,10 +218,10 @@ enum CoroStep[+V]:
 /** A live coroutine over a pinned function. The backing thread is pinned by
   * the minting scope, so the coroutine cannot be collected mid-flight.
   *
-  * Multi-result steps are strict: `resume`/`resume1` … `resume4` consume
-  * exactly as many yielded/returned values as their arity and fail on
-  * extras; fewer values are nil-padded (so `Unit`/`Option` work for
-  * value-less yields).
+  * Step value counts are exact-match: `resume0` … `resume4` fail unless the
+  * yield/return produces exactly that many values — no silent drops, no
+  * nil-padding (`resume` is the arity-1 spelling; value-less yields step
+  * with `resume0`).
   */
 final class LuaCoro[H] private[api] (
   private[api] val binding: Binding[H],
@@ -232,6 +233,12 @@ final class LuaCoro[H] private[api] (
   def resume[V: LuauDecoder](args: LuaArg*): Try[CoroStep[V]] =
     resumeWith(args) { (t, n) =>
       StackResults.decodeResultsT[H, V *: EmptyTuple](binding, t, n).map(_.head)
+    }
+
+  /** Resume a step that must produce no yielded/returned values. */
+  def resume0(args: LuaArg*): Try[CoroStep[Unit]] =
+    resumeWith(args) { (t, n) =>
+      StackResults.decodeResultsT[H, EmptyTuple](binding, t, n).map(_ => ())
     }
 
   def resume1[A: LuauDecoder](args: LuaArg*): Try[CoroStep[A]] =
