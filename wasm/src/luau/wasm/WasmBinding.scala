@@ -9,15 +9,17 @@ final class WasmBinding private () extends Binding[Int]:
 
   // ── Live-state slot ────────────────────────────────────────────────────
 
-  def reserveStateSlot(): Unit = WasmBinding.reserveSlot()
-  def releaseStateSlot(): Unit = WasmBinding.releaseSlot()
+  def reserveStateSlot(): Unit = WasmBinding.slot.reserve()
+  def releaseStateSlot(): Unit = WasmBinding.slot.release()
 
   def takePendingSuspend(thread: Int): Option[NativeFnResult.Suspend] =
-    val tok = module._lx_get_suspend_token(thread).toString.toLong
-    if tok == 0L then None
+    // Common path is token 0 (plain yield, nothing pending): compare the JS
+    // BigInt directly — the String→Long round-trip allocates on every yield.
+    val tok = module._lx_get_suspend_token(thread)
+    if tok == WasmBinding.zeroToken then None
     else
-      module._lx_set_suspend_token(thread, js.BigInt(0))
-      Trampoline.suspendRegistry.consume(tok)
+      module._lx_set_suspend_token(thread, WasmBinding.zeroToken)
+      Trampoline.suspendRegistry.consume(tok.toString.toLong)
 
   def resumeError(thread: Int, error: LuaError): ResumeResult =
     pushString(thread, error.message)
@@ -35,14 +37,21 @@ final class WasmBinding private () extends Binding[Int]:
   // ── State lifecycle ────────────────────────────────────────────────────
 
   def newState(): Int =
-    WasmBinding.markLive()
-    module._lx_newstate(Trampoline.install())
+    val s = module._lx_newstate(Trampoline.install())
+    // mount throws while another state is live — close the fresh VM on that
+    // path or it leaks in linear memory (nothing else holds the pointer).
+    try WasmBinding.slot.mount(s)
+    catch
+      case t: Throwable =>
+        module._lx_close(s)
+        throw t
+    s
 
   def closeState(state: Int): Unit =
     Trampoline.unregisterAllFor(state)
     Trampoline.suspendRegistry.clear()
     module._lx_close(state)
-    WasmBinding.releaseSlot()
+    WasmBinding.slot.unmountIf(_ == state)
 
   // ── Script loading ─────────────────────────────────────────────────────
 
@@ -259,20 +268,7 @@ final class WasmBinding private () extends Binding[Int]:
       module._free(bufPtr)
 
 object WasmBinding:
-  private var slot: Int = 0 // 0 free, 1 reserved, 2 live
-
-  private[wasm] def reserveSlot(): Unit =
-    if slot != 0 then
-      throw new IllegalStateException(
-        "one live state per runtime (plan 10 §0): close the current state first")
-    slot = 1
-
-  private[wasm] def releaseSlot(): Unit = slot = 0
-
-  private[wasm] def markLive(): Unit =
-    if slot == 2 then
-      throw new IllegalStateException(
-        "one live state per runtime (plan 10 §0): close the current state first")
-    slot = 2
+  private[wasm] val slot = new StateSlot[Int]
+  private[wasm] val zeroToken: js.BigInt = js.BigInt(0)
 
   def create(): WasmBinding = new WasmBinding()

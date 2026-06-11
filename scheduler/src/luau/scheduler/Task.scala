@@ -7,13 +7,11 @@ import luau.core.{Ref, Cancel}
   * @param threadRef Registry Ref pinning the lua_newthread coroutine.
   *                  Closed when Task reaches a terminal state.
   * @param thread    Raw thread handle passed to binding.resume().
-  * @param parent    Optional parent Task for error propagation.
   * @param id        Unique monotonic ID for logging/debugging.
   */
 final class Task[H](
   val threadRef: Ref[H],
   val thread: H,
-  val parent: Option[Task[H]],
   val id: Long,
 ):
 

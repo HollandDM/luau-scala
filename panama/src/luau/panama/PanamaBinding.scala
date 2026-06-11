@@ -47,7 +47,13 @@ final class PanamaBinding private () extends Binding[MemorySegment]:
   def newState(): MemorySegment =
     val s: MemorySegment = LxHandles.lx_newstate.invokeExact(PanamaRuntime.upcallStub)
     if s.address() == 0L then throw new OutOfMemoryError("lx_newstate returned NULL")
-    PanamaRuntime.mount(s)
+    // mount throws while another state is live — close the fresh native VM
+    // on that path or it leaks (nothing else holds the segment).
+    try PanamaRuntime.mount(s)
+    catch
+      case t: Throwable =>
+        LxHandles.lx_close.invokeExact(s): Unit
+        throw t
     PanamaRuntime.countOpen()
     s
 

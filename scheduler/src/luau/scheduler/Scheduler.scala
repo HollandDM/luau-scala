@@ -31,57 +31,69 @@ final class Scheduler[H](
   private def post(rt: ReadyTask[H]): Unit =
     runQueue.enqueue(rt); wake()
 
+  // ── Task allocation ───────────────────────────────────────────────────
+
+  /** Fresh coroutine thread pinned via a registry Ref (the thread object
+    * lands on the parent stack; ref() consumes it).
+    */
+  private def newTaskThread(): (H, Ref[H]) =
+    val thread = binding.newThread(state)
+    (thread, binding.ref(state))
+
+  private def allocTask(thread: H, threadRef: Ref[H], initial: TaskState): Task[H] =
+    val task = Task[H](threadRef, thread, idCounter.incrementAndGet())
+    task.setState(initial)
+    liveTasks.put(task.id, task)
+    task
+
+  /** Push fn + args onto the task thread, consuming the caller's refs.
+    * Returns nargs for lua_resume — args only; the function sits below them
+    * (Luau convention: firstArg = top - nargs, callee at firstArg - 1).
+    */
+  private def pushFnAndArgs(thread: H, fnRef: Ref[H], extraArgs: List[Ref[H]]): Int =
+    binding.pushRef(thread, fnRef.registryKey)
+    extraArgs.foreach { ref => binding.pushRef(thread, ref.registryKey) }
+    fnRef.close()
+    extraArgs.foreach(_.close())
+    extraArgs.size
+
   // ── Spawn ─────────────────────────────────────────────────────────────
 
-  def spawn(parent: Option[Task[H]] = None): Task[H] =
-    val rawThread = binding.newThread(state)
-    val threadRef = binding.ref(state)
-    val id = idCounter.incrementAndGet()
-    val task = Task[H](threadRef, rawThread, parent, id)
-    task.setState(TaskState.Queued)
-    liveTasks.put(id, task)
+  def spawn(): Task[H] =
+    val (thread, threadRef) = newTaskThread()
+    val task = allocTask(thread, threadRef, TaskState.Queued)
     post(ReadyTask[H](task, ResumeValues.Pushed(0)))
     task
 
   // ── Spawn immediate ───────────────────────────────────────────────────
 
+  /** Run the function NOW, up to its first yield (Roblox task.spawn
+    * semantics). If the task ends terminal here (Complete/Failed), the
+    * handle's threadRef stays OPEN so the caller can still push the thread
+    * object — the caller owns closing it (TaskLibrary closes after pushing).
+    */
   def spawnImmediate(fnRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
-    val rawThread = binding.newThread(state)
-    val threadRef = binding.ref(state)
-    val id = idCounter.incrementAndGet()
-    val task = Task[H](threadRef, rawThread, None, id)
-    task.setState(TaskState.Running)
-    liveTasks.put(id, task)
-
-    binding.pushRef(rawThread, fnRef.registryKey)
-    extraArgs.foreach { ref => binding.pushRef(rawThread, ref.registryKey) }
-
-    fnRef.close()
-    extraArgs.foreach(_.close())
-
-    val nargs = 1 + extraArgs.size
-    val result = binding.resume(rawThread, nargs)
-
-    handleResumeResult(task, result)
+    val (rawThread, threadRef) = newTaskThread()
+    val task = allocTask(rawThread, threadRef, TaskState.Running)
+    val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
+    // The immediate burst nests inside the caller's resume: the spawned task
+    // is current for its own burst (task.wait inside it must see itself),
+    // then the enclosing task is restored.
+    val prev = _currentTask
+    _currentTask = Some(task)
+    val result =
+      try binding.resume(rawThread, nargs)
+      finally _currentTask = prev
+    handleResumeResult(task, result, releaseOnTerminal = false)
     TaskHandle(threadRef, task, this)
 
   // ── Defer task ────────────────────────────────────────────────────────
 
   def deferTask(fnRef: Ref[H], extraArgs: List[Ref[H]]): TaskHandle[H] =
-    val rawThread = binding.newThread(state)
-    val threadRef = binding.ref(state)
-    val id = idCounter.incrementAndGet()
-    val task = Task[H](threadRef, rawThread, None, id)
-    task.setState(TaskState.Queued)
-    liveTasks.put(id, task)
-
-    binding.pushRef(rawThread, fnRef.registryKey)
-    extraArgs.foreach { ref => binding.pushRef(rawThread, ref.registryKey) }
-
-    fnRef.close()
-    extraArgs.foreach(_.close())
-
-    post(ReadyTask[H](task, ResumeValues.Pushed(extraArgs.size + 1)))
+    val (rawThread, threadRef) = newTaskThread()
+    val task = allocTask(rawThread, threadRef, TaskState.Queued)
+    val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
+    post(ReadyTask[H](task, ResumeValues.Pushed(nargs)))
     TaskHandle(threadRef, task, this)
 
   // ── Schedule delayed ──────────────────────────────────────────────────
@@ -90,25 +102,16 @@ final class Scheduler[H](
     timer.schedule(seconds)(() => callback)
 
   def scheduleDelayed(fnRef: Ref[H], extraArgs: List[Ref[H]], seconds: Double): TaskHandle[H] =
-    val rawThread = binding.newThread(state)
-    val threadRef = binding.ref(state)
-    val id = idCounter.incrementAndGet()
-    val task = Task[H](threadRef, rawThread, None, id)
-    task.setState(TaskState.Parked)
+    val (rawThread, threadRef) = newTaskThread()
+    val task = allocTask(rawThread, threadRef, TaskState.Parked)
     task.setPendingCompletion(true)
-    liveTasks.put(id, task)
-
-    binding.pushRef(rawThread, fnRef.registryKey)
-    extraArgs.foreach { ref => binding.pushRef(rawThread, ref.registryKey) }
-
-    fnRef.close()
-    extraArgs.foreach(_.close())
+    val nargs = pushFnAndArgs(rawThread, fnRef, extraArgs)
 
     timer.schedule(seconds) { () =>
       if task.state == TaskState.Parked then
         task.setPendingCompletion(false)
         task.setState(TaskState.Queued)
-        post(ReadyTask[H](task, ResumeValues.Pushed(extraArgs.size + 1)))
+        post(ReadyTask[H](task, ResumeValues.Pushed(nargs)))
     }
 
     TaskHandle(threadRef, task, this)
@@ -142,25 +145,18 @@ final class Scheduler[H](
   // ── Facade spawn surface (consumed by Task 8's TaskWorld) ─────────────
 
   def spawnChunk(source: String, chunkname: String): Either[LuaError, TaskHandle[H]] =
-    val thread = binding.newThread(state)
-    val threadRef = binding.ref(state)
+    val (thread, threadRef) = newTaskThread()
     binding.compileAndLoad(thread, source, chunkname) match
       case Left(e) =>
         threadRef.close()
         Left(e)
       case Right(()) =>
-        val id = idCounter.incrementAndGet()
-        val task = Task[H](threadRef, thread, None, id)
-        task.setState(TaskState.Queued)
-        liveTasks.put(id, task)
+        val task = allocTask(thread, threadRef, TaskState.Queued)
         post(ReadyTask(task, ResumeValues.Pushed(0)))
         Right(TaskHandle(threadRef, task, this))
 
   def spawnReady(threadRef: Ref[H], thread: H, nargs: Int): TaskHandle[H] =
-    val id = idCounter.incrementAndGet()
-    val task = Task[H](threadRef, thread, None, id)
-    task.setState(TaskState.Queued)
-    liveTasks.put(id, task)
+    val task = allocTask(thread, threadRef, TaskState.Queued)
     post(ReadyTask(task, ResumeValues.Pushed(nargs)))
     TaskHandle(threadRef, task, this)
 
@@ -192,18 +188,25 @@ final class Scheduler[H](
   private def doResume(thread: H, values: ResumeValues): ResumeResult =
     values match
       case ResumeValues.Failure(err)    => binding.resumeError(thread, err)
-      case ResumeValues.None            => binding.resume(thread, 0)
       case ResumeValues.Pushed(n)       => binding.resume(thread, n)
       case ResumeValues.SuspendValue(v) =>
         pushValue(thread, v)
         binding.resume(thread, 1)
 
-  private def handleResumeResult(task: Task[H], result: ResumeResult): Unit =
+  /** @param releaseOnTerminal false only for spawnImmediate, whose caller
+    *   still needs the threadRef to push the thread object and then owns
+    *   closing it.
+    */
+  private def handleResumeResult(
+    task: Task[H],
+    result: ResumeResult,
+    releaseOnTerminal: Boolean = true,
+  ): Unit =
     result match
       case ResumeResult.Returned(_) =>
         task.setState(TaskState.Complete)
         liveTasks.remove(task.id)
-        task.releaseThread()
+        if releaseOnTerminal then task.releaseThread()
 
       case ResumeResult.Yielded(_) =>
         binding.takePendingSuspend(task.thread) match
@@ -216,7 +219,7 @@ final class Scheduler[H](
       case ResumeResult.Error(err) =>
         task.setState(TaskState.Failed(err.message))
         liveTasks.remove(task.id)
-        task.releaseThread()
+        if releaseOnTerminal then task.releaseThread()
         errorPolicy.onTaskError(task, err)
 
   // ── Suspend wiring ────────────────────────────────────────────────────
@@ -270,4 +273,9 @@ final class Scheduler[H](
 
   // ── Teardown ──────────────────────────────────────────────────────────
 
-  def close(): Unit = cancelAll()
+  def close(): Unit =
+    cancelAll()
+    // The Scheduler shuts the timer down whether it created it (default arg)
+    // or got it injected — the Driver tears the world down through here, and
+    // a second shutdown (Driver's own) is an idempotent no-op.
+    timer.shutdown()

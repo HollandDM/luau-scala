@@ -6,11 +6,19 @@ import luau.core.LuaError
 trait ErrorPolicy:
   def onTaskError(task: Task[?], error: LuaError): Unit
 
+  /** True → the Driver cancels the world and fails the TaskResult on the
+    * first unhandled task error. Structural, not identity-based: wrapping
+    * policies (logging decorators etc.) keep fail-fast by forwarding this.
+    */
+  def isFailFast: Boolean = false
+
 object ErrorPolicy:
   val logAndDiscard: ErrorPolicy = (task, error) =>
     Console.err.println(s"[luau-scheduler] Task ${task.id} failed: ${error.message}")
 
-  /** Sentinel recognized by the Driver: first unhandled task error cancels
-    * the world and fails the TaskResult. The function body is never called.
+  /** Fail-fast default (Q6): the Driver intercepts errors itself; this
+    * policy's onTaskError body never runs.
     */
-  val failFast: ErrorPolicy = (_, _) => ()
+  val failFast: ErrorPolicy = new ErrorPolicy:
+    override def isFailFast: Boolean = true
+    def onTaskError(task: Task[?], error: LuaError): Unit = ()

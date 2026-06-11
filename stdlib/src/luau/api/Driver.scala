@@ -57,7 +57,7 @@ private[api] final class Driver[H, A](
     val state = binding.newState()
     stateOpt = Some(state)
     val policy: ErrorPolicy =
-      if errorPolicy eq ErrorPolicy.failFast then
+      if errorPolicy.isFailFast then
         (task, err) => { if firstError.isEmpty then firstError = Some(err) }
       else errorPolicy
     scheduler = Scheduler(binding, state, timer, () => pump.wake(), policy)

@@ -1,8 +1,7 @@
 package luau.panama
 
 import java.lang.foreign.{Arena, MemorySegment}
-import java.util.concurrent.atomic.AtomicReference
-import luau.core.SuspendRegistry
+import luau.core.{StateSlot, SuspendRegistry}
 
 /** Process-level singleton: arena, dispatcher, upcall stub, and the single
   * live-state slot (§0). Owns NO VM. Lazy on first use; never closed (Q2) —
@@ -14,48 +13,30 @@ object PanamaRuntime:
     val suspendRegistry = new SuspendRegistry
     val fnIds = scala.collection.mutable.Set.empty[Int]
 
-  private enum Slot:
-    case Free
-    case Reserved
-    case Live(data: VmData)
-
-  private val slot = new AtomicReference[Slot](Slot.Free)
+  private val slot = new StateSlot[VmData]
 
   lazy val arena: Arena = Arena.ofShared()
   lazy val dispatcher: NativeFnDispatcher = new NativeFnDispatcher
   lazy val upcallStub: MemorySegment = dispatcher.allocateUpcallStub(arena)
 
-  private val illegal =
-    "one live state per runtime (plan 10 §0): close the current state first"
+  def reserve(): Unit = slot.reserve()
 
-  def reserve(): Unit =
-    if !slot.compareAndSet(Slot.Free, Slot.Reserved) then
-      throw new IllegalStateException(illegal)
-
-  def release(): Unit = slot.set(Slot.Free)
+  def release(): Unit = slot.release()
 
   /** newState: Free or Reserved → Live; Live → throw. */
   def mount(state: MemorySegment): VmData =
     val data = new VmData(state)
-    slot.get match
-      case Slot.Live(_) => throw new IllegalStateException(illegal)
-      case prev =>
-        if !slot.compareAndSet(prev, Slot.Live(data)) then
-          throw new IllegalStateException(illegal)
-        data
+    slot.mount(data)
+    data
 
   /** closeState: purge fnIds + drop in-flight suspends, then Free. */
   def unmount(state: MemorySegment): Unit =
-    slot.get match
-      case Slot.Live(d) if d.state.address() == state.address() =>
-        d.fnIds.foreach(dispatcher.unregister)
-        d.suspendRegistry.clear()
-        slot.set(Slot.Free)
-      case _ => ()
+    slot.unmountIf(_.state.address() == state.address()).foreach { d =>
+      d.fnIds.foreach(dispatcher.unregister)
+      d.suspendRegistry.clear()
+    }
 
-  def liveData: Option[VmData] = slot.get match
-    case Slot.Live(d) => Some(d)
-    case _            => None
+  def liveData: Option[VmData] = slot.live
 
   // ---- Test hooks (acceptance §2.4) -------------------------------------
   @volatile private[panama] var statesOpened: Long = 0L

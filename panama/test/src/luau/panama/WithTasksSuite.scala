@@ -71,4 +71,38 @@ class WithTasksSuite extends FunSuite:
     assert(r.await(10.seconds).isFailure)
     assert(cancelFired)
 
+  // WT-10..13: the Lua-side task.* surface on a real backend — these pin the
+  // nargs convention (args only, fn below them) and the threadRef ownership
+  // handoff for synchronously-completing spawns.
+
+  test("WT-10 task.spawn runs a sync-completing fn with args and returns the thread"):
+    val r = PanamaLuau.withTasks() { w =>
+      w.spawn(
+        """local th = task.spawn(function(a, b) sum = a + b end, 20, 22)
+          |spawned = type(th) == "thread"""".stripMargin).get
+    } { st => (st.get[Double]("sum").get, st.get[Boolean]("spawned").get) }
+    assertEquals(r.await(10.seconds), Success((42.0, true)))
+
+  test("WT-11 task.spawn fn that waits resumes with its args intact"):
+    val r = PanamaLuau.withTasks() { w =>
+      w.spawn(
+        """task.spawn(function(x)
+          |  task.wait(0.01)
+          |  resumed = x * 2
+          |end, 21)""".stripMargin).get
+    } { st => st.get[Double]("resumed").get }
+    assertEquals(r.await(10.seconds), Success(42.0))
+
+  test("WT-12 task.defer passes args"):
+    val r = PanamaLuau.withTasks() { w =>
+      w.spawn("task.defer(function(x) deferred = x * 2 end, 21)").get
+    } { st => st.get[Double]("deferred").get }
+    assertEquals(r.await(10.seconds), Success(42.0))
+
+  test("WT-13 task.delay passes args through the timer"):
+    val r = PanamaLuau.withTasks() { w =>
+      w.spawn("task.delay(0.02, function(x) delayed = x + 1 end, 41)").get
+    } { st => st.get[Double]("delayed").get }
+    assertEquals(r.await(10.seconds), Success(42.0))
+
 

@@ -15,6 +15,15 @@ object Tasks:
     errorPolicy: ErrorPolicy = ErrorPolicy.failFast,
   )(setup: TaskWorld[H] => Unit)(finish: LuaState[H] => A): TaskResult[A] =
     binding.reserveStateSlot()
-    val result = TaskResultPlatform.cell[A]()
-    new Driver[H, A](binding, libs, deadline, errorPolicy, setup, finish, result).start()
-    result
+    // Anything failing between the reservation and start() returning would
+    // otherwise leave the slot Reserved forever, bricking the runtime. The
+    // Driver takes ownership of the slot (releases or closes it) only after
+    // start() returns, so releasing on the throw path cannot double-free.
+    try
+      val result = TaskResultPlatform.cell[A]()
+      new Driver[H, A](binding, libs, deadline, errorPolicy, setup, finish, result).start()
+      result
+    catch
+      case t: Throwable =>
+        binding.releaseStateSlot()
+        throw t
