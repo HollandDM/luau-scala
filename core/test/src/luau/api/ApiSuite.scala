@@ -23,8 +23,14 @@ import scala.util.{Failure, Success}
   *     Found: Some[LuaFn[H]^{s}]  Required: Option[LuaFn[H]]
   *     capability `s` cannot flow into capture set {}
   *
+  *   st.useRef { leaked = Some(st.getTbl("t").get.getFn("f").get) }
+  *     Found: Some[LuaFn[H^'s1]^{s}]  Required: Option[LuaFn[H]]
+  *     capability `s` cannot flow into capture set {}
+  *
   * Note the second fires through Try[...].get + Some(...): enforcement
-  * survives wrapping handles in stdlib containers.
+  * survives wrapping handles in stdlib containers. The third covers
+  * tbl-minted handles (plan 09): the LuaAccess chain pins in whichever
+  * scope is in context at the mint site, and that scope still cannot leak.
   */
 abstract class ApiSuite[H] extends FunSuite:
 
@@ -73,21 +79,21 @@ abstract class ApiSuite[H] extends FunSuite:
       assert(st.eval[Double]("return function() return 1 end").isFailure)
     }
 
-  test("TC-API-08 setGlobal then eval reads it back"):
+  test("TC-API-08 set then eval reads it back"):
     withLuau() { st =>
-      st.setGlobal("answer", 21.0)
+      st.set("answer", 21.0)
       assertEquals(st.eval[Double]("return answer * 2"), Success(42.0))
     }
 
-  test("TC-API-09 run + global round-trips a value"):
+  test("TC-API-09 run + get round-trips a value"):
     withLuau() { st =>
       assertEquals(st.run("greeting = 'hi'"), Success(()))
-      assertEquals(st.global[String]("greeting"), Success("hi"))
+      assertEquals(st.get[String]("greeting"), Success("hi"))
     }
 
   test("TC-API-10 absent global decodes as None"):
     withLuau() { st =>
-      assertEquals(st.global[Option[Double]]("nonexistent"), Success(None))
+      assertEquals(st.get[Option[Double]]("nonexistent"), Success(None))
     }
 
   test("TC-API-11 stack stays balanced across calls, success and failure"):
@@ -95,8 +101,8 @@ abstract class ApiSuite[H] extends FunSuite:
       st.eval[Double]("return 1")
       st.eval[Double]("return 'not a number'")
       st.eval[Double]("error('x')")
-      st.global[Double]("nope")
-      st.setGlobal("k", 1.0)
+      st.get[Double]("nope")
+      st.set("k", 1.0)
       assertEquals(st.binding.stackTop(st.state), 0)
     }
 
@@ -144,21 +150,21 @@ abstract class ApiSuite[H] extends FunSuite:
       }
     }
 
-  test("TC-API-18 globalFn + multiple calls reuse one pin"):
+  test("TC-API-18 getFn + multiple calls reuse one pin"):
     withLuau() { st =>
       st.run("function inc(x) return x + 1 end").get
       st.useRef {
-        val fn = st.globalFn("inc").get
+        val fn = st.getFn("inc").get
         assertEquals(fn.call[Double](LuaArg(1.0)), Success(2.0))
         assertEquals(fn.call[Double](LuaArg(41.0)), Success(42.0))
       }
     }
 
-  test("TC-API-19 globalTbl get and set hit the live table"):
+  test("TC-API-19 getTbl get and set hit the live table"):
     withLuau() { st =>
       st.run("config = { debug = false }").get
       st.useRef {
-        val tbl = st.globalTbl("config").get
+        val tbl = st.getTbl("config").get
         assertEquals(tbl.get[Boolean]("debug"), Success(false))
         tbl.set("debug", true)
         tbl.set("level", 3.0)
@@ -171,8 +177,8 @@ abstract class ApiSuite[H] extends FunSuite:
     withLuau() { st =>
       st.run("notAFn = 5").get
       st.useRef {
-        assert(st.globalFn("notAFn").isFailure)
-        assert(st.globalTbl("notAFn").isFailure)
+        assert(st.getFn("notAFn").isFailure)
+        assert(st.getTbl("notAFn").isFailure)
       }
     }
 
@@ -183,7 +189,7 @@ abstract class ApiSuite[H] extends FunSuite:
       st.useRef {
         st.run("t = {}").get
         fnRef = st.evalFn("return function() return 1 end").get.ref
-        tblRef = st.globalTbl("t").get.ref
+        tblRef = st.getTbl("t").get.ref
         assert(!fnRef.isClosed && !tblRef.isClosed)
       }
       assert(fnRef.isClosed && tblRef.isClosed)
@@ -225,5 +231,104 @@ abstract class ApiSuite[H] extends FunSuite:
         val co = st.coro(fn)
         assertEquals(co.resume[Unit](), Success(CoroStep.Yielded(())))
         assertEquals(co.resume[Double](), Success(CoroStep.Done(1.0)))
+      }
+    }
+
+  // ---- LuaAccess: table fields + array elements (plan 09) ----------------
+
+  test("TC-API-26 tbl Int overloads: array elem get/set and getFn"):
+    withLuau() { st =>
+      st.run("arr = { 10, 20, 30, function(x) return x * 2 end }").get
+      st.useRef {
+        val arr = st.getTbl("arr").get
+        assertEquals(arr.get[Double](2), Success(20.0))
+        arr.set(2, 99.0)
+        assertEquals(arr.getFn(4).get.call[Double](LuaArg(21.0)), Success(42.0))
+      }
+      assertEquals(st.eval[Double]("return arr[2]"), Success(99.0))
+      assertEquals(st.binding.stackTop(st.state), 0)
+    }
+
+  test("TC-API-27 nested handle chain reaches config.callbacks.onTick"):
+    withLuau() { st =>
+      st.run("config = { callbacks = { onTick = function(dt) return dt * 2 end } }").get
+      st.useRef {
+        val tick = st.getTbl("config").get.getTbl("callbacks").get.getFn("onTick").get
+        assertEquals(tick.call[Double](LuaArg(21.0)), Success(42.0))
+      }
+    }
+
+  test("TC-API-28 tbl length, toSeq, toMap snapshots"):
+    withLuau() { st =>
+      st.run("nums = { 5, 6, 7 }; cfg = { a = 1, b = 2 }").get
+      st.useRef {
+        val nums = st.getTbl("nums").get
+        assertEquals(nums.length, 3L)
+        assertEquals(nums.toSeq[Double], Success(Seq(5.0, 6.0, 7.0)))
+        assertEquals(st.getTbl("cfg").get.toMap[Double], Success(Map("a" -> 1.0, "b" -> 2.0)))
+      }
+    }
+
+  test("TC-API-29 toSeq fails on reference-data elements"):
+    withLuau() { st =>
+      st.run("bad = { function() end }").get
+      st.useRef {
+        assert(st.getTbl("bad").get.toSeq[Double].isFailure)
+      }
+    }
+
+  // ---- Multi-result strictness (plan 09) ----------------------------------
+
+  test("TC-API-30 eval2 and eval4 decode tuples"):
+    withLuau() { st =>
+      assertEquals(st.eval2[Double, String]("return 1, 'two'"), Success((1.0, "two")))
+      assertEquals(
+        st.eval4[Double, Double, Double, Double]("return 1, 2, 3, 4"),
+        Success((1.0, 2.0, 3.0, 4.0)),
+      )
+    }
+
+  test("TC-API-31 extra results are a Failure, never dropped"):
+    withLuau() { st =>
+      assert(st.eval[Double]("return 1, 2").isFailure)
+      assert(st.eval1[Double]("return 1, 2").isFailure)
+      assert(st.eval2[Double, Double]("return 1, 2, 3").isFailure)
+      assertEquals(st.binding.stackTop(st.state), 0)
+    }
+
+  test("TC-API-32 fewer results nil-pad the missing positions"):
+    withLuau() { st =>
+      assertEquals(st.eval2[Double, Option[Double]]("return 1"), Success((1.0, None)))
+      assert(st.eval2[Double, Double]("return 1").isFailure) // nil is not a number
+    }
+
+  test("TC-API-33 call2 decodes a pair; call1 on a 2-result fn fails"):
+    withLuau() { st =>
+      st.useRef {
+        val fn = st.evalFn("return function() return 1, 2 end").get
+        assertEquals(fn.call2[Double, Double](), Success((1.0, 2.0)))
+        assert(fn.call1[Double]().isFailure)
+      }
+    }
+
+  test("TC-API-34 resume2 is strict across yield and return"):
+    withLuau() { st =>
+      st.useRef {
+        val fn = st.evalFn("return function() coroutine.yield(1, 2) return 3, 4 end").get
+        val co = st.coro(fn)
+        assertEquals(co.resume2[Double, Double](), Success(CoroStep.Yielded((1.0, 2.0))))
+        assertEquals(co.resume2[Double, Double](), Success(CoroStep.Done((3.0, 4.0))))
+        val co2 = st.coro(fn)
+        assert(co2.resume[Double]().isFailure) // 2-value yield at arity 1
+      }
+    }
+
+  test("TC-API-35 into conversion: plain values as call/resume args"):
+    withLuau() { st =>
+      st.useRef {
+        val fn = st.evalFn("return function(x, s) return x * 2 end").get
+        assertEquals(fn.call[Double](21.0, "label"), Success(42.0))
+        val co = st.coro(st.evalFn("return function(a) coroutine.yield(a + 1) end").get)
+        assertEquals(co.resume[Double](1.0), Success(CoroStep.Yielded(2.0)))
       }
     }

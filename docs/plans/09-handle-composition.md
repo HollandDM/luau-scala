@@ -1,6 +1,9 @@
 # Plan 09 — Handle Composition (facade gap-fill)
 
-**Status:** Draft for discussion — nothing here is implemented.
+**Status:** Implemented (2026-06-11) — `LuaAccess[H, K]`, `LuaTbl` Int
+overloads + extras, strict `eval1`–`4`/`call1`–`4`/`resume1`–`4`, and the
+`into LuaArg` conversion all landed; TC-API-26…35 cover them on both
+backends. Resolutions to the open questions are recorded in §5.
 **Depends on:** the shipped `luau.api` facade (value plane + `useRef` handle plane).
 
 ## 1. Problem
@@ -143,18 +146,22 @@ members, same rule as the value plane.
 
 ### 2.4 `LuaArg` ergonomics via `into`
 
-`-experimental` is already on globally. SIP-66's `into` modifier
-(`import language.experimental.into`) lets conversions fire without the
-caller importing `implicitConversions`:
+**Spike result (3.8.3):** the SIP-66 parameter-position syntax
+(`args: (into LuaArg)*`) no longer parses — the feature moved from
+experimental import to a **class-level preview modifier**. What works:
 
 ```scala
-def call[V: LuauDecoder](args: (into LuaArg)*): Try[V]
-// caller: fn.call[Double](21.0, "label", true)
+// build: scalacOptions += "-preview"
+into final class LuaArg private (...)
+
+def call[V: LuauDecoder](args: LuaArg*): Try[V]
+// caller, no imports: fn.call[Double](21.0, "label")
 ```
 
-Needs a spike: `into` + varargs interaction on 3.8.3 is the unverified part.
-Fallback if it misbehaves: status quo (`LuaArg(...)` explicit, given
-Conversion for users who opt into implicitConversions).
+Marking the *target type* `into` lets the existing `given Conversion[A,
+LuaArg]` fire at every `call`/`resume` site (varargs included) without
+`implicitConversions` at the caller. `LuaArg(...)` stays as the explicit
+spelling. Cost: `-preview` is now on globally, next to `-experimental`.
 
 ## 3. Non-goals (this plan)
 
@@ -177,13 +184,15 @@ happy paths and an arity-4 case; extra-results strictness (`eval1` on a
 verified the established way (cc rejection recorded, blind spot pinned in
 CcCompileSpec).
 
-## 5. Open questions (grill here)
+## 5. Open questions — resolved
 
-1. The `LuaState` rename is breaking: `global`/`setGlobal`/`globalFn`/
-   `globalTbl` become inherited `get`/`set`/`getFn`/`getTbl`. OK to break
-   now (pre-1.0), or keep deprecated aliases for one cycle?
-2. Should `set` accept a handle (`tbl.set("cb", fn)`) — writing ref data INTO
-   a table? Sound (push via pin, rawSet), but it lets a short-lived scope
-   install a long-lived reference; the Lua side keeps it alive after the pin
-   drops, which is fine GC-wise but may surprise. Include or defer?
-3. `LuaAccess` name — alternatives: `LuaSlots`, `LuaFields`, `KeyedAccess`.
+1. **Breaking rename: done, no aliases.** Pre-1.0, single consumer (the test
+   suite), migrated in the same change. `global`/`setGlobal`/`globalFn`/
+   `globalTbl` are gone; the inherited `get`/`set`/`getFn`/`getTbl` are the
+   only spelling.
+2. **Handle-writes into tables (`tbl.set("cb", fn)`): deferred.** Sound but
+   surprising (a short-lived scope installing a long-lived reference); no
+   driving use case yet. Revisit with the async design, where passing
+   functions across the boundary becomes load-bearing.
+3. **Name stays `LuaAccess`.** It covers gets, sets and handle mints across
+   three concrete cases; the alternatives each over-narrow.

@@ -16,7 +16,10 @@ trait LuauCrossPlatformModule extends ScalaModule with ScalafmtModule {
     "-source:future",
     // Required on stable releases for `import language.experimental.captureChecking`
     // (capture checking itself stays per-file opt-in via that import).
-    "-experimental"
+    "-experimental",
+    // SIP-66 `into` modifier (LuaArg conversions at call sites) is a preview
+    // feature on 3.8.
+    "-preview"
   )
 }
 

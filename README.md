@@ -20,24 +20,30 @@ Scala bindings for [Luau](https://luau.org/) — Roblox's gradually-typed, sandb
 
 ```scala
 import luau.panama.PanamaLuau   // JVM; use luau.wasm.WasmLuau on Scala.js
-import luau.api.LuaArg
 
 PanamaLuau.withState() { st =>            // fresh VM, sandboxed, closed on exit
-  st.setGlobal("answer", 21.0)
+  st.set("answer", 21.0)
   st.defineGlobal("hostAdd")((a: Double, b: Double) => a + b)
 
   val v: scala.util.Try[Double] =
     st.eval[Double]("return hostAdd(answer, 21)")   // Success(42.0)
 
   st.eval[Map[String, Double]]("return { alpha = 1, beta = 2 }")
+  st.eval2[Double, String]("return 1, 'two'")       // multi-result, strict:
+  st.eval[Double]("return 1, 2")                    // Failure: 2 results, 1 consumed
   st.eval[Double]("return function() end")          // Failure: not copyable
 
   st.useRef {
     val fn = st.evalFn("return function(x) return x * 2 end").get
-    fn.call[Double](LuaArg(21.0))                   // Success(42.0)
+    fn.call[Double](21.0)                           // Success(42.0)
+
+    st.run("config = { level = 3, onTick = function() end, 10, 20, 30 }")
+    val tbl = st.getTbl("config").get               // pinned table handle
+    tbl.get[Double]("level"); tbl.get[Double](3)    // fields + array elems
+    tbl.getFn("onTick")                             // handles out of tables
 
     val co = st.coro(fn)                            // coroutine over fn
-    co.resume[Double](LuaArg(1.0))                  // Yielded / Done steps
+    co.resume[Double](1.0)                          // Yielded / Done steps
   }                                                 // pins released (LIFO) here
 }                                                   // VM closed here
 ```
