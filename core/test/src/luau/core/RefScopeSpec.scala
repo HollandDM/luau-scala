@@ -5,6 +5,9 @@ import munit.FunSuite
 
 class RefScopeSpec extends FunSuite:
 
+  override def beforeEach(context: BeforeEach): Unit =
+    FakeBinding.releaseStateSlot()
+
   test("Ref.close releases registry slot") {
     val state = FakeBinding.newState()
     FakeBinding.pushNumber(state, 42.0)

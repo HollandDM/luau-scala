@@ -16,11 +16,43 @@ final class PanamaState private (
   private val LUA_GLOBALSINDEX = -10002
 
   val suspendRegistry: SuspendRegistry = new SuspendRegistry()
-  @volatile var lastYieldToken: Long = -1L
 
   @volatile private var closed = false
 
   def isClosed: Boolean = closed
+
+  // plan 10 Task 1 interim — PanamaRuntime owns this slot from Task 2 on.
+  private val stateSlot = new java.util.concurrent.atomic.AtomicInteger(0) // 0 free, 1 reserved, 2 live
+
+  def reserveStateSlot(): Unit =
+    if !stateSlot.compareAndSet(0, 1) then
+      throw new IllegalStateException(
+        "one live state per runtime (plan 10 §0): close the current state first")
+
+  def releaseStateSlot(): Unit = stateSlot.set(0)
+
+  def takePendingSuspend(thread: MemorySegment): Option[NativeFnResult.Suspend] =
+    val token: Long = LxHandles.lx_get_suspend_token.invokeExact(thread)
+    if token == 0L then None
+    else
+      LxHandles.lx_set_suspend_token.invokeExact(thread, 0L): Unit
+      suspendRegistry.consume(token)
+
+  def resumeError(thread: MemorySegment, error: LuaError): ResumeResult =
+    pushString(thread, error.message)
+    withArena { arena =>
+      val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
+      val rc: Int = LxHandles.lx_resume_error.invokeExact(thread, nResultsSeg)
+      val nResults = nResultsSeg.get(ValueLayout.JAVA_INT, 0L)
+      rc match
+        case LX_RESUME_OK    => ResumeResult.Returned(nResults)
+        case LX_RESUME_YIELD => ResumeResult.Yielded(nResults)
+        case LX_RESUME_ERR   => ResumeResult.Error(LuaError.runtime(readError(thread)))
+        case LX_RESUME_MEMERR =>
+          ResumeResult.Error(LuaError.memory("lx_resume_error: memory allocation failed"))
+        case _ =>
+          ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume_error status: $rc"))
+    }
 
   // Every newState() call creates a genuinely fresh Luau VM sharing this
   // binding's upcall stub and dispatcher (the shim attaches per-state
@@ -29,13 +61,19 @@ final class PanamaState private (
   // and is torn down by close().
   def newState(): MemorySegment =
     checkOpen()
+    if stateSlot.get == 2 then
+      throw new IllegalStateException(
+        "one live state per runtime (plan 10 §0): close the current state first")
+    stateSlot.set(2)
     val s: MemorySegment = LxHandles.lx_newstate.invokeExact(upcallStub)
     if s.address() == 0L then throw new OutOfMemoryError("lx_newstate returned NULL")
     s
 
   def closeState(state: MemorySegment): Unit =
     if state.address() == L.address() then close()
-    else LxHandles.lx_close.invokeExact(state): Unit
+    else
+      stateSlot.set(0)
+      LxHandles.lx_close.invokeExact(state): Unit
 
   def compileAndLoad(
     state: MemorySegment,
@@ -76,27 +114,6 @@ final class PanamaState private (
           ResumeResult.Error(LuaError.memory("lx_resume: memory allocation failed"))
         case _ =>
           ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume status: $rc"))
-    }
-
-  /** Resume a yielded thread by raising `error` inside it (the value is
-    * pushed onto the thread's stack, then lx_resume_error raises it at the
-    * suspension point). How the Host fails a Suspension.
-    */
-  def resumeError(thread: MemorySegment, error: LuaError): ResumeResult =
-    checkOpen()
-    pushString(thread, error.message)
-    withArena { arena =>
-      val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
-      val rc: Int = LxHandles.lx_resume_error.invokeExact(thread, nResultsSeg)
-      val nResults = nResultsSeg.get(ValueLayout.JAVA_INT, 0L)
-      rc match
-        case LX_RESUME_OK    => ResumeResult.Returned(nResults)
-        case LX_RESUME_YIELD => ResumeResult.Yielded(nResults)
-        case LX_RESUME_ERR   => ResumeResult.Error(LuaError.runtime(readError(thread)))
-        case LX_RESUME_MEMERR =>
-          ResumeResult.Error(LuaError.memory("lx_resume_error: memory allocation failed"))
-        case _ =>
-          ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume_error status: $rc"))
     }
 
   def newThread(state: MemorySegment): MemorySegment =

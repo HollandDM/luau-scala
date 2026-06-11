@@ -6,6 +6,9 @@ import munit.FunSuite
 
 class CodecSpec extends FunSuite:
 
+  override def beforeEach(context: BeforeEach): Unit =
+    FakeBinding.releaseStateSlot()
+
   def encode[A: LuauEncoder](value: A): FakeState =
     val s = FakeBinding.newState()
     FakeBinding.pushEncoded(s, value)

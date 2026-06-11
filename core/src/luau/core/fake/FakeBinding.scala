@@ -5,11 +5,45 @@ import luau.core.codec.*
 
 object FakeBinding extends Binding[FakeState]:
 
-  def newState(): FakeState = FakeState()
+  // ---- Live-state slot ---------------------------------------------------
+  private var slot: Int = 0 // 0 free, 1 reserved, 2 live
+  private var liveState: FakeState | Null = null
+  private val pendingByState = scala.collection.mutable.HashMap[FakeState, NativeFnResult.Suspend]()
+
+  def reserveStateSlot(): Unit =
+    if slot != 0 then
+      throw new IllegalStateException(
+        "one live state per runtime (plan 10 §0): close the current state first")
+    slot = 1
+
+  def releaseStateSlot(): Unit =
+    slot = 0
+    liveState = null
+    pendingByState.clear()
+
+  def takePendingSuspend(thread: FakeState): Option[NativeFnResult.Suspend] =
+    pendingByState.remove(thread)
+
+  /** Test hook: plant a pending Suspend the way a dispatcher would. */
+  def setPendingSuspendForTest(thread: FakeState, s: NativeFnResult.Suspend): Unit =
+    pendingByState.update(thread, s)
+
+  def resumeError(thread: FakeState, error: LuaError): ResumeResult =
+    ResumeResult.Error(error)
+
+  def newState(): FakeState =
+    if slot == 2 then
+      throw new IllegalStateException(
+        "one live state per runtime (plan 10 §0): close the current state first")
+    slot = 2
+    val s = FakeState()
+    liveState = s
+    s
 
   def closeState(state: FakeState): Unit =
     state.markClosed()
     state.registry.clear()
+    if liveState == state then releaseStateSlot()
 
   def compileAndLoad(
     state:     FakeState,

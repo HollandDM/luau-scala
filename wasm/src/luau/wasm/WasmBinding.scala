@@ -11,13 +11,41 @@ final class WasmBinding private () extends Binding[Int]:
 
   private val module = WasmModule.module
 
+  // ── Live-state slot (§2.3 item 2) ──────────────────────────────────────
+
+  override def reserveStateSlot(): Unit = WasmBinding.reserveSlot()
+  override def releaseStateSlot(): Unit = WasmBinding.releaseSlot()
+
+  override def takePendingSuspend(thread: Int): Option[NativeFnResult.Suspend] =
+    val tok = module._lx_get_suspend_token(thread).toString.toLong
+    if tok == 0L then None
+    else
+      module._lx_set_suspend_token(thread, js.BigInt(0))
+      Trampoline.suspendRegistry.consume(tok)
+
+  override def resumeError(thread: Int, error: LuaError): ResumeResult =
+    pushString(thread, error.message)
+    val (nresultsPtr, readNResults) = WasmMarshal.allocOutInt()
+    try
+      module._lx_resume_error(thread, nresultsPtr) match
+        case LxStatus.Ok    => ResumeResult.Returned(readNResults())
+        case LxStatus.Yield => ResumeResult.Yielded(readNResults())
+        case _ =>
+          val errMsg = readError(thread)
+          if errMsg.nonEmpty then module._lx_pop(thread, 1)
+          ResumeResult.Error(LuaError.runtime(errMsg))
+    finally module._free(nresultsPtr)
+
   // ── State lifecycle ────────────────────────────────────────────────────
 
   override def newState(): Int =
+    WasmBinding.markLive()
     module._lx_newstate(Trampoline.install())
 
   override def closeState(state: Int): Unit =
+    Trampoline.suspendRegistry.clear()
     module._lx_close(state)
+    WasmBinding.releaseSlot()
 
   // ── Script loading ─────────────────────────────────────────────────────
 
@@ -182,8 +210,6 @@ final class WasmBinding private () extends Binding[Int]:
     val refId = RefKey.fromRaw(module._lx_ref(state, -1))
     if refId.isNoRef then
       throw IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
-    // lx_ref pins by index without popping (see lx.h); the Ref now owns the
-    // value, so consume it off the stack to match luaL_ref semantics.
     module._lx_pop(state, 1)
     Ref[Int](state, refId, this, "wasm")
 
@@ -236,4 +262,20 @@ final class WasmBinding private () extends Binding[Int]:
       module._free(bufPtr)
 
 object WasmBinding:
+  private var slot: Int = 0 // 0 free, 1 reserved, 2 live
+
+  private[wasm] def reserveSlot(): Unit =
+    if slot != 0 then
+      throw new IllegalStateException(
+        "one live state per runtime (plan 10 §0): close the current state first")
+    slot = 1
+
+  private[wasm] def releaseSlot(): Unit = slot = 0
+
+  private[wasm] def markLive(): Unit =
+    if slot == 2 then
+      throw new IllegalStateException(
+        "one live state per runtime (plan 10 §0): close the current state first")
+    slot = 2
+
   def create(): WasmBinding = new WasmBinding()

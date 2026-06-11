@@ -29,18 +29,17 @@ class SuspendResumeTest extends munit.FunSuite:
       // The dispatcher must not run register itself — wiring belongs to the
       // Host (Scheduler in production). It parks the Suspend under a token.
       assert(!registerCalled)
-      val token = ps.lastYieldToken
-      assert(token > 0L)
-      val suspended = ps.suspendRegistry.consume(token)
-      assert(suspended.isDefined)
+      val suspend = ps.takePendingSuspend(ps.L)
+        .getOrElse(fail("expected a pending Suspend on the thread"))
+      assert(suspend.isInstanceOf[NativeFnResult.Suspend])
 
       // Host wires the async op: register receives the Host's Resume.
       var captured: Option[Either[LuaError, LuaValue]] = None
-      suspended.get.register(Resume(result => captured = Some(result)))
+      suspend.register(Resume(result => captured = Some(result)))
       assert(registerCalled)
 
       // A consumed token is gone — no double-wiring.
-      assert(ps.suspendRegistry.consume(token).isEmpty)
+      assert(ps.takePendingSuspend(ps.L).isEmpty)
     }
   }
 
@@ -62,11 +61,9 @@ class SuspendResumeTest extends munit.FunSuite:
       val r1 = ps.resume(ps.L, 0)
       assertEquals(r1, ResumeResult.Yielded(0))
 
-      val token = ps.lastYieldToken
-      assert(token > 0L)
-      val suspended = ps.suspendRegistry.consume(token)
-      assert(suspended.isDefined)
-      suspended.get.register(Resume(_ => ()))
+      val suspend = ps.takePendingSuspend(ps.L)
+        .getOrElse(fail("expected a pending Suspend on the thread"))
+      suspend.register(Resume(_ => ()))
       assert(capturedResume.isDefined)
 
       // Host completes: push the value onto the thread, resume with 1 arg.

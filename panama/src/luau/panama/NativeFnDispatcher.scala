@@ -58,7 +58,6 @@ final class NativeFnDispatcher:
         case s @ NativeFnResult.Suspend(_) =>
           val panamaState = ps
           val token = panamaState.suspendRegistry.allocToken(s)
-          panamaState.lastYieldToken = token
           lx_set_suspend_token.invokeExact(thread, token): Unit
           LX_SUSPEND
     catch case t: Throwable =>

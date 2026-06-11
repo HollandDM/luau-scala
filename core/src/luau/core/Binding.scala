@@ -129,3 +129,34 @@ trait Binding[H]:
     openLibs(state, libs.toSet)
 
   def sandbox(state: H): Unit
+
+  // ---- Live-state slot (plan 10 §0: one live state per runtime) --------
+
+  /** Reserve the runtime's single live-state slot without creating the VM.
+    * The facade entry calls this on the caller thread so a second entry
+    * fails synchronously; the Driver's newState() then fills the
+    * reservation. Throws IllegalStateException if a state is live or the
+    * slot is already reserved.
+    */
+  def reserveStateSlot(): Unit
+
+  /** Free the slot without closing a state (entry failed before newState).
+    * Idempotent; closeState frees the slot itself.
+    */
+  def releaseStateSlot(): Unit
+
+  // ---- Suspend transfer (§2.3 item 2) ----------------------------------
+
+  /** Consume the pending Suspend a host fn left on `thread` during the last
+    * resume, if any. One-shot: a second call returns None. Implementations
+    * route through the shim's per-thread token (lx_get_suspend_token) and a
+    * SuspendRegistry; token 0 means none.
+    */
+  def takePendingSuspend(thread: H): Option[NativeFnResult.Suspend]
+
+  // ---- Failing a suspension --------------------------------------------
+
+  /** Resume a yielded thread by raising `error` at its suspension point
+    * (script-side pcall can observe it). How the host fails a Suspend.
+    */
+  def resumeError(thread: H, error: LuaError): ResumeResult

@@ -22,12 +22,7 @@ object Trampoline:
 
   private var fnPtr: Int = -1
 
-  private var pendingSuspend: Option[Resume => Cancel] = None
-
-  def consumePendingSuspend(): Option[Resume => Cancel] =
-    val r = pendingSuspend
-    pendingSuspend = None
-    r
+  val suspendRegistry = new luau.core.SuspendRegistry
 
   def install(): Int =
     if fnPtr == -1 then
@@ -47,8 +42,8 @@ object Trampoline:
    *  a stale fnPtr / fnId registry from the previous instance is meaningless. */
   def reset(): Unit =
     fnPtr = -1
-    pendingSuspend = None
     table.clear()
+    suspendRegistry.clear()
     nextId = 1
 
   def register(fn: NativeFn): Int =
@@ -68,18 +63,15 @@ object Trampoline:
         }
         LxReturn.Fail
       case Some(fn) =>
-        // The fn operates on the CALLING thread's stack (args live there,
-        // results go there) — same contract as the Panama dispatcher. Passing
-        // `state` (the main thread) here was a latent wrong-stack bug masked
-        // while all chunks ran on the main thread.
         try fn(thread, nArgs) match
           case NativeFnResult.Return(n) =>
             writeNResults(nResultsPtr, n)
             LxReturn.Return
           case NativeFnResult.Fail =>
             LxReturn.Fail
-          case NativeFnResult.Suspend(reg) =>
-            pendingSuspend = Some(reg)
+          case s @ NativeFnResult.Suspend(_) =>
+            val token = suspendRegistry.allocToken(s)
+            WasmModule.module._lx_set_suspend_token(thread, js.BigInt(token.toString))
             LxReturn.Suspend
         catch
           case t: Throwable =>

@@ -4,7 +4,6 @@ import luau.core.*
 import luau.core.fake.FakeBinding
 import luau.core.fake.FakeState
 import luau.core.NativeFnResult.Suspend
-import scala.collection.mutable.ArrayDeque
 
 /** Programmable Binding[FakeState] for scheduler tests.
   * Delegates most ops to FakeBinding; controls resume() return values.
@@ -15,6 +14,19 @@ class TestBinding extends Binding[FakeState]:
 
   def programResumes(results: ResumeResult*): Unit =
     resumeResults = results.toList
+
+  // ---- Live-state slot ---------------------------------------------------
+
+  override def reserveStateSlot(): Unit = FakeBinding.reserveStateSlot()
+  override def releaseStateSlot(): Unit = FakeBinding.releaseStateSlot()
+  override def takePendingSuspend(thread: FakeState): Option[NativeFnResult.Suspend] =
+    FakeBinding.takePendingSuspend(thread)
+
+  def setPendingSuspendForTest(thread: FakeState, s: NativeFnResult.Suspend): Unit =
+    FakeBinding.setPendingSuspendForTest(thread, s)
+
+  override def resumeError(thread: FakeState, error: LuaError): ResumeResult =
+    ResumeResult.Error(error)
 
   def newState(): FakeState =
     FakeBinding.newState()
@@ -48,7 +60,8 @@ class TestBinding extends Binding[FakeState]:
   def pushBytes(state: FakeState, b: IArray[Byte]): Unit = FakeBinding.pushBytes(state, b)
   def pushString(state: FakeState, v: String): Unit  = FakeBinding.pushString(state, v)
   def pushFunction(state: FakeState, fnId: Int): Unit = FakeBinding.pushFunction(state, fnId)
-  def pushRef(state: FakeState, reg: Int): Unit       = FakeBinding.pushRef(state, reg)
+  private[luau] def pushRef(state: FakeState, registry: RefKey): Unit =
+    FakeBinding.pushRef(state, registry)
 
   def typeAt(state: FakeState, idx: Int): LuaType    = FakeBinding.typeAt(state, idx)
   def toNumber(state: FakeState, idx: Int): Option[Double] = FakeBinding.toNumber(state, idx)
@@ -63,9 +76,11 @@ class TestBinding extends Binding[FakeState]:
   def setArray(state: FakeState, tIdx: Int, n: Int): Unit = FakeBinding.setArray(state, tIdx, n)
   def getArray(state: FakeState, tIdx: Int, n: Int): Unit = FakeBinding.getArray(state, tIdx, n)
   def rawLen(state: FakeState, idx: Int): Long = FakeBinding.rawLen(state, idx)
+  def tableNext(state: FakeState, tableIdx: Int): Boolean = FakeBinding.tableNext(state, tableIdx)
 
   def ref(state: FakeState): Ref[FakeState] = FakeBinding.ref(state)
-  def unref(state: FakeState, key: Int): Unit = FakeBinding.unref(state, key)
+  private[luau] def unref(state: FakeState, key: RefKey): Unit =
+    FakeBinding.unref(state, key)
 
   def registerNativeFn(state: FakeState, fn: NativeFn[FakeState]): Unit =
     FakeBinding.registerNativeFn(state, fn)

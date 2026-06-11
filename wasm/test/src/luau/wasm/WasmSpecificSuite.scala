@@ -30,18 +30,17 @@ class WasmSpecificSuite extends FunSuite:
     assertEquals(result, 0)
     m.removeFunction(idx)
 
-  test("TC-WASM-04 two WasmBindings have independent states"):
-    val b1 = WasmBinding.create()
-    val b2 = WasmBinding.create()
-    val s1 = b1.newState()
-    val s2 = b2.newState()
+  test("TC-WASM-04 one live state per runtime; sequential reuse works"):
+    val b = WasmBinding.create()
+    val s1 = b.newState()
+    intercept[IllegalStateException] { b.newState() }
+    b.pushNumber(s1, 1.0)
+    assert(b.toNumber(s1, -1).contains(1.0))
+    b.pop(s1, 1)
+    b.closeState(s1)
+    val s2 = b.newState()
     try
-      b1.pushNumber(s1, 1.0)
-      b2.pushNumber(s2, 2.0)
-      assert(b1.toNumber(s1, -1).contains(1.0))
-      assert(b2.toNumber(s2, -1).contains(2.0))
-      b1.pop(s1, 1)
-      b2.pop(s2, 1)
-    finally
-      b1.closeState(s1)
-      b2.closeState(s2)
+      b.pushNumber(s2, 2.0)
+      assert(b.toNumber(s2, -1).contains(2.0))
+      b.pop(s2, 1)
+    finally b.closeState(s2)
