@@ -251,6 +251,10 @@ object shim extends Module {
       s"-DCMAKE_TOOLCHAIN_FILE=${work / "wasi-sdk-p1.cmake"}",
       "-DWASI_SDK_PREFIX=/usr",
       "-DWASI_SDK_TARGETS=wasm32-wasi",
+      // CI installs upstream LLVM which doesn't have wasi-sdk's fork-only
+      // 'lime1' CPU target — pin to generic (safe baseline for all finished
+      // wasm proposals: reference-types, bulk-memory, SIMD, etc).
+      "-DWASI_SDK_CPU_CFLAGS=-mcpu=generic",
       // The wasm32-wasi compiler can't link host test binaries during cmake's
       // probe; the sysroot sources are trusted to compile.
       "-DCMAKE_C_COMPILER_WORKS=ON", "-DCMAKE_CXX_COMPILER_WORKS=ON",
