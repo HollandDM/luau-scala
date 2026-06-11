@@ -12,4 +12,4 @@ object PanamaLuau:
   def withState[A](
     libs: Set[LuauLib] = LuauLib.Standard
   )(f: LuaState[MemorySegment]^ => A): A =
-    PanamaState.use(ps => Luau.withState(ps, libs)(f))
+    Luau.withState(PanamaBinding.instance, libs)(f)

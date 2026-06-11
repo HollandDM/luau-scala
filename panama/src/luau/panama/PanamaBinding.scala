@@ -6,37 +6,25 @@ import luau.core.*
 import luau.panama.LxConstants.*
 import luau.panama.LxHandles.*
 
-final class PanamaState private (
-  val L: MemorySegment,
-  stateArena: Arena,
-  val dispatcher: NativeFnDispatcher,
-  upcallStub: MemorySegment,
-) extends Binding[MemorySegment]:
+/** Stateless Binding[MemorySegment] over PanamaRuntime — mirror of
+  * WasmBinding over WasmModule/Trampoline. No VM identity, no per-VM fields;
+  * every method takes its target state (§2.1, Q1).
+  */
+final class PanamaBinding private () extends Binding[MemorySegment]:
 
   private val LUA_GLOBALSINDEX = -10002
 
-  val suspendRegistry: SuspendRegistry = new SuspendRegistry()
+  // ---- Live-state slot --------------------------------------------------
 
-  @volatile private var closed = false
-
-  def isClosed: Boolean = closed
-
-  // plan 10 Task 1 interim — PanamaRuntime owns this slot from Task 2 on.
-  private val stateSlot = new java.util.concurrent.atomic.AtomicInteger(0) // 0 free, 1 reserved, 2 live
-
-  def reserveStateSlot(): Unit =
-    if !stateSlot.compareAndSet(0, 1) then
-      throw new IllegalStateException(
-        "one live state per runtime (plan 10 §0): close the current state first")
-
-  def releaseStateSlot(): Unit = stateSlot.set(0)
+  def reserveStateSlot(): Unit = PanamaRuntime.reserve()
+  def releaseStateSlot(): Unit = PanamaRuntime.release()
 
   def takePendingSuspend(thread: MemorySegment): Option[NativeFnResult.Suspend] =
     val token: Long = LxHandles.lx_get_suspend_token.invokeExact(thread)
     if token == 0L then None
     else
       LxHandles.lx_set_suspend_token.invokeExact(thread, 0L): Unit
-      suspendRegistry.consume(token)
+      PanamaRuntime.liveData.flatMap(_.suspendRegistry.consume(token))
 
   def resumeError(thread: MemorySegment, error: LuaError): ResumeResult =
     pushString(thread, error.message)
@@ -54,33 +42,26 @@ final class PanamaState private (
           ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume_error status: $rc"))
     }
 
-  // Every newState() call creates a genuinely fresh Luau VM sharing this
-  // binding's upcall stub and dispatcher (the shim attaches per-state
-  // LxStateData, so states are independent). Callers own the state and must
-  // closeState it; the binding's own VM (L) exists for the legacy direct API
-  // and is torn down by close().
+  // ---- State lifecycle --------------------------------------------------
+
   def newState(): MemorySegment =
-    checkOpen()
-    if stateSlot.get == 2 then
-      throw new IllegalStateException(
-        "one live state per runtime (plan 10 §0): close the current state first")
-    stateSlot.set(2)
-    val s: MemorySegment = LxHandles.lx_newstate.invokeExact(upcallStub)
+    val s: MemorySegment = LxHandles.lx_newstate.invokeExact(PanamaRuntime.upcallStub)
     if s.address() == 0L then throw new OutOfMemoryError("lx_newstate returned NULL")
+    PanamaRuntime.mount(s)
+    PanamaRuntime.countOpen()
     s
 
   def closeState(state: MemorySegment): Unit =
-    if state.address() == L.address() then close()
-    else
-      stateSlot.set(0)
-      LxHandles.lx_close.invokeExact(state): Unit
+    PanamaRuntime.unmount(state)
+    LxHandles.lx_close.invokeExact(state): Unit
+
+  // ---- Script loading ---------------------------------------------------
 
   def compileAndLoad(
     state: MemorySegment,
     source: IArray[Byte],
     chunkname: String,
   ): Either[LuaError, Unit] =
-    checkOpen()
     withArena { arena =>
       val srcSeg = arena.allocate(source.length.toLong + 1L, 1L)
       MemorySegment.copy(source.toArray, 0, srcSeg, ValueLayout.JAVA_BYTE, 0L, source.length)
@@ -89,7 +70,7 @@ final class PanamaState private (
       val errbuf = arena.allocate(4096L, 1L)
       val rc: Int = LxHandles.lx_compile_and_load.invokeExact(
         state, srcSeg, source.length.toLong, nameSeg,
-        1, 1, // optLevel 1, debugLevel 1 (line info — upstream default)
+        1, 1,
         errbuf, 4096L,
       )
       if rc == 0 then Right(())
@@ -98,8 +79,9 @@ final class PanamaState private (
         Left(LuaError.runtime(errMsg))
     }
 
+  // ---- Resume boundary --------------------------------------------------
+
   def resume(thread: MemorySegment, nargs: Int): ResumeResult =
-    checkOpen()
     withArena { arena =>
       val nResultsSeg = arena.allocate(ValueLayout.JAVA_INT)
       val rc: Int = LxHandles.lx_resume.invokeExact(thread, nargs, nResultsSeg)
@@ -116,9 +98,12 @@ final class PanamaState private (
           ResumeResult.Error(LuaError.runtime(s"unexpected lx_resume status: $rc"))
     }
 
+  // ---- Coroutine / thread lifecycle -------------------------------------
+
   def newThread(state: MemorySegment): MemorySegment =
-    checkOpen()
     LxHandles.lx_new_thread.invokeExact(state): MemorySegment
+
+  // ---- Stack: push operations -------------------------------------------
 
   def pushNil(state: MemorySegment): Unit =
     LxHandles.lx_push_nil.invokeExact(state): Unit
@@ -147,6 +132,8 @@ final class PanamaState private (
 
   private[luau] def pushRef(state: MemorySegment, registry: RefKey): Unit =
     LxHandles.lx_push_ref.invokeExact(state, registry.raw): Unit
+
+  // ---- Stack: read operations -------------------------------------------
 
   def typeAt(state: MemorySegment, idx: Int): LuaType =
     val code: Int = LxHandles.lx_type.invokeExact(state, idx)
@@ -209,6 +196,8 @@ final class PanamaState private (
         LxHandles.lx_push_nil.invokeExact(state): Unit
         i += 1
 
+  // ---- Table operations -------------------------------------------------
+
   def newTable(state: MemorySegment): Unit =
     LxHandles.lx_newtable.invokeExact(state, 0, 0): Unit
 
@@ -231,32 +220,31 @@ final class PanamaState private (
     val rc: Int = LxHandles.lx_table_next.invokeExact(state, tableIdx)
     rc != 0
 
+  // ---- Registry ---------------------------------------------------------
+
   private[luau] def ref(state: MemorySegment): Ref[MemorySegment] =
-    checkOpen()
     val rawKey: Int = LxHandles.lx_ref.invokeExact(state, -1)
     val key = RefKey.fromRaw(rawKey)
     if key.isNoRef then
       throw new IllegalStateException("lx_ref returned LUA_NOREF (stack empty?)")
-    // lx_ref pins by index without popping (see lx.h); the Ref now owns the
-    // value, so consume it off the stack — matches WasmBinding and luaL_ref.
     LxHandles.lx_pop.invokeExact(state, 1): Unit
     val origin = Ref.genOrigin()
-    // The Ref must remember the state it was created against — pushRef/unref
-    // route through it. Storing the binding's own L here breaks as soon as
-    // newState() hands out a different VM.
     Ref(state, key, this, origin)
 
   private[luau] def unref(state: MemorySegment, key: RefKey): Unit =
-    if !closed then
-      LxHandles.lx_unref.invokeExact(state, key.raw): Unit
+    LxHandles.lx_unref.invokeExact(state, key.raw): Unit
+
+  // ---- Native functions -------------------------------------------------
 
   def registerNativeFn(state: MemorySegment, fn: NativeFn[MemorySegment]): Unit =
-    checkOpen()
-    val fnId = dispatcher.register(fn)
+    val fnId = PanamaRuntime.dispatcher.register(fn)
+    PanamaRuntime.liveData.foreach(_.fnIds.add(fnId))
     withArena { arena =>
       val name = Marshal.toNativeString(s"nativeFn_$fnId", arena)
       LxHandles.lx_register_native.invokeExact(state, fnId, name): Unit
     }
+
+  // ---- Global access ----------------------------------------------------
 
   def getGlobal(state: MemorySegment, name: String): Unit =
     withArena { arena =>
@@ -279,18 +267,7 @@ final class PanamaState private (
   def sandbox(state: MemorySegment): Unit =
     LxHandles.lx_sandbox.invokeExact(state): Unit
 
-  def close(): Unit =
-    if !closed then
-      closed = true
-      LxHandles.lx_close.invokeExact(L): Unit
-      stateArena.close()
-
-  def releaseRef(luaRef: RefKey): Unit =
-    if !closed then
-      LxHandles.lx_unref.invokeExact(L, luaRef.raw): Unit
-
-  private def checkOpen(): Unit =
-    if closed then throw new IllegalStateException("PanamaState is closed")
+  // ---- Internal helpers -------------------------------------------------
 
   private def readError(thread: MemorySegment): String =
     withArena { arena =>
@@ -309,20 +286,5 @@ final class PanamaState private (
     try f(a)
     finally a.close()
 
-object PanamaState:
-  def open(): PanamaState =
-    val stateArena = Arena.ofShared()
-    val dispatcher = new NativeFnDispatcher()
-    val stub = dispatcher.allocateUpcallStub(stateArena)
-    val L: MemorySegment = LxHandles.lx_newstate.invokeExact(stub)
-    if L.address() == 0L then
-      stateArena.close()
-      throw new OutOfMemoryError("lx_newstate returned NULL")
-    val ps = new PanamaState(L, stateArena, dispatcher, stub)
-    dispatcher.init(ps)
-    ps
-
-  def use[A](f: PanamaState => A): A =
-    val ps = open()
-    try f(ps)
-    finally ps.close()
+object PanamaBinding:
+  val instance: PanamaBinding = new PanamaBinding()

@@ -8,12 +8,8 @@ import luau.panama.LxConstants.*
 import luau.panama.LxHandles.*
 
 final class NativeFnDispatcher:
-  private var ps: PanamaState = null
   private val fns = new ConcurrentHashMap[Int, NativeFn[MemorySegment]]()
   private val nextId = new java.util.concurrent.atomic.AtomicInteger(1)
-
-  private[panama] def init(state: PanamaState): Unit =
-    ps = state
 
   def register(fn: NativeFn[MemorySegment]): Int =
     val id = nextId.getAndIncrement()
@@ -21,6 +17,8 @@ final class NativeFnDispatcher:
     id
 
   def unregister(id: Int): Unit = fns.remove(id)
+
+  private[panama] def registeredCount: Int = fns.size
 
   // No exception may escape this method: it runs inside a Panama upcall
   // frame and an escaping throwable terminates the JVM.
@@ -46,8 +44,6 @@ final class NativeFnDispatcher:
 
       result match
         case NativeFnResult.Return(n) =>
-          // Pointer args cross the upcall boundary as zero-length segments;
-          // resize before dereferencing.
           nResults.reinterpret(ValueLayout.JAVA_INT.byteSize())
             .set(ValueLayout.JAVA_INT, 0L, n)
           LX_RETURN
@@ -56,10 +52,14 @@ final class NativeFnDispatcher:
           LX_FAIL
 
         case s @ NativeFnResult.Suspend(_) =>
-          val panamaState = ps
-          val token = panamaState.suspendRegistry.allocToken(s)
-          lx_set_suspend_token.invokeExact(thread, token): Unit
-          LX_SUSPEND
+          PanamaRuntime.liveData match
+            case None =>
+              pushErrorMessage(thread, "luau-scala: Suspend with no live state")
+              LX_FAIL
+            case Some(vm) =>
+              val token = vm.suspendRegistry.allocToken(s)
+              lx_set_suspend_token.invokeExact(thread, token): Unit
+              LX_SUSPEND
     catch case t: Throwable =>
       try pushErrorMessage(thread, s"luau-scala: dispatch failed: ${t.getClass.getSimpleName}")
       catch case _: Throwable => ()

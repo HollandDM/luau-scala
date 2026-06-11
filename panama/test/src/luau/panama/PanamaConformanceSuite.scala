@@ -17,7 +17,7 @@ class PanamaConformanceSuite extends ConformanceSuiteBase[MemorySegment]:
     IArray.unsafeFromArray(Files.readAllBytes(Paths.get(conformanceDir, name)))
 
   override def withBinding[A](f: Binding[MemorySegment] => A): A =
-    PanamaState.use(f)
+    f(PanamaBinding.instance)
 
   override def conformanceSetup(b: Binding[MemorySegment], state: MemorySegment): Unit =
     LxHandles.lx_conformance_setup.invokeExact(state, 1): Unit

@@ -5,14 +5,15 @@ import munit.FunSuite
 class NativeLibSmokeTest extends FunSuite:
 
   test("lx_newstate returns non-null pointer") {
-    PanamaState.use { ps =>
-      assert(ps.L.address() != 0L, s"Expected non-null state pointer")
-    }
+    val b = PanamaBinding.instance
+    val s = b.newState()
+    assert(s.address() != 0L, s"Expected non-null state pointer")
+    b.closeState(s)
   }
 
-  test("PanamaState.open() and close() lifecycle") {
-    val ps = PanamaState.open()
-    assert(ps.L.address() != 0L, s"Expected non-null state pointer")
-    ps.close()
-    assert(ps.isClosed)
+  test("PanamaBinding newState/closeState lifecycle") {
+    val b = PanamaBinding.instance
+    val s = b.newState()
+    assert(s.address() != 0L, s"Expected non-null state pointer")
+    b.closeState(s)
   }
