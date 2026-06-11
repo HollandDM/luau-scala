@@ -52,7 +52,8 @@ object panama extends LuauCrossPlatformModule {
   override def moduleDeps = super.moduleDeps ++ Seq(core.jvm, stdlib.jvm)
   object test extends ScalaTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm.test)
+    // stdlib.jvm.test provides PortedTaskSuiteBase
+    override def moduleDeps = super.moduleDeps ++ Seq(core.jvm.test, stdlib.jvm.test)
     override def forkArgs = Task {
       val lib = shim.nativeBuild()
       Seq(
@@ -64,6 +65,7 @@ object panama extends LuauCrossPlatformModule {
     override def forkEnv = Task {
       super.forkEnv() ++ Map(
         "LUAU_CONFORMANCE_DIR" -> (shim.moduleDir / "luau" / "tests" / "conformance").toString,
+        "LUAU_PORTED_DIR" -> (stdlib.moduleDir / "test" / "resources" / "ported").toString,
         // Luau's number lexing/printing goes through libc strtod/snprintf,
         // which honor LC_NUMERIC. A comma-decimal locale (vi_VN, de_DE, ...)
         // breaks parsing of literals like 3.14 inside the native Runtime.
@@ -121,12 +123,14 @@ object wasm extends LuauCrossPlatformJSModule {
     val wasmPath = wasmDir.path / "luau-shim.wasm"
     JsEnvConfig.NodeJs().copy(env = Map(
       "LUAU_WASM_PATH" -> wasmPath.toString,
-      "LUAU_CONFORMANCE_DIR" -> (shim.moduleDir / "luau" / "tests" / "conformance").toString
+      "LUAU_CONFORMANCE_DIR" -> (shim.moduleDir / "luau" / "tests" / "conformance").toString,
+      "LUAU_PORTED_DIR" -> (stdlib.moduleDir / "test" / "resources" / "ported").toString
     ))
   }
   object test extends ScalaJSTests with TestModule.Munit {
     def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
-    override def moduleDeps = super.moduleDeps ++ Seq(core.js.test)
+    // stdlib.js.test provides PortedTaskSuiteBase
+    override def moduleDeps = super.moduleDeps ++ Seq(core.js.test, stdlib.js.test)
   }
 }
 
