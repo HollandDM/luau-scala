@@ -79,6 +79,8 @@ object stdlib extends Module {
     override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / "src")
     object test extends ScalaTests with TestModule.Munit {
       override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
+      // scheduler.jvm.test provides TestBinding for StdlibSuite
+      override def moduleDeps = super.moduleDeps ++ Seq(scheduler.jvm.test)
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }
@@ -87,6 +89,7 @@ object stdlib extends Module {
     override def sources = Task.Sources(moduleDir / os.up / "src", moduleDir / "src")
     object test extends ScalaJSTests with TestModule.Munit {
       override def sources = Task.Sources(moduleDir / os.up / os.up / "test" / "src")
+      override def moduleDeps = super.moduleDeps ++ Seq(scheduler.js.test)
       def mvnDeps = Seq(mvn"org.scalameta::munit::${build.munitVersion}")
     }
   }

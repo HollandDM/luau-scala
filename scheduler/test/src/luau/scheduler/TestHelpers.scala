@@ -7,8 +7,10 @@ import luau.core.NativeFnResult.Suspend
 
 /** Programmable Binding[FakeState] for scheduler tests.
   * Delegates most ops to FakeBinding; controls resume() return values.
+  * `open`: downstream suites (StdlibSuite's CallOrderBinding) extend it to
+  * instrument individual ops.
   */
-class TestBinding extends Binding[FakeState]:
+open class TestBinding extends Binding[FakeState]:
 
   private var resumeResults: List[ResumeResult] = Nil
 
