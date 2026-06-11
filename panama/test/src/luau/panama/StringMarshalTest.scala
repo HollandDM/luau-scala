@@ -14,7 +14,7 @@ class StringMarshalTest extends munit.FunSuite:
   test("ASCII string round-trip via push/read") {
     withState { (b, s) =>
       b.pushString(s, "hello world")
-      assertEquals(b.toBytes(s, -1).map(arr => new String(arr.toArray)), Some("hello world"))
+      assertEquals(b.toBytes(s, -1).map(arr => new String(IArray.genericWrapArray(arr).toArray)), Some("hello world"))
     }
   }
 
@@ -22,7 +22,7 @@ class StringMarshalTest extends munit.FunSuite:
     withState { (b, s) =>
       val testStr = "こんにちは"
       b.pushString(s, testStr)
-      val result = b.toBytes(s, -1).map(arr => new String(arr.toArray, "UTF-8"))
+      val result = b.toBytes(s, -1).map(arr => new String(IArray.genericWrapArray(arr).toArray, "UTF-8"))
       assertEquals(result, Some(testStr))
     }
   }

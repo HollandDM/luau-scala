@@ -70,7 +70,7 @@ final class PanamaBinding private () extends Binding[MemorySegment]:
   ): Either[LuaError, Unit] =
     withArena { arena =>
       val srcSeg = arena.allocate(source.length.toLong + 1L, 1L)
-      MemorySegment.copy(source.toArray, 0, srcSeg, ValueLayout.JAVA_BYTE, 0L, source.length)
+      MemorySegment.copy(IArray.genericWrapArray(source).toArray, 0, srcSeg, ValueLayout.JAVA_BYTE, 0L, source.length)
       srcSeg.set(ValueLayout.JAVA_BYTE, source.length.toLong, 0.toByte)
       val nameSeg = Marshal.toNativeString(chunkname, arena)
       val errbuf = arena.allocate(4096L, 1L)
@@ -123,7 +123,7 @@ final class PanamaBinding private () extends Binding[MemorySegment]:
   def pushBytes(state: MemorySegment, bytes: IArray[Byte]): Unit =
     withArena { arena =>
       val seg = arena.allocate(bytes.length.toLong, 1L)
-      MemorySegment.copy(bytes.toArray, 0, seg, ValueLayout.JAVA_BYTE, 0L, bytes.length)
+      MemorySegment.copy(IArray.genericWrapArray(bytes).toArray, 0, seg, ValueLayout.JAVA_BYTE, 0L, bytes.length)
       LxHandles.lx_push_lstring.invokeExact(state, seg, bytes.length.toLong): Unit
     }
 
