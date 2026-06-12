@@ -92,10 +92,17 @@ replaced the `__result` sentinel protocol in all ported files.
   Luau ships language features behind FFlags; without it the conformance set
   ages.
 
-### 8. Adapted `gc.luau` conformance port
+### 8. Adapted `gc.luau` conformance port — **DONE (2026-06-12)**
 - Blocked: excluded only for `setblockallocations` (custom allocator hook).
 - Plan: adapted copy minus allocator sections — most of its 407 lines are
   plain GC behavior. No new exports needed.
+- Done differently: the UNMODIFIED upstream file now runs in the conformance
+  suite (it needs lx_conformance_setup's collectgarbage fixture, so the
+  ported/ tree was the wrong home) with a no-op `setblockallocations`
+  stand-in in `ConformanceManifest.luaPrelude`. The OOM shrink sections
+  still run their shrink paths, just without allocation-failure injection.
+  Full fidelity (blockable allocator + `lx_set_block_allocations` export)
+  remains a follow-up.
 
 ### 9. `require` / module system
 - Blocked: nothing critical today (lune `fcheck` was inlined), but every

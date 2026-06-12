@@ -39,6 +39,7 @@ object ConformanceManifest:
     "events.luau",
     "exceptions.luau",
     "explicit_type_instantiations.luau",
+    "gc.luau",
     "ifelseexpr.luau",
     "interrupt.luau",
     "iter.luau",
@@ -72,7 +73,6 @@ object ConformanceManifest:
     "coverage.luau"           -> "needs getcoverage C++ global + coverageLevel=2",
     "cyield.luau"             -> "needs C++ continuation helpers (lua_resumek)",
     "debugger.luau"           -> "needs breakpoint/debugstep C++ callbacks",
-    "gc.luau"                 -> "needs setblockallocations allocator hook",
     "integers.luau"           -> "needs LuauIntegerType2/LuauIntegerLibrary fast flags",
     "integers_regspill.luau"  -> "hard assert(is_native()) — needs codegen",
     "native.luau"             -> "hard assert(is_native()) — needs codegen",
@@ -90,6 +90,12 @@ object ConformanceManifest:
     *
     * cYieldingIterator mirrors the upstream C closure: yield index+1 to the
     * enclosing coroutine, then deliver (index+1, index+1) to the for-loop.
+    *
+    * setblockallocations is a no-op stand-in for the upstream blockable
+    * allocator toggle: gc.luau's shrink sections still run their full
+    * weak-table/intern/thread-stack shrink paths, just without allocation
+    * failure injected mid-collect. Full fidelity needs a blockable allocator
+    * in the shim (lx_set_block_allocations) — tracked as a follow-up.
     */
   val luaPrelude: String =
     """
@@ -99,5 +105,8 @@ object ConformanceManifest:
       |  end
       |  coroutine.yield(index + 1)
       |  return index + 1, index + 1
+      |end
+      |
+      |function setblockallocations(enabled)
       |end
       |""".stripMargin
