@@ -50,8 +50,30 @@ object LuauShimFactory:
     def memDataView(): js.Dynamic =
       js.Dynamic.newInstance(js.Dynamic.global.DataView)(wasiMemory.buffer)
     val wasi = js.Dynamic.literal(
-      fd_write = { (_: Int, _: Int, _: Int, nwrittenPtr: Int) =>
-        memDataView().setUint32(nwrittenPtr, 0, true)
+      // fd_write must CONSUME the iovecs: wasi-libc's __stdio_write loops
+      // `rem -= nwritten` until the buffer drains, so acknowledging success
+      // with nwritten=0 spins that loop forever (first hit: Luau `print`
+      // flushing stdout in the ported pcall.luau — 100% CPU hang). Report
+      // every byte as written and forward stdout/stderr to Node for parity
+      // with the native backend.
+      fd_write = { (fd: Int, iovsPtr: Int, iovsLen: Int, nwrittenPtr: Int) =>
+        val dv = memDataView()
+        var total = 0
+        var i = 0
+        while i < iovsLen do
+          val ptr = dv.getUint32(iovsPtr + i * 8, true).asInstanceOf[Int]
+          val len = dv.getUint32(iovsPtr + i * 8 + 4, true).asInstanceOf[Int]
+          if len > 0 && (fd == 1 || fd == 2) then
+            // copy out of linear memory: Node may hold the chunk past this
+            // call, and a later memory.grow would detach a borrowed view
+            val view  = new Uint8Array(wasiMemory.buffer.asInstanceOf[js.typedarray.ArrayBuffer], ptr, len)
+            val chunk = new Uint8Array(len)
+            chunk.set(view)
+            val out = js.Dynamic.global.process
+            (if fd == 1 then out.stdout else out.stderr).write(chunk)
+          total += len
+          i += 1
+        dv.setUint32(nwrittenPtr, total, true)
         0
       }: js.Function,
       fd_close = { (_: Int) => 0 }: js.Function,
