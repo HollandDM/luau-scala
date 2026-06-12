@@ -85,4 +85,9 @@ object PortedTaskSuiteBase:
     "lune/coroutine.luau",
     "zune/task.luau",
     "conformance/pcall.luau",
+    "cobalt/bit32.luau",
+    "cobalt/math.luau",
+    "cobalt/coroutine.luau",
+    "cobalt/vm.luau",
+    "cobalt/utf8.luau",
   )
