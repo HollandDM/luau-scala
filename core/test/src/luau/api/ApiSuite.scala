@@ -321,3 +321,56 @@ abstract class ApiSuite[H] extends FunSuite:
       assert(r.isFailure)
       assert(r.failed.get.getMessage.contains("spawn it as a task"))
     }
+
+  // ---- Embedding edge cases (scenarios mined from hollow-cube/luau-java) --
+
+  test("TC-API-38 empty chunk compiles and runs"):
+    withLuau() { st =>
+      assertEquals(st.run(""), Success(()))
+      assertEquals(st.eval0(""), Success(()))
+    }
+
+  test("TC-API-39 host fn body throwing surfaces as a Lua error, catchable by pcall"):
+    withLuau() { st =>
+      st.defineGlobal[Double, Double]("explode")(_ => throw new RuntimeException("kaboom"))
+      // uncaught: surfaces as eval Failure
+      assert(st.eval[Double]("return explode(1)").isFailure)
+      // caught Lua-side: pcall sees a failure, the VM stays usable
+      assertEquals(st.eval[Boolean]("local ok = pcall(explode, 1); return ok"), Success(false))
+      assertEquals(st.eval[Double]("return 42"), Success(42.0))
+    }
+
+  test("TC-API-40 host error message survives nested Lua pcall layers"):
+    withLuau() { st =>
+      st.defineGlobal[Double, Double]("explode")(_ => throw new RuntimeException("kaboom"))
+      val r = st.eval[String](
+        """local ok, err = pcall(function() return (function() return explode(1) end)() end)
+          |assert(not ok)
+          |return tostring(err)""".stripMargin
+      )
+      assert(r.isSuccess)
+      assert(r.get.contains("kaboom"), s"error text lost through pcall layers: ${r.get}")
+    }
+
+  test("TC-API-41 coro resume propagates an error raised after a yield"):
+    withLuau() { st =>
+      st.useRef {
+        val fn = st.evalFn(
+          "return function() coroutine.yield(1) error('late boom') end"
+        ).get
+        val co = st.coro(fn)
+        assertEquals(co.resume[Double](), Success(CoroStep.Yielded(1.0)))
+        val r = co.resume0()
+        assert(r.isFailure)
+        assert(r.failed.get.getMessage.contains("late boom"))
+      }
+    }
+
+  test("TC-API-42 script error() carries the chunk position prefix"):
+    withLuau() { st =>
+      val r = st.eval[Double]("error('positioned')", chunkname = "=mychunk")
+      assert(r.isFailure)
+      val msg = r.failed.get.getMessage
+      assert(msg.contains("mychunk:1"), s"expected chunk:line prefix, got: $msg")
+      assert(msg.contains("positioned"))
+    }

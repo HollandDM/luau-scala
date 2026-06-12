@@ -90,4 +90,9 @@ object PortedTaskSuiteBase:
     "cobalt/coroutine.luau",
     "cobalt/vm.luau",
     "cobalt/utf8.luau",
+    "cobalt/base.luau",
+    "cobalt/vararg.luau",
+    "cobalt/operation.luau",
+    "cobalt/string.luau",
+    "cobalt/table.luau",
   )

@@ -38,14 +38,33 @@ Luau divergences discovered and now pinned as assertions:
 4. Argument errors are worded "invalid argument #N to 'f'" (PUC: "bad
    argument"), with the chunk:line prefix present.
 
-## Cobalt — remaining queue
+## Batch 2 — DONE (2026-06-12): Cobalt adaptation set
 
-- **ADAPT next (best value)**: base_spec (507 lines; drop getfenv/setfenv 5.1
-  section + version-gated float formatting), vararg_spec (202; drop 5.0 `arg`
-  table section), table_spec (946; drop `:lua>=5.5` length/hash sections),
-  string_spec (582; drop string.pack — Luau has NO string.pack — and 5.x `%q`
-  variants), operation_spec (101; relax error text).
-- **SKIP**: goto_spec (Luau has no goto), bytecode_spec (string.dump),
+Ported to `ported/cobalt/`: `base.luau` (from base_spec; getfenv/setfenv
+kept — Luau HAS them, contrary to the initial triage), `vararg.luau`,
+`operation.luau`, `string.luau` (string.pack kept — Luau HAS
+pack/unpack/packsize, correcting the initial triage), `table.luau`.
+
+Further Luau divergences pinned as assertions:
+
+5. `string.byte(s, 1, -1)` multret is stack-bounded: 2^19 raises
+   "stack overflow (string slice too long)" (PUC 5.2+ allows it).
+6. `%` keeps the 5.1 definition `a - floor(a/b)*b`: at ~1e105 magnitudes it
+   collapses to 0 where 5.3's fmod-based float `%` gives the exact remainder.
+7. The whole `table.*` library is a raw fastpath: insert/remove/move/sort/
+   unpack/concat do NOT honor __index/__newindex/__len proxies (PUC 5.3 and
+   Cobalt drive metamethods); `table.remove` on an empty table does not pop
+   index 0 (5.2 does); `table.move` of a metamethod-only source copies
+   nothing.
+8. The C-call-boundary yield ban extends to gsub replacement functions,
+   sort comparators, sort-driven __lt, and table.foreach/foreachi callbacks.
+9. Luau's number printing is Schubfach shortest-roundtrip (e.g. 2^62 renders
+   "4611686018427388000"), matching no PUC formatting branch.
+10. `inext` (ipairs iterator) returns 0 values when exhausted, not nil.
+
+## Cobalt — remaining
+
+- **SKIP (final)**: goto_spec (Luau has no goto), bytecode_spec (string.dump),
   debug_spec (Debug lib outside Standard), compare/ (golden-output diffing vs
   PUC), perf/, assert/ (Cobalt-internal regressions — re-triage individually
   if mining deeper).
@@ -60,13 +79,14 @@ baselib/tablelib/stringlib/mathlib/metatags (drop string.dump, debug.*,
 collectgarbage, platform branches, the 5.0 `arg` sections).
 SKIP: iolib, debuglib, errors/ subdir (requires `require`/package framework).
 
-## luau-java — queue (Scala-side ports, not .luau)
+## luau-java — DONE (2026-06-12, Scala-side)
 
-API tests against real Luau via FFM; most value-codec/host-fn/error cases are
-already covered by our TC-API suite. Worth porting as Scala tests:
-- error propagation through host-fn → Lua → host-fn chains, deep traces
-- coroutine resume returning errors (not just yield/done)
-- compile-error shapes (empty source, syntax error text presence)
+API tests against real Luau via FFM; most value-codec/host-fn/error cases
+were already covered by the TC-API suite. The uncovered edge cases landed as
+TC-API-38..42 in the shared ApiSuite (both backends): empty-chunk compile,
+host-fn body throwing (uncaught + pcall-caught + VM-stays-usable), host error
+text surviving nested pcall layers, coro resume error after a yield, and the
+chunkname:line prefix on script error().
 Feature-GAP markers it surfaced (not test ports): vector/buffer codecs,
 read-only tables, userdata, string atoms, preemption/interrupt, per-category
 GC stats, require/module (tracked separately as task #9).
